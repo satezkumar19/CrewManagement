@@ -10,7 +10,7 @@ import structlog
 
 from agents.master_agent import MasterAgent
 from database.models import WorkflowState, WorkflowStatus
-from mock_data.crew_data import get_crew_by_id, get_sign_on_crew
+from database.crew_repository import get_crew_by_id, get_sign_on_crew, update_crew
 from services.state_service import state_service
 
 log = structlog.get_logger()
@@ -40,7 +40,7 @@ class WorkflowService:
         Returns immediately after creating the workflow; orchestration runs async.
         """
         # Look up the sign-off crew member
-        crew = get_crew_by_id(crew_id, pool="signoff")
+        crew = await get_crew_by_id(crew_id, pool="signoff")
         if not crew:
             raise ValueError(f"Crew member {crew_id} not found in sign-off pool")
 
@@ -83,6 +83,24 @@ class WorkflowService:
             master = MasterAgent(event_callback=self._event_callback)
             updated = await master.orchestrate_sign_off(workflow, sign_off_crew)
             await state_service.update_workflow(updated)
+
+            # Persist the sign-off outcome to the crew table: the departing crew
+            # member leaves the onboard (signoff) pool and becomes available for
+            # sign-on (signon pool).
+            crew_id = updated.sign_off_crew_id
+            if crew_id:
+                row = await update_crew(crew_id, pool="signon", status="Signed Off")
+                if row:
+                    log.info("sign_off.crew_pool_updated", crew_id=crew_id, pool="signon")
+                    await self._event_callback("crew_updated", "Master Agent", {
+                        "workflow_id": updated.workflow_id,
+                        "crew_id": crew_id,
+                        "pool": "signon",
+                        "status": "Signed Off",
+                    })
+                else:
+                    log.warning("sign_off.crew_not_found_for_update", crew_id=crew_id)
+
             log.info("sign_off.orchestration.complete", workflow_id=workflow.workflow_id)
         except Exception as exc:
             log.error("sign_off.orchestration.error", error=str(exc))
@@ -107,7 +125,7 @@ class WorkflowService:
             raise ValueError(f"Workflow {workflow_id} not found")
 
         # Get candidate profile (could be from sign-on pool or matched crew)
-        candidate = get_crew_by_id(candidate_crew_id, pool="signon")
+        candidate = await get_crew_by_id(candidate_crew_id, pool="signon")
         if not candidate:
             # Try the matched crew data
             candidate = workflow.matched_crew

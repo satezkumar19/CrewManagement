@@ -14,6 +14,7 @@ from api.routes.workflow import router as workflow_router
 from api.routes.monitoring import router as monitoring_router
 from api.websockets.workflow_ws import manager
 from config import settings
+from database.db import init_db
 
 log = structlog.get_logger()
 
@@ -21,6 +22,10 @@ log = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("startup", app=settings.app_name, version=settings.app_version)
+    try:
+        await init_db()
+    except Exception as exc:  # noqa: BLE001 - log and continue so the app still boots
+        log.error("db_init_failed", error=str(exc))
     yield
     log.info("shutdown", app=settings.app_name)
 

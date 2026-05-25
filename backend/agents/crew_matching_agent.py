@@ -7,7 +7,7 @@ import random
 from typing import Any, Dict, List
 
 from agents.base_agent import BaseAgent
-from mock_data.crew_data import get_sign_on_crew
+from database.crew_repository import get_sign_on_crew
 
 TOOLS = [
     {
@@ -89,9 +89,15 @@ class CrewMatchingAgent(BaseAgent):
             tools=TOOLS,
             event_callback=event_callback,
         )
-        self._all_crew = get_sign_on_crew()
+        # Loaded lazily from Postgres on first use (can't await in __init__).
+        self._all_crew: List[Dict[str, Any]] = None
+
+    async def _ensure_crew_loaded(self) -> None:
+        if self._all_crew is None:
+            self._all_crew = await get_sign_on_crew()
 
     async def _execute_tool(self, tool_name: str, tool_input: Dict[str, Any]) -> Any:
+        await self._ensure_crew_loaded()
         if tool_name == "searchCrew":
             return self._search_crew(tool_input)
         if tool_name == "rankCrew":
@@ -234,6 +240,7 @@ class CrewMatchingAgent(BaseAgent):
     async def _validate_and_format(
         self, raw_text: str, context: Dict[str, Any]
     ) -> Dict[str, Any]:
+        await self._ensure_crew_loaded()
         # Extract the best match from tool call history
         ranked_result = None
         top_candidate = None

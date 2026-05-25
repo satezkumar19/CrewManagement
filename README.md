@@ -54,7 +54,7 @@ An enterprise-grade maritime crew management system that demonstrates **autonomo
 | Backend | FastAPI, Python 3.12 |
 | AI Agents | Anthropic SDK, Claude claude-sonnet-4-6 |
 | Real-time | WebSockets (FastAPI + Next.js) |
-| Database | PostgreSQL (optional for production) |
+| Database | PostgreSQL (required — crew data store) |
 | Cache | Redis (optional) |
 | Observability | Langfuse (optional) |
 
@@ -65,6 +65,7 @@ An enterprise-grade maritime crew management system that demonstrates **autonomo
 ### Prerequisites
 - Python 3.12+
 - Node.js 22+
+- **PostgreSQL 14+** running locally (the backend reads/writes crew data from it)
 - An Anthropic API key (`claude-sonnet-4-6` access)
 - **Managed Agents beta access** on your Anthropic organization (`client.beta.agents` /
   `sessions` / `environments`). Without it, the one-time setup below returns a 403.
@@ -78,7 +79,33 @@ cp .env.example .env
 # Edit .env and add your ANTHROPIC_API_KEY
 ```
 
-### 2. Start Backend
+### 2. Database (PostgreSQL) — Local Setup
+
+The backend stores crew data in PostgreSQL. The committed code does **not** include a
+database dump — each developer creates and seeds their own local database. (`backend/.env`
+is gitignored, so set your own connection string below.)
+
+```bash
+# 1. Create the database (init_db creates TABLES on startup, but NOT the database itself):
+psql -U postgres -c "CREATE DATABASE maritime_crew;"
+
+# 2. Point the backend at your local Postgres — in backend/.env set DATABASE_URL
+#    to match YOUR credentials (note the +asyncpg driver):
+#    DATABASE_URL=postgresql+asyncpg://postgres:<your_password>@localhost:5432/maritime_crew
+```
+
+Tables are created automatically the first time the backend starts (`init_db()` runs
+`Base.metadata.create_all`). To create **and** seed the table with the 40 sample crew
+records in one step, run the seed script (see the next step, after deps are installed):
+
+```bash
+python -m scripts.seed_crew
+```
+
+> `seed_crew.py` drops, recreates, and reseeds the `crew` table — safe to re-run anytime
+> you want a clean dataset. Skip it if you only want empty tables.
+
+### 3. Start Backend
 
 ```bash
 cd backend
@@ -93,7 +120,10 @@ pip install -r requirements.txt
 
 # Copy env
 cp .env.example .env
-# Add your ANTHROPIC_API_KEY to .env
+# Add your ANTHROPIC_API_KEY and set DATABASE_URL (see step 2) in .env
+
+# Create + seed the crew table (requires the database from step 2 to exist)
+python -m scripts.seed_crew
 
 # Provision the Managed Agents (environment + 5 agents) — RUN ONCE.
 # Caches IDs to backend/managed_agents.json, which the app loads at startup.
@@ -110,7 +140,7 @@ Backend API docs: http://localhost:8000/docs
 > if you want to recreate the agents. To change an agent's prompt/tools later, prefer
 > `client.beta.agents.update` (versioned) over recreating.
 
-### 3. Start Frontend
+### 4. Start Frontend
 
 ```bash
 cd frontend
@@ -124,13 +154,19 @@ npm run dev
 
 Frontend: http://localhost:3000
 
-### 4. Docker (Optional — Full Stack)
+### 5. Docker (Optional — Full Stack)
+
+Docker is the simplest path: the `postgres` service auto-creates the `maritime_crew`
+database and the backend creates the tables on startup — no manual DB setup needed.
 
 ```bash
 cp .env.example .env
 # Edit .env — add ANTHROPIC_API_KEY
 
 docker-compose up --build
+
+# Seed the crew table inside the running backend container (one-time):
+docker-compose exec backend python -m scripts.seed_crew
 ```
 
 ---
@@ -362,8 +398,8 @@ MANAGED_ENVIRONMENT_ID=env_...      # Optional — else loaded from managed_agen
 MANAGED_COORDINATOR_AGENT_ID=agent_... # Optional — else loaded from managed_agents.json
 LANGFUSE_PUBLIC_KEY=                # Optional
 LANGFUSE_SECRET_KEY=                # Optional
-DATABASE_URL=postgresql+...         # Auto-set by Docker
-REDIS_URL=redis://...               # Auto-set by Docker
+DATABASE_URL=postgresql+asyncpg://postgres:<pwd>@localhost:5432/maritime_crew  # Required (auto-set in Docker)
+REDIS_URL=redis://...               # Optional (auto-set in Docker)
 ```
 
 > `scripts/setup_managed_agents.py` writes `backend/managed_agents.json`; the app loads
