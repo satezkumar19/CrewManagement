@@ -22,6 +22,7 @@ export default function DashboardPage() {
     signOnCrew, signOffCrew,
     setSignOnCrew, setSignOffCrew,
     activeWorkflow, events,
+    setActiveWorkflow, setMatchedCandidate,
   } = useWorkflowStore();
 
   const { isConnected } = useWebSocket();
@@ -29,7 +30,11 @@ export default function DashboardPage() {
   const [initiatingSignOff, setInitiatingSignOff] = useState<string | null>(null);
 
   useEffect(() => {
-    loadCrew();
+    void loadCrew();
+    void hydrateActiveWorkflow();
+    // We deliberately depend on neither store setters nor hydrateActiveWorkflow:
+    // this runs once on mount, and store actions are referentially stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCrew = async () => {
@@ -44,6 +49,33 @@ export default function DashboardPage() {
       toast.error("Failed to load crew data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Restore the most recent in-flight workflow into the store after a page
+  // reload. Without this the Sign On buttons and the WorkflowTimeline panel
+  // (which carries the compliance-retry banner) wouldn't render until the
+  // operator manually initiates a new sign-off.
+  const hydrateActiveWorkflow = async () => {
+    try {
+      const all = await workflowApi.listWorkflows(20);
+      const nonTerminal = all.find((w) =>
+        ["pending", "running", "waiting", "retrying_compliance", "paused"].includes(w.status)
+      );
+      if (nonTerminal) {
+        setActiveWorkflow(nonTerminal);
+        if (nonTerminal.matched_crew_id) {
+          setMatchedCandidate(nonTerminal.matched_crew_id);
+        }
+        useWorkflowStore.getState().setShowWorkflowPanel(true);
+        // If the workflow is past Phase 1, drop the operator straight into
+        // the Sign On tab so the matched candidate is visible.
+        if (["waiting", "retrying_compliance", "running"].includes(nonTerminal.status)) {
+          setActiveTab("sign-on");
+        }
+      }
+    } catch {
+      // Best-effort hydration — fall back to empty state on any failure.
     }
   };
 

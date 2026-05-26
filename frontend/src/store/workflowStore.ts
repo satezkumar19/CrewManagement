@@ -186,6 +186,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
           case "master_waiting":
             updateAgentState("Master Agent", { status: "waiting" });
+            // Flip the workflow itself to "waiting" so the Sign On tab shows
+            // a button on every row (not just the AI-matched one).
+            updateActiveWorkflow({ status: "waiting" });
             if (data.matched_crew) {
               const matched = data.matched_crew as Record<string, string>;
               setMatchedCandidate(matched.crew_id);
