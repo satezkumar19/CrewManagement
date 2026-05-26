@@ -180,9 +180,20 @@ class WorkflowService:
 
             # attempt 0 is the initial try; attempts 1..max_compliance_retries
             # are the retries. With max=3 → up to 4 total attempts.
-            for current in queue:
+            for slot in queue:
                 if attempt > workflow.max_compliance_retries:
                     break
+
+                # The first slot is the operator's fully-loaded pick. Subsequent
+                # slots come from ranked_candidates, which only carries the
+                # match-time projection (crew_id/name/rank/grade/port/nationality
+                # + score) — NOT the document fields compliance needs. Hydrate
+                # them from the DB so the compliance agent gets real inputs.
+                current = slot if attempt == 0 else await self._hydrate_candidate(slot)
+                if current is None:
+                    log.warning("compliance.retry.candidate_missing", crew_id=slot.get("crew_id"))
+                    attempt += 1
+                    continue
 
                 workflow.compliance_retries = attempt
                 updated = await master.orchestrate_compliance(workflow, current, port)
@@ -245,6 +256,8 @@ class WorkflowService:
         """
         Build the ordered try-list for compliance: the user-picked candidate first,
         then the rest of the Phase 1 ranked list in score order, deduped on crew_id.
+        Ranked entries are thin (no document fields) — they get hydrated by
+        _hydrate_candidate at the point of use.
         """
         first_id = first_candidate.get("crew_id")
         ranked = ((workflow.crew_match_result or {}).get("ranked_candidates") or [])
@@ -256,6 +269,16 @@ class WorkflowService:
                 queue.append(c)
                 seen.add(cid)
         return queue
+
+    async def _hydrate_candidate(self, slot: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Resolve a ranked-list slot to the full sign-on-pool record so the
+        compliance agent receives real medical_expiry / visa_status / etc.
+        """
+        cid = slot.get("crew_id")
+        if not cid:
+            return None
+        return await get_crew_by_id(cid, pool="signon")
 
     async def _finish_compliance_success(
         self, workflow: WorkflowState, candidate: Dict[str, Any], overall: str
