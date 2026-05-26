@@ -133,14 +133,13 @@ class MasterAgent:
         report = (workflow.compliance_result or {}).get("compliance_report") or {}
         overall = report.get("overall_status", "unknown")
 
-        await self._emit_timeline(workflow, f"Compliance {overall} — workflow completing")
-        workflow.status = WorkflowStatus.COMPLETED
-        workflow.completed_at = datetime.utcnow()
-        await self._emit("workflow_completed", {
+        # Phase-level signal only — whether the workflow is COMPLETED, retrying,
+        # or FAILED is decided by the service layer, which owns the retry loop.
+        await self._emit_timeline(workflow, f"Compliance {overall} for {candidate_crew.get('name')}")
+        await self._emit("compliance_phase_complete", {
             "workflow_id": workflow.workflow_id,
+            "candidate": candidate_crew,
             "compliance_status": overall,
-            "total_tokens": workflow.total_tokens,
-            "total_cost": workflow.total_cost,
         })
         return workflow
 

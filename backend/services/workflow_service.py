@@ -160,11 +160,76 @@ class WorkflowService:
         candidate: Dict[str, Any],
         port: str,
     ):
+        """
+        Drive Phase 2 with a retry loop:
+
+        - Try the user-picked candidate first.
+        - On compliance "failed", record the rejection, advance to the next
+          candidate from the Phase 1 ranked list (skipping anyone already tried),
+          and retry — up to max_compliance_retries.
+        - On "passed" / "warning" the workflow completes.
+        - If the queue is exhausted, the workflow fails.
+
+        The master agent emits a `compliance_phase_complete` event per attempt
+        but does NOT decide the terminal workflow state; that's owned here.
+        """
         try:
+            queue = self._build_candidate_queue(workflow, candidate)
             master = MasterAgent(event_callback=self._event_callback)
-            updated = await master.orchestrate_compliance(workflow, candidate, port)
-            await state_service.update_workflow(updated)
-            log.info("compliance.orchestration.complete", workflow_id=workflow.workflow_id)
+            attempt = 0
+
+            # attempt 0 is the initial try; attempts 1..max_compliance_retries
+            # are the retries. With max=3 → up to 4 total attempts.
+            for current in queue:
+                if attempt > workflow.max_compliance_retries:
+                    break
+
+                workflow.compliance_retries = attempt
+                updated = await master.orchestrate_compliance(workflow, current, port)
+                workflow = updated  # master returns the same instance, but be explicit
+
+                report = (workflow.compliance_result or {}).get("compliance_report") or {}
+                overall = (report.get("overall_status") or "").lower()
+
+                if overall in ("passed", "warning"):
+                    await self._finish_compliance_success(workflow, current, overall)
+                    return
+
+                # Failed — record, decide whether to retry
+                rejection = {
+                    "attempt": attempt + 1,
+                    "candidate": current,
+                    "compliance_score": report.get("compliance_score"),
+                    "reason": report.get("recommendation", "Compliance failed"),
+                    "failures": report.get("failures", []),
+                }
+                workflow.rejected_candidates.append(rejection)
+
+                remaining = queue[attempt + 1 :]
+                next_attempt_within_budget = (attempt + 1) <= workflow.max_compliance_retries
+                next_candidate = remaining[0] if remaining and next_attempt_within_budget else None
+
+                if next_candidate is None:
+                    await self._finish_compliance_exhausted(workflow, rejection)
+                    return
+
+                workflow.status = WorkflowStatus.RETRYING_COMPLIANCE
+                await state_service.update_workflow(workflow)
+                await self._event_callback("compliance_retry", "Master Agent", {
+                    "workflow_id": workflow.workflow_id,
+                    "attempt": attempt + 1,
+                    "max_retries": workflow.max_compliance_retries,
+                    "rejected": current,
+                    "reason": rejection["reason"],
+                    "next_candidate": next_candidate,
+                })
+                attempt += 1
+
+            # Loop fell through without a success or an early exhaustion exit —
+            # means the for-loop ran out of queue items but we still had budget.
+            last = workflow.rejected_candidates[-1] if workflow.rejected_candidates else None
+            await self._finish_compliance_exhausted(workflow, last)
+
         except Exception as exc:
             log.error("compliance.orchestration.error", error=str(exc))
             workflow.status = WorkflowStatus.FAILED
@@ -173,6 +238,68 @@ class WorkflowService:
                 "workflow_id": workflow.workflow_id,
                 "error": str(exc),
             })
+
+    def _build_candidate_queue(
+        self, workflow: WorkflowState, first_candidate: Dict[str, Any]
+    ) -> list:
+        """
+        Build the ordered try-list for compliance: the user-picked candidate first,
+        then the rest of the Phase 1 ranked list in score order, deduped on crew_id.
+        """
+        first_id = first_candidate.get("crew_id")
+        ranked = ((workflow.crew_match_result or {}).get("ranked_candidates") or [])
+        queue = [first_candidate]
+        seen = {first_id}
+        for c in ranked:
+            cid = c.get("crew_id")
+            if cid and cid not in seen:
+                queue.append(c)
+                seen.add(cid)
+        return queue
+
+    async def _finish_compliance_success(
+        self, workflow: WorkflowState, candidate: Dict[str, Any], overall: str
+    ) -> None:
+        workflow.status = WorkflowStatus.COMPLETED
+        workflow.completed_at = datetime.utcnow()
+        # Reflect the actually-signed-on candidate, which may differ from the
+        # operator's initial pick when retries fired.
+        workflow.matched_crew = candidate
+        workflow.matched_crew_id = candidate.get("crew_id")
+        await state_service.update_workflow(workflow)
+        await self._event_callback("workflow_completed", "Master Agent", {
+            "workflow_id": workflow.workflow_id,
+            "compliance_status": overall,
+            "final_candidate": candidate,
+            "retries": workflow.compliance_retries,
+            "rejected_candidates": workflow.rejected_candidates,
+            "total_tokens": workflow.total_tokens,
+            "total_cost": workflow.total_cost,
+        })
+        log.info(
+            "compliance.orchestration.complete",
+            workflow_id=workflow.workflow_id,
+            retries=workflow.compliance_retries,
+        )
+
+    async def _finish_compliance_exhausted(
+        self, workflow: WorkflowState, last_rejection: Optional[Dict[str, Any]]
+    ) -> None:
+        workflow.status = WorkflowStatus.FAILED
+        workflow.completed_at = datetime.utcnow()
+        await state_service.update_workflow(workflow)
+        await self._event_callback("workflow_failed", "Master Agent", {
+            "workflow_id": workflow.workflow_id,
+            "error": "Compliance retry budget exhausted",
+            "attempts": len(workflow.rejected_candidates),
+            "rejected_candidates": workflow.rejected_candidates,
+            "last_rejection": last_rejection,
+        })
+        log.warning(
+            "compliance.orchestration.exhausted",
+            workflow_id=workflow.workflow_id,
+            attempts=len(workflow.rejected_candidates),
+        )
 
     async def pause_workflow(self, workflow_id: str) -> WorkflowState:
         workflow = await state_service.get_workflow(workflow_id)
