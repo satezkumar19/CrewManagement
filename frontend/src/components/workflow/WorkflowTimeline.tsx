@@ -1,6 +1,6 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Clock, CheckCircle, AlertCircle, RefreshCw, XCircle } from "lucide-react";
 import type { WorkflowState } from "@/types";
 import { agentIcon } from "@/lib/utils";
 import { workflowApi } from "@/lib/api";
@@ -10,7 +10,8 @@ import toast from "react-hot-toast";
 interface Props { workflow: WorkflowState; }
 
 export default function WorkflowTimeline({ workflow }: Props) {
-  const { updateActiveWorkflow } = useWorkflowStore();
+  const { updateActiveWorkflow, complianceRetry } = useWorkflowStore();
+  const rejected = workflow.rejected_candidates ?? [];
 
   const handleControl = async (action: "pause" | "resume" | "cancel") => {
     try {
@@ -60,6 +61,35 @@ export default function WorkflowTimeline({ workflow }: Props) {
         <p className="text-xs text-gray-500 mt-1 font-mono">{workflow.workflow_id.slice(0, 16)}...</p>
       </div>
 
+      <AnimatePresence>
+        {complianceRetry && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-b border-ocean-border bg-orange-500/10 px-4 py-3"
+          >
+            <div className="flex items-start gap-2">
+              <RefreshCw className="w-3.5 h-3.5 text-orange-400 mt-0.5 animate-spin shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-orange-300">
+                  Compliance retry {complianceRetry.attempt} / {complianceRetry.max_retries}
+                </p>
+                <p className="text-xs text-orange-200/80 mt-0.5">
+                  Rejected <span className="font-medium">{complianceRetry.rejected_name}</span>
+                  {" — "}{complianceRetry.reason}
+                </p>
+                {complianceRetry.next_candidate_name && (
+                  <p className="text-xs text-orange-200/60 mt-0.5">
+                    Trying next: <span className="font-medium">{complianceRetry.next_candidate_name}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="p-4 max-h-72 overflow-y-auto space-y-2">
         <AnimatePresence>
           {workflow.timeline.length === 0 && (
@@ -93,6 +123,28 @@ export default function WorkflowTimeline({ workflow }: Props) {
       {workflow.compliance_result?.compliance_report && (
         <div className="border-t border-ocean-border p-4">
           <ComplianceResultCard report={workflow.compliance_result.compliance_report} />
+        </div>
+      )}
+
+      {/* Rejected candidates summary (visible once retries have occurred) */}
+      {rejected.length > 0 && (
+        <div className="border-t border-ocean-border px-4 py-3">
+          <p className="text-xs font-semibold text-gray-400 mb-1.5 flex items-center gap-1.5">
+            <XCircle className="w-3 h-3 text-red-400" />
+            Rejected by compliance ({rejected.length})
+          </p>
+          <ul className="space-y-1">
+            {rejected.map((r, i) => (
+              <li key={i} className="text-xs text-gray-500">
+                <span className="text-gray-400">#{r.attempt}</span>{" "}
+                <span className="text-gray-300">{r.candidate?.name || r.candidate?.crew_id}</span>
+                {typeof r.compliance_score === "number" && (
+                  <span className="text-red-400/80"> · {r.compliance_score.toFixed(0)}%</span>
+                )}
+                <span className="text-gray-600"> — {r.reason}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

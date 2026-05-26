@@ -65,9 +65,18 @@ export type WorkflowStatus =
   | "running"
   | "paused"
   | "waiting"
+  | "retrying_compliance"
   | "completed"
   | "failed"
   | "cancelled";
+
+export interface RejectedCandidate {
+  attempt: number;
+  candidate: Partial<CrewMember>;
+  compliance_score?: number;
+  reason: string;
+  failures?: string[];
+}
 
 export interface TimelineEntry {
   timestamp: string;
@@ -96,6 +105,9 @@ export interface WorkflowState {
   travel_result?: TravelResult;
   notification_result?: NotificationResult;
   compliance_result?: ComplianceResult;
+  compliance_retries?: number;
+  max_compliance_retries?: number;
+  rejected_candidates?: RejectedCandidate[];
   total_tokens: number;
   total_cost: number;
   total_duration_ms: number;

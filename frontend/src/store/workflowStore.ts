@@ -6,7 +6,16 @@ import type {
   WSEvent,
   AgentExecution,
   AgentStatus,
+  RejectedCandidate,
 } from "@/types";
+
+export interface ComplianceRetryState {
+  attempt: number;
+  max_retries: number;
+  rejected_name: string;
+  reason: string;
+  next_candidate_name?: string;
+}
 
 interface AgentLiveState {
   name: string;
@@ -40,6 +49,10 @@ interface WorkflowStore {
   agentStates: Record<string, AgentLiveState>;
   updateAgentState: (name: string, state: Partial<AgentLiveState>) => void;
   resetAgentStates: () => void;
+
+  // Compliance retry banner state (cleared when a workflow completes/fails)
+  complianceRetry: ComplianceRetryState | null;
+  setComplianceRetry: (v: ComplianceRetryState | null) => void;
 
   // Events log
   events: WSEvent[];
@@ -101,13 +114,22 @@ export const useWorkflowStore = create<WorkflowStore>()(
           agentStates: JSON.parse(JSON.stringify(DEFAULT_AGENT_STATES)),
         }),
 
+      complianceRetry: null,
+      setComplianceRetry: (v) => set({ complianceRetry: v }),
+
       events: [],
       addEvent: (e) =>
         set((s) => ({ events: [e, ...s.events].slice(0, 200) })),
       clearEvents: () => set({ events: [] }),
 
       handleWSEvent: (event) => {
-        const { updateAgentState, updateActiveWorkflow, setMatchedCandidate, addEvent } = get();
+        const {
+          updateAgentState,
+          updateActiveWorkflow,
+          setMatchedCandidate,
+          setComplianceRetry,
+          addEvent,
+        } = get();
         addEvent(event);
 
         const agentName = event.agent_name || "Master Agent";
@@ -120,6 +142,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
               status: "running",
             });
             get().resetAgentStates();
+            setComplianceRetry(null);
             updateAgentState("Master Agent", { status: "running" });
             break;
 
@@ -175,6 +198,33 @@ export const useWorkflowStore = create<WorkflowStore>()(
           case "sign_on_initiated":
             updateAgentState("Master Agent", { status: "running" });
             updateAgentState("Compliance Agent", { status: "pending" });
+            setComplianceRetry(null);
+            break;
+
+          case "compliance_retry": {
+            const rejected = data.rejected as Record<string, unknown> | undefined;
+            const next = data.next_candidate as Record<string, unknown> | undefined;
+            setComplianceRetry({
+              attempt: Number(data.attempt) || 1,
+              max_retries: Number(data.max_retries) || 3,
+              rejected_name: (rejected?.name as string) || "previous candidate",
+              reason: (data.reason as string) || "Compliance failed",
+              next_candidate_name: next?.name as string | undefined,
+            });
+            updateActiveWorkflow({ status: "retrying_compliance" });
+            // Compliance Agent will re-run; reset its live state so the panel
+            // doesn't look like it's still "completed" from the previous attempt.
+            updateAgentState("Compliance Agent", { status: "pending" });
+            if (next?.crew_id) {
+              setMatchedCandidate(next.crew_id as string);
+            }
+            break;
+          }
+
+          case "compliance_phase_complete":
+            // Master finished one compliance attempt; service decides whether
+            // to retry or complete. Nothing to do here — we react to the
+            // follow-up compliance_retry / workflow_completed / workflow_failed.
             break;
 
           case "workflow_completed":
@@ -183,11 +233,19 @@ export const useWorkflowStore = create<WorkflowStore>()(
               status: "completed",
               total_tokens: data.total_tokens as number,
               total_cost: data.total_cost as number,
+              rejected_candidates: (data.rejected_candidates as RejectedCandidate[]) || [],
+              compliance_retries: data.retries as number | undefined,
+              matched_crew: (data.final_candidate as WorkflowState["matched_crew"]) ?? undefined,
             });
+            setComplianceRetry(null);
             break;
 
           case "workflow_failed":
-            updateActiveWorkflow({ status: "failed" });
+            updateActiveWorkflow({
+              status: "failed",
+              rejected_candidates: (data.rejected_candidates as RejectedCandidate[]) || [],
+            });
+            setComplianceRetry(null);
             break;
 
           case "workflow_paused":
