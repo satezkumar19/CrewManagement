@@ -24,6 +24,7 @@ class WorkflowStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
     WAITING = "waiting"  # Phase 1 complete; awaiting the user's "Sign On" confirmation
+    RETRYING_COMPLIANCE = "retrying_compliance"  # Last compliance attempt failed; trying next ranked candidate
     PAUSED = "paused"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -135,6 +136,13 @@ class WorkflowState(BaseModel):
     travel_result: Optional[Dict[str, Any]] = None
     notification_result: Optional[Dict[str, Any]] = None
     compliance_result: Optional[Dict[str, Any]] = None
+
+    # Compliance retry loop — see workflow_service._run_compliance_orchestration.
+    # When a candidate's compliance fails, the service iterates down the ranked
+    # list (up to max_compliance_retries) instead of failing the workflow.
+    compliance_retries: int = 0
+    max_compliance_retries: int = 3
+    rejected_candidates: List[Dict[str, Any]] = []
 
     # Metrics
     total_tokens: int = 0
