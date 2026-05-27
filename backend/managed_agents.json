@@ -8,7 +8,13 @@
     },
     "travel": {
       "agent_id": "agent_01Ctt1zPdMP5SU5fNkrEr1XB",
-      "name": "Travel Agent"
+      "name": "Travel Agent",
+      "skill_ids": [
+        "skill_01RrKgQVEukmGXUGSM4TwTjH",
+        "skill_01NQi61Cypaie8e1g638GWqR",
+        "skill_01Aup8ENioYRnhGpL11fXbKJ",
+        "skill_014nF9kb9Cdg6raqxiDyvw1p"
+      ]
     },
     "notification": {
       "agent_id": "agent_01AnNFdrPoDKU6JUCtAhSRTD",

@@ -101,7 +101,7 @@ export default function WorkflowPage() {
   );
 }
 
-type FlowState = { status: string; tool_calls: number; current_task?: string };
+type FlowState = { status: string; tool_calls: number; current_task?: string; skills_used?: number };
 
 function AgentFlowGraph({ agentStates }: { agentStates: Record<string, FlowState> }) {
   // Master on top; all four specialists aligned in one row beneath it. Edges fan
@@ -114,6 +114,10 @@ function AgentFlowGraph({ agentStates }: { agentStates: Record<string, FlowState
     { name: "Compliance Agent", x: 86, y: 70 },
   ];
   const activeCount = specialists.filter((s) => agentStates[s.name]?.status === "running").length;
+  const totalSkills = [master, ...specialists].reduce(
+    (n, s) => n + (agentStates[s.name]?.skills_used || 0),
+    0
+  );
 
   return (
     <div className="glass rounded-2xl p-6">
@@ -122,11 +126,16 @@ function AgentFlowGraph({ agentStates }: { agentStates: Record<string, FlowState
           <Zap className="w-4 h-4 text-ocean-accent" />
           Live Agent Orchestration
         </h2>
-        <span className="text-xs text-gray-500">
-          {activeCount > 0
-            ? `Master is calling ${activeCount} agent${activeCount > 1 ? "s" : ""} ↓`
-            : "Master delegates to the highlighted agents ↓"}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] px-2 py-0.5 rounded-full border border-green-500/30 bg-green-500/10 text-green-300">
+            📚 {totalSkills} skill{totalSkills === 1 ? "" : "s"} used
+          </span>
+          <span className="text-xs text-gray-500">
+            {activeCount > 0
+              ? `Master is calling ${activeCount} agent${activeCount > 1 ? "s" : ""} ↓`
+              : "Master delegates to the highlighted agents ↓"}
+          </span>
+        </div>
       </div>
 
       <div className="relative h-72 bg-ocean/30 rounded-xl border border-ocean-border/30 overflow-hidden">
@@ -219,6 +228,9 @@ function FlowNode({
         </div>
         {!!state && state.tool_calls > 0 && (
           <div className="text-[10px] text-gray-500 mt-0.5">{state.tool_calls} tool calls</div>
+        )}
+        {!!state?.skills_used && (
+          <div className="text-[10px] text-green-400/80 mt-0.5">📚 {state.skills_used} skill{state.skills_used === 1 ? "" : "s"}</div>
         )}
       </motion.div>
     </div>

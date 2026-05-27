@@ -17,7 +17,7 @@ Two responsibilities:
 """
 import json
 import os
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import structlog
 
@@ -142,6 +142,80 @@ def custom_skill_id_to_name() -> Dict[str, str]:
     except Exception:
         return {}
     return {v.get("skill_id"): k for k, v in cache.items() if v.get("skill_id")}
+
+
+# ── Attachable custom skills (in-place attach via scripts.attach_skills) ────────
+# Distinct from the create()-time wiring above (SKILLS_BY_KEY / _CUSTOM_SKILLS_BY_AGENT,
+# applied by scripts.update_agent_skills). These are custom Agent Skills authored under
+# backend/agents/skills/<folder>/SKILL.md and attached to an ALREADY-CREATED specialist in
+# place by scripts.attach_skills — it uploads each via ManagedAgentsClient.upload_skill and
+# patches the agent with agents.update. The folder name MUST equal the `name:` field in that
+# folder's SKILL.md.
+#
+# NOTE: scripts.attach_skills REPLACES an agent's skill list with exactly these. Running
+# scripts.update_agent_skills afterwards rebuilds the agent from SKILLS_BY_KEY /
+# _CUSTOM_SKILLS_BY_AGENT and would drop anything attached here — keep the two paths in
+# sync (or pick one) if you use both.
+_AGENT_SKILLS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "skills"))
+
+# specialist key -> [(skill folder under backend/agents/skills/, human display title)]
+SPECIALIST_SKILLS: Dict[str, List[Tuple[str, str]]] = {
+    "travel": [
+        ("crew-travel-policy", "Crew Travel Booking Policy"),
+        ("visa-and-transit-requirements", "Visa & Transit Requirements"),
+        ("port-clearance-procedures", "Port Clearance Procedures"),
+        ("repatriation-rules", "Seafarer Repatriation Rules (MLC 2006)"),
+    ],
+}
+
+
+def specialist_skill_specs(key: str) -> List[Dict[str, str]]:
+    """Resolve a specialist's declared attachable skills to upload specs:
+    ``[{"dir": <abs skill folder>, "display_title": <title>}, ...]``.
+    Returns ``[]`` for a key that declares no skills."""
+    return [
+        {"dir": os.path.join(_AGENT_SKILLS_DIR, folder), "display_title": title}
+        for folder, title in SPECIALIST_SKILLS.get(key, [])
+    ]
+
+
+def specialist_config_with_skills(key: str, skills: List[Dict[str, str]]) -> Dict[str, Any]:
+    """Full agents.update payload for an existing specialist, carrying `skills`.
+
+    Re-asserts the specialist's name/model/system/tools (rebuilt from its class, the
+    same source setup() used) alongside the given skill refs, so an in-place attach
+    can't drop the prompt or tools regardless of the update endpoint's merge semantics.
+    The agent toolset is included whenever skills are present — skills need `read`/`bash`
+    to open their SKILL.md files, so agents.update rejects a skill-bearing agent without it.
+    """
+    inst: BaseAgent = SPECIALIST_CLASSES[key]()
+    tools: List[Dict[str, Any]] = list(inst.custom_tool_defs())
+    if skills:
+        tools.insert(0, {"type": "agent_toolset_20260401"})
+    return {
+        "name": inst.name,
+        "model": settings.claude_model,
+        "system": inst.system_prompt(),
+        "tools": tools,
+        "skills": skills,
+    }
+
+
+def attached_custom_skill_labels(key: str) -> List[str]:
+    """Friendly labels (the skill folder name == SKILL.md `name:`) for the custom skills
+    attached IN PLACE to a specialist via scripts.attach_skills. These live in
+    SPECIALIST_SKILLS rather than the create()-time `skills` config, so the monitoring API
+    merges them in to reflect what is actually on the agent. Returns labels only when
+    managed_agents.json records skill_ids for the specialist (i.e. attach has run)."""
+    declared = [folder for folder, _title in SPECIALIST_SKILLS.get(key, [])]
+    if not declared:
+        return []
+    try:
+        with open(settings.managed_agents_ids_file) as f:
+            attached = json.load(f).get("specialists", {}).get(key, {}).get("skill_ids") or []
+    except Exception:
+        attached = []
+    return declared if attached else []
 
 
 def specialist_agent_configs() -> List[Dict[str, Any]]:

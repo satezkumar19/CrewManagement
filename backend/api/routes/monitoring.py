@@ -7,6 +7,7 @@ from api.websockets.workflow_ws import manager
 from agents.managed.registry import (
     COORDINATOR_NAME,
     COORDINATOR_SKILLS,
+    attached_custom_skill_labels,
     coordinator_agent_config,
     custom_skill_id_to_name,
     specialist_agent_configs,
@@ -42,15 +43,19 @@ async def get_agent_skills():
     pdf/docx/xlsx or custom). Single-sourced from registry.py.
     """
     id_to_name = custom_skill_id_to_name()
-    agents = [
-        {
-            "key": cfg["key"],
-            "name": cfg["name"],
-            "tools": _tool_labels(cfg.get("tools")),
-            "skills": _skill_labels(cfg.get("skills"), id_to_name),
-        }
-        for cfg in specialist_agent_configs()
-    ]
+    agents = []
+    for cfg in specialist_agent_configs():
+        # create()-time skills (SKILLS_BY_KEY / custom refs) + skills attached in place
+        # via scripts.attach_skills (SPECIALIST_SKILLS). Dedupe, preserve order.
+        skills = _skill_labels(cfg.get("skills"), id_to_name) + attached_custom_skill_labels(cfg["key"])
+        agents.append(
+            {
+                "key": cfg["key"],
+                "name": cfg["name"],
+                "tools": _tool_labels(cfg.get("tools")),
+                "skills": list(dict.fromkeys(skills)),
+            }
+        )
     coordinator = coordinator_agent_config([])  # roster irrelevant — we only read its tools
     agents.append(
         {

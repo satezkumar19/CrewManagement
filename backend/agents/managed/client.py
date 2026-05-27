@@ -19,7 +19,9 @@ the method/field names here are the ones to verify first.
 """
 import asyncio
 import json
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+import os
+import re
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 import anthropic
 import structlog
@@ -60,6 +62,28 @@ def _to_result_text(output: Any) -> str:
         return str(output)
 
 
+# Skills API beta header for skills.create (matches scripts.upload_skills).
+_SKILLS_BETA = "skills-2025-10-02"
+_SKILL_CONTENT_TYPES = {".md": "text/markdown", ".txt": "text/plain", ".json": "application/json"}
+
+
+def _skill_files(skill_dir: str) -> List[Tuple[str, bytes, str]]:
+    """Read every file under a skill folder as (relpath, bytes, content_type) tuples,
+    naming each relative to the folder's PARENT so paths read '<skill-folder>/SKILL.md' —
+    the Skills API requires SKILL.md to sit in exactly one top-level folder."""
+    parent = os.path.dirname(os.path.normpath(skill_dir))
+    files: List[Tuple[str, bytes, str]] = []
+    for root, _dirs, names in os.walk(skill_dir):
+        for n in names:
+            path = os.path.join(root, n)
+            # Skills API path keys must use forward slashes — normalize Windows '\'.
+            rel = os.path.relpath(path, parent).replace(os.sep, "/")
+            ct = _SKILL_CONTENT_TYPES.get(os.path.splitext(n)[1], "application/octet-stream")
+            with open(path, "rb") as f:
+                files.append((rel, f.read(), ct))
+    return files
+
+
 # Built-in toolset commands that, when they touch a path/command mentioning a
 # skill, indicate the hosted agent is loading one of its configured Skills. There
 # is no first-class "skill used" event in the managed stream, so this is the
@@ -76,6 +100,25 @@ def _looks_like_skill_access(payload: Dict[str, Any]) -> bool:
     except Exception:
         return False
     return "skill" in blob
+
+
+# Pull the skill's folder name out of a skill-file access so the console can show
+# WHICH skill was used. Prefer the SKILL.md folder; fall back to the segment after
+# a /skills/ path component.
+_SKILL_MD_RE = re.compile(r"([A-Za-z0-9][\w.-]*)/SKILL\.md", re.IGNORECASE)
+_SKILLS_DIR_RE = re.compile(r"(?:^|/)skills?/([A-Za-z0-9][\w.-]*)", re.IGNORECASE)
+
+
+def _skill_name_from_payload(payload: Dict[str, Any]) -> Optional[str]:
+    try:
+        blob = json.dumps(payload.get("input") or {}, default=str)
+    except Exception:
+        return None
+    m = _SKILL_MD_RE.search(blob) or _SKILLS_DIR_RE.search(blob)
+    if not m:
+        return None
+    # Normalize: the failed-setup workaround references "<name>.zip" under /mnt/skills.
+    return m.group(1).removesuffix(".zip")
 
 
 def _event_category(etype: str, payload: Dict[str, Any]) -> str:
@@ -133,6 +176,10 @@ def _summarize_event(event: Any) -> Dict[str, Any]:
         payload["stop_reason"] = getattr(sr, "type", None) if sr else None
 
     payload["category"] = _event_category(etype, payload)
+    if payload["category"] == "skill":
+        skill = _skill_name_from_payload(payload)
+        if skill:
+            payload["skill"] = skill
     return payload
 
 
@@ -155,6 +202,10 @@ def _coerce_input(value: Any) -> Dict[str, Any]:
 class ManagedAgentsClient:
     def __init__(self, api_key: Optional[str] = None):
         self.client = anthropic.AsyncAnthropic(api_key=api_key or settings.anthropic_api_key)
+        # Skill loads are built-in read/bash calls that appear ONLY on sub-agent
+        # thread streams, not the session stream we subscribe to. After each turn we
+        # sweep the threads for them; this dedups across phases (same session).
+        self._seen_skill_events: set = set()
 
     # ── Control plane (one-time setup) ─────────────────────────────────────────
 
@@ -190,6 +241,34 @@ class ManagedAgentsClient:
             "specialists": specialists,
             "model": settings.claude_model,
         }
+
+    async def _find_skill_id_by_title(self, display_title: str) -> Optional[str]:
+        """Return the skill_id of an existing custom skill with this display_title, or
+        None. Display titles are unique per org, so a match means we must version it
+        rather than create a duplicate."""
+        async for sk in self.client.beta.skills.list(betas=[_SKILLS_BETA]):
+            if getattr(sk, "display_title", None) == display_title:
+                return getattr(sk, "id", None)
+        return None
+
+    async def upload_skill(self, skill_dir: str, display_title: str) -> str:
+        """Upload a custom Agent Skill from a local folder (must contain SKILL.md) and
+        return its skill_id. Idempotent on display_title: if a skill with this title
+        already exists it adds a new VERSION (the API rejects duplicate titles);
+        otherwise it creates the skill."""
+        files = _skill_files(skill_dir)
+        if not any(rel.endswith("SKILL.md") for rel, _b, _ct in files):
+            raise FileNotFoundError(f"No SKILL.md found under {skill_dir}")
+        existing = await self._find_skill_id_by_title(display_title)
+        if existing:
+            await self.client.beta.skills.versions.create(
+                existing, files=files, betas=[_SKILLS_BETA]
+            )
+            return existing
+        resp = await self.client.beta.skills.create(
+            display_title=display_title, files=files, betas=[_SKILLS_BETA]
+        )
+        return resp.id
 
     async def update_skills(self) -> Dict[str, Any]:
         """
@@ -349,4 +428,44 @@ class ManagedAgentsClient:
                     if getattr(sr, "type", None) != "requires_action":
                         break
 
+        # Skill loads (read/bash on a SKILL.md) only surface on the sub-agent THREAD
+        # streams, never the session stream above — sweep them now and relay so the
+        # console/UI can show which skills each specialist actually used this turn.
+        await self._relay_skill_events(session_id, relay)
+
         return {"text": " ".join(p for p in text_parts if p), "usage": usage}
+
+    async def _relay_skill_events(self, session_id: str, relay: EventCallback) -> None:
+        """Walk each sub-agent thread's events and relay any skill-file access
+        (a read/bash/glob touching a SKILL.md or /skills/ path). Deduped by event id
+        across phases of the same session so a later turn doesn't re-emit earlier ones.
+        Best-effort: any API hiccup is swallowed so it never breaks a workflow turn."""
+        try:
+            threads = []
+            async for t in self.client.beta.sessions.threads.list(session_id):
+                threads.append(t)
+            for t in threads:
+                tid = getattr(t, "id", None)
+                if not tid:
+                    continue
+                agent = getattr(t, "agent", None)
+                tname = getattr(agent, "name", None) if agent else None
+                async for ev in self.client.beta.sessions.threads.events.list(
+                    tid, session_id=session_id
+                ):
+                    if getattr(ev, "type", "") != "agent.tool_use":
+                        continue
+                    eid = getattr(ev, "id", None)
+                    if not eid or eid in self._seen_skill_events:
+                        continue
+                    payload = _summarize_event(ev)
+                    # Only relay loads we could resolve to a skill NAME — drops bare
+                    # `glob /skills` scans so the count reflects distinct skills used.
+                    if payload.get("category") != "skill" or not payload.get("skill"):
+                        continue
+                    self._seen_skill_events.add(eid)
+                    if tname:
+                        payload["agent_name"] = tname
+                    await relay("agent.tool_use", payload)
+        except Exception:
+            log.warning("skill_sweep.failed", exc_info=True)

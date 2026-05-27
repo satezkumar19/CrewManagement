@@ -18,6 +18,12 @@ interface AgentLiveState {
   tool_calls: number;
   last_tool?: string;
   confidence_score?: number;
+  // Skill usage during the run. `skills_loaded` holds a dedup key per distinct
+  // skill access (resolved name when known, else the access input) so reloads of
+  // one skill count once; `skills_used` is its length.
+  skills_used: number;
+  skills_loaded: string[];
+  last_skill?: string;
 }
 
 export interface SignOnOutcome {
@@ -72,12 +78,16 @@ interface WorkflowStore {
   setShowWorkflowPanel: (v: boolean) => void;
 }
 
+const mkAgent = (name: string): AgentLiveState => ({
+  name, status: "idle", tokens_used: 0, estimated_cost: 0, tool_calls: 0,
+  skills_used: 0, skills_loaded: [],
+});
 const DEFAULT_AGENT_STATES: Record<string, AgentLiveState> = {
-  "Master Agent": { name: "Master Agent", status: "idle", tokens_used: 0, estimated_cost: 0, tool_calls: 0 },
-  "Crew Matching Agent": { name: "Crew Matching Agent", status: "idle", tokens_used: 0, estimated_cost: 0, tool_calls: 0 },
-  "Travel Agent": { name: "Travel Agent", status: "idle", tokens_used: 0, estimated_cost: 0, tool_calls: 0 },
-  "Notification Agent": { name: "Notification Agent", status: "idle", tokens_used: 0, estimated_cost: 0, tool_calls: 0 },
-  "Compliance Agent": { name: "Compliance Agent", status: "idle", tokens_used: 0, estimated_cost: 0, tool_calls: 0 },
+  "Master Agent": mkAgent("Master Agent"),
+  "Crew Matching Agent": mkAgent("Crew Matching Agent"),
+  "Travel Agent": mkAgent("Travel Agent"),
+  "Notification Agent": mkAgent("Notification Agent"),
+  "Compliance Agent": mkAgent("Compliance Agent"),
 };
 
 export const useWorkflowStore = create<WorkflowStore>()(
@@ -133,6 +143,23 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
         const agentName = event.agent_name || "Master Agent";
         const data = event.data || {};
+
+        // Skill usage isn't a named event type — it's any event the backend tagged
+        // category:"skill" (a read/bash that opened a SKILL.md). Count distinct skills
+        // per agent, deduped by resolved name or the raw access input.
+        if (data.category === "skill") {
+          const key =
+            (data.skill as string) || JSON.stringify(data.input ?? data.name ?? "");
+          const prev = get().agentStates[agentName]?.skills_loaded || [];
+          if (key && !prev.includes(key)) {
+            const loaded = [...prev, key];
+            updateAgentState(agentName, {
+              skills_loaded: loaded,
+              skills_used: loaded.length,
+              last_skill: (data.skill as string) || get().agentStates[agentName]?.last_skill,
+            });
+          }
+        }
 
         switch (event.event_type) {
           case "workflow_created":

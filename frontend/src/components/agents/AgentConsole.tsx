@@ -51,6 +51,17 @@ function narrate(e: WSEvent, iter?: number): Narration | null {
   const d = (e.data || {}) as Record<string, unknown>;
   const t = e.event_type || "";
 
+  // Skill access (a read/bash that opened a SKILL.md) — tagged category:"skill"
+  // by the backend regardless of event type. Log it as a labeled skill line.
+  if (d.category === "skill") {
+    const name = (d.skill as string) || "";
+    return {
+      icon: "📚",
+      text: name ? `used skill: ${name}` : "loaded a skill package",
+      milestone: true,
+    };
+  }
+
   switch (t) {
     case "workflow_created":
       return { icon: "🟢", text: "Sign-off initiated — Master Agent invoked", milestone: true };
@@ -211,6 +222,12 @@ export default function AgentConsole() {
     setPick("all");
   };
 
+  const resetFilters = () => {
+    setKind("all");
+    setAgent("all");
+    setPick("all");
+  };
+
   useEffect(() => {
     monitoringApi.getAgentSkills().then(setSkills).catch(() => setSkills([]));
   }, []);
@@ -276,12 +293,12 @@ export default function AgentConsole() {
     }
     if (pick.startsWith("skill:")) {
       const name = pick.slice(6).toLowerCase();
-      // No first-class "skill used" event — best-effort: skill-lane events whose
-      // file path / input mentions this skill.
-      return (
-        r.lanes.includes("skill") &&
-        JSON.stringify((r.e.data?.input ?? r.e.data) || {}).toLowerCase().includes(name)
-      );
+      if (!r.lanes.includes("skill")) return false;
+      // Prefer the resolved skill name the backend attaches; fall back to the raw
+      // access path/input mentioning it.
+      const resolved = ((r.e.data?.skill as string) || "").toLowerCase();
+      if (resolved) return resolved === name;
+      return JSON.stringify((r.e.data?.input ?? r.e.data) || {}).toLowerCase().includes(name);
     }
     return true;
   };
@@ -289,7 +306,26 @@ export default function AgentConsole() {
     (r) => matchesKind(r) && (agent === "all" || r.e.agent_name === agent) && matchesPick(r)
   );
 
+  // Skills each agent ACTUALLY loaded this run (resolved name on the relayed skill
+  // events). The configured/available list (from the API) often uses a different
+  // label than what shows up in the access path, so we surface both as filters.
+  const usedSkillsByAgent = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const e of events) {
+      if ((e.data as Record<string, unknown>)?.category !== "skill") continue;
+      const a = e.agent_name || "Master Agent";
+      const s = (e.data?.skill as string) || "";
+      if (!s) continue;
+      (m[a] ||= []);
+      if (!m[a].includes(s)) m[a].push(s);
+    }
+    return m;
+  }, [events]);
+
   const selectedCaps = agent === "all" ? undefined : skills.find((a) => a.name === agent);
+  const usedSkills = agent === "all" ? [] : usedSkillsByAgent[agent] || [];
+  // Union: configured skills + ones actually used (the used ones are what populate).
+  const skillChips = Array.from(new Set([...(selectedCaps?.skills || []), ...usedSkills]));
 
   const KIND_TABS: Array<{ key: Kind; label: string; count: number }> = [
     { key: "all", label: "All", count: kindCounts.all },
@@ -400,24 +436,30 @@ export default function AgentConsole() {
                 {tname}
               </button>
             ))}
-            {selectedCaps.skills.map((s) => (
-              <button
-                key={`s-${s}`}
-                onClick={() => {
-                  setPick(`skill:${s}`);
-                  setKind("all");
-                }}
-                className={cn(
-                  "px-2.5 py-1 rounded-lg text-xs border font-mono transition-colors",
-                  pick === `skill:${s}`
-                    ? "bg-green-500/25 border-green-400/50 text-green-100"
-                    : "bg-green-500/10 border-green-500/25 text-green-300 hover:border-green-400/50"
-                )}
-              >
-                {s}
-              </button>
-            ))}
-            {selectedCaps.skills.length === 0 && selectedCaps.tools.length === 0 && (
+            {skillChips.map((s) => {
+              const used = usedSkills.includes(s);
+              return (
+                <button
+                  key={`s-${s}`}
+                  onClick={() => {
+                    setPick(`skill:${s}`);
+                    setKind("all");
+                  }}
+                  title={used ? "loaded this run" : "available, not used this run"}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-xs border font-mono transition-colors",
+                    pick === `skill:${s}`
+                      ? "bg-green-500/25 border-green-400/50 text-green-100"
+                      : used
+                      ? "bg-green-500/15 border-green-500/40 text-green-200 hover:border-green-400/60"
+                      : "bg-green-500/5 border-green-500/15 text-green-300/60 hover:border-green-400/40"
+                  )}
+                >
+                  {used && "📚 "}{s}
+                </button>
+              );
+            })}
+            {skillChips.length === 0 && selectedCaps.tools.length === 0 && (
               <span className="text-xs text-gray-600 italic">no tools or skills</span>
             )}
           </div>
@@ -488,10 +530,27 @@ export default function AgentConsole() {
       {/* Trace log */}
       <div className="max-h-[30rem] overflow-y-auto text-xs">
         {visible.length === 0 ? (
-          <div className="p-10 text-center text-gray-600 font-mono">
-            No matching activity — initiate a sign-off from the Dashboard to watch the agents
-            work iteration by iteration.
-          </div>
+          trace.length === 0 ? (
+            <div className="p-10 text-center text-gray-600 font-mono">
+              No activity yet — initiate a sign-off from the Dashboard to watch the agents
+              work iteration by iteration.
+            </div>
+          ) : (
+            <div className="p-10 text-center text-gray-500 font-mono space-y-3">
+              <p>
+                {trace.length} event{trace.length === 1 ? "" : "s"} hidden by the current filter
+                {kind !== "all" && ` · ${kind}`}
+                {agent !== "all" && ` · ${shortName(agent)}`}
+                {pick !== "all" && ` · ${pick.replace(":", " ")}`}
+              </p>
+              <button
+                onClick={resetFilters}
+                className="px-3 py-1.5 rounded-lg text-xs border border-ocean-accent/40 bg-ocean-accent/15 text-white hover:border-ocean-accent transition-colors"
+              >
+                Reset filters
+              </button>
+            </div>
+          )
         ) : (
           <AnimatePresence initial={false}>
             {visible.map((r, i) => (
