@@ -7,6 +7,7 @@ import random
 from typing import Any, Dict, List
 
 from agents.base_agent import BaseAgent
+from agents.skills import build_instructions
 from database.crew_repository import get_sign_on_crew
 
 TOOLS = [
@@ -62,30 +63,16 @@ TOOLS = [
     },
 ]
 
-SYSTEM_ROLE = """You are the Crew Matching Agent for a maritime crew management system.
-Your sole responsibility is to find the best replacement crew member from the sign-on pool.
-
-You MUST:
-1. Call searchCrew() to find candidates matching the rank and other criteria
-2. Call rankCrew() to score and rank those candidates
-3. Call getCrewProfile() for the top candidate to get their full details
-4. Return a structured result with the top match, confidence score, and ranking rationale
-
-Scoring criteria (weighted):
-- Rank match: 40%
-- Grade match: 20%
-- Port proximity: 15%
-- Valid certifications (STCW, Medical, Visa): 15%
-- Experience level: 10%
-
-Always select the candidate with the highest overall score."""
+# SYSTEM_ROLE is now assembled from markdown skill files under
+# agents/skills/crew_matching/ via agents.skills.build_instructions().
+# See agents/skills/README.md for the layout and INTEGRATION.md for context.
 
 
 class CrewMatchingAgent(BaseAgent):
     def __init__(self, event_callback=None):
         super().__init__(
             name="Crew Matching Agent",
-            role=SYSTEM_ROLE,
+            role=build_instructions("crew_matching"),
             tools=TOOLS,
             event_callback=event_callback,
         )

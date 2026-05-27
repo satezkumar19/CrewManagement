@@ -11,6 +11,7 @@ from agents.managed.registry import (
     custom_skill_id_to_name,
     specialist_agent_configs,
 )
+from agents.skills import list_skill_files
 
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 
@@ -47,7 +48,11 @@ async def get_agent_skills():
             "key": cfg["key"],
             "name": cfg["name"],
             "tools": _tool_labels(cfg.get("tools")),
-            "skills": _skill_labels(cfg.get("skills"), id_to_name),
+            # Combine hosted Anthropic skills (pdf/docx/xlsx/custom) with the
+            # local markdown role-skill files under agents/skills/<key>/. Both
+            # render as tags in the UI's SKILLS section.
+            "skills": _skill_labels(cfg.get("skills"), id_to_name)
+            + list_skill_files(cfg["key"]),
         }
         for cfg in specialist_agent_configs()
     ]
