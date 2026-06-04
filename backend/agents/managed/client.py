@@ -458,17 +458,28 @@ class ManagedAgentsClient:
             threads = []
             async for t in self.client.beta.sessions.threads.list(session_id):
                 threads.append(t)
+            # Per-sweep tallies so the logs show WHY skills did/didn't surface: which
+            # threads ran, how many built-in tool calls each made, and how many we
+            # resolved to a named skill load. Without this the sweep is a black box —
+            # a 0 here could mean "agent never opened a skill" OR "detection missed it".
+            n_tool_use = 0
+            n_relayed = 0
+            per_thread: List[str] = []
             for t in threads:
                 tid = getattr(t, "id", None)
                 if not tid:
                     continue
                 agent = getattr(t, "agent", None)
                 tname = getattr(agent, "name", None) if agent else None
+                t_tools = 0
+                t_skills = 0
                 async for ev in self.client.beta.sessions.threads.events.list(
                     tid, session_id=session_id
                 ):
                     if getattr(ev, "type", "") != "agent.tool_use":
                         continue
+                    t_tools += 1
+                    n_tool_use += 1
                     eid = getattr(ev, "id", None)
                     if not eid or eid in self._seen_skill_events:
                         continue
@@ -480,6 +491,17 @@ class ManagedAgentsClient:
                     self._seen_skill_events.add(eid)
                     if tname:
                         payload["agent_name"] = tname
+                    t_skills += 1
+                    n_relayed += 1
                     await relay("agent.tool_use", payload)
+                per_thread.append(f"{tname or tid}: tools={t_tools} skills={t_skills}")
+            log.info(
+                "skill_sweep.done",
+                session_id=session_id,
+                threads=len(threads),
+                tool_use_events=n_tool_use,
+                skills_relayed=n_relayed,
+                detail=per_thread,
+            )
         except Exception:
-            log.warning("skill_sweep.failed", exc_info=True)
+            log.warning("skill_sweep.failed", session_id=session_id, exc_info=True)

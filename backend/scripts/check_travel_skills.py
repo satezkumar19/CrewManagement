@@ -21,6 +21,12 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Windows consoles default to cp1252 and mangle the PASS/FAIL status emoji.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 import anthropic  # noqa: E402
 from agents.managed.registry import SPECIALIST_SKILLS  # noqa: E402
 from config import settings  # noqa: E402

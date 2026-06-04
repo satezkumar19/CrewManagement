@@ -14,6 +14,13 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Windows consoles default to cp1252, which can't encode the ✅ status emoji and
+# crashes the script AFTER the update already applied. Force UTF-8 output.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 import anthropic  # noqa: E402
 from agents.managed.registry import coordinator_agent_config  # noqa: E402
 from config import settings  # noqa: E402
