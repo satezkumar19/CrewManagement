@@ -14,6 +14,7 @@ import { crewApi, workflowApi } from "@/lib/api";
 import SignOffTab from "@/components/dashboard/SignOffTab";
 import SignOnTab from "@/components/dashboard/SignOnTab";
 import SignOnOutcomeCard from "@/components/dashboard/SignOnOutcomeCard";
+import ComplianceGraph from "@/components/compliance/ComplianceGraph";
 import AgentOrchestrationPanel from "@/components/agents/AgentOrchestrationPanel";
 import WorkflowTimeline from "@/components/workflow/WorkflowTimeline";
 
@@ -234,6 +235,7 @@ export default function DashboardPage() {
         {/* ── Right: Agent Panel (4 cols) ───────────────────────────────────── */}
         <div className="col-span-12 xl:col-span-4 space-y-4">
           <SignOnOutcomeCard />
+          <ComplianceGraph />
           <AgentOrchestrationPanel />
           {activeWorkflow && <WorkflowTimeline workflow={activeWorkflow} />}
         </div>
