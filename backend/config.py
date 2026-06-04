@@ -44,6 +44,12 @@ class Settings(BaseSettings):
     # SWR client cache and the Redis cache-aside above.
     crew_http_cache_max_age_seconds: int = int(os.getenv("CREW_HTTP_CACHE_MAX_AGE", "60"))
 
+    # Context graph backend: "fallback" (build the compliance subgraph in Python,
+    # no extra infra — the default) or "age" (use the Apache AGE graph that lives
+    # inside the same PostgreSQL instance; requires an AGE-enabled image + a graph
+    # seeded by scripts/seed_graph.py). See database/graph_db.py.
+    graph_backend: str = os.getenv("GRAPH_BACKEND", "fallback")
+
     # Email / SMTP — the Notification Agent sends real mail here.
     # Defaults target MailHog (dev SMTP sink: SMTP on 1025, web UI on http://localhost:8025).
     mail_enabled: bool = os.getenv("MAIL_ENABLED", "true").lower() == "true"

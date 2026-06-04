@@ -205,8 +205,40 @@ export interface ComplianceReport {
   recommendation: string;
 }
 
+// ─── Context Graph (compliance subgraph) ──────────────────────────────────────
+
+export type GraphStatus = "ok" | "warn" | "block";
+
+export interface ComplianceGraphNode {
+  id: string;
+  type: "Seafarer" | "Country" | "Vessel" | "Port" | "Certificate" | string;
+  label: string;
+  sub?: string;
+  status: GraphStatus;
+  x: number;
+  y: number;
+}
+
+export interface ComplianceGraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  label: string;
+  status: GraphStatus;
+}
+
+export interface ComplianceSubgraph {
+  nodes: ComplianceGraphNode[];
+  edges: ComplianceGraphEdge[];
+  findings: string[];
+  verdict: "passed" | "warning" | "failed";
+  backend: string;
+  subject?: { crew_id: string; name: string; rank: string; port: string };
+}
+
 export interface ComplianceResult {
   compliance_report?: ComplianceReport;
+  compliance_subgraph?: ComplianceSubgraph;
   narrative: string;
 }
 

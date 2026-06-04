@@ -2,34 +2,45 @@
 Compliance Agent — validates all documents for the incoming crew member.
 Tools: validateDocuments(), checkPortRestrictions(), generateComplianceReport()
 """
-import json
 import random
-from datetime import date, timedelta
-from typing import Any, Dict, List
+from datetime import date
+from typing import Any, Dict
 
 from agents.base_agent import BaseAgent
 from database.models import ComplianceStatus
-
-REQUIRED_CERTIFICATIONS = [
-    "STCW Basic Safety",
-    "GMDSS",
-    "Proficiency in Survival Craft",
-    "Advanced Fire Fighting",
-    "Medical First Aid",
-]
-
-PORT_RESTRICTIONS = {
-    "Singapore": {"visa_required": ["Iranian", "North Korean"], "min_medical_days": 30},
-    "Rotterdam": {"visa_required": ["Iranian"], "min_medical_days": 60},
-    "Houston": {"visa_required": ["Cuban", "Iranian", "North Korean"], "min_medical_days": 30},
-    "Dubai": {"visa_required": [], "min_medical_days": 30},
-    "Shanghai": {"visa_required": [], "min_medical_days": 30},
-    "Manila": {"visa_required": [], "min_medical_days": 30},
-    "Mumbai": {"visa_required": [], "min_medical_days": 30},
-    "Piraeus": {"visa_required": [], "min_medical_days": 30},
-}
+# Compliance rules now live as DATA in the context-graph module (single source of
+# truth) instead of being hardcoded here. The subgraph builder turns a seafarer +
+# port into the graph the agent reasons over and the UI renders.
+from database.compliance_graph import PORT_RESTRICTIONS, build_compliance_subgraph
 
 TOOLS = [
+    {
+        "name": "queryComplianceGraph",
+        "description": (
+            "Query the maritime context graph for the incoming seafarer: returns the "
+            "relevant subgraph (seafarer, nationality, vessel, boarding port, and "
+            "certificates) with each node/edge marked ok / warning / blocking, plus "
+            "plain-language findings and an overall verdict. Call this FIRST to ground "
+            "the compliance decision in the graph before validating individual documents."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "crew_id": {"type": "string"},
+                "crew_name": {"type": "string"},
+                "rank": {"type": "string"},
+                "nationality": {"type": "string"},
+                "vessel": {"type": "string"},
+                "port": {"type": "string", "description": "Boarding port"},
+                "passport_expiry": {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                "medical_expiry": {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                "visa_status": {"type": "string"},
+                "stcw_status": {"type": "string"},
+                "certifications": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": ["crew_id", "port"],
+        },
+    },
     {
         "name": "validateDocuments",
         "description": (
@@ -91,9 +102,11 @@ SYSTEM_ROLE = """You are the Compliance Agent for a maritime crew management sys
 You are triggered when a replacement crew member is about to sign on.
 
 You MUST:
-1. Call validateDocuments() to check ALL required documents
-2. Call checkPortRestrictions() to verify port-specific requirements
-3. Call generateComplianceReport() to produce the final compliance verdict
+1. Call queryComplianceGraph() FIRST to retrieve the seafarer's context subgraph
+   (nationality, vessel, boarding port, certificates) and its graph-derived findings
+2. Call validateDocuments() to check ALL required documents
+3. Call checkPortRestrictions() to verify port-specific requirements
+4. Call generateComplianceReport() to produce the final compliance verdict
 
 Compliance is CRITICAL — the vessel cannot sail without proper documentation.
 Be thorough, flag any issues, and provide clear remediation steps for failures.
@@ -114,6 +127,8 @@ class ComplianceAgent(BaseAgent):
         )
 
     async def _execute_tool(self, tool_name: str, tool_input: Dict[str, Any]) -> Any:
+        if tool_name == "queryComplianceGraph":
+            return self._query_compliance_graph(tool_input)
         if tool_name == "validateDocuments":
             return self._validate_documents(tool_input)
         if tool_name == "checkPortRestrictions":
@@ -121,6 +136,11 @@ class ComplianceAgent(BaseAgent):
         if tool_name == "generateComplianceReport":
             return self._generate_compliance_report(tool_input)
         return {"error": f"Unknown tool: {tool_name}"}
+
+    def _query_compliance_graph(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Build the seafarer's compliance context subgraph (GraphRAG retrieval)."""
+        port = params.get("port") or "Singapore"
+        return build_compliance_subgraph(params, port)
 
     def _validate_documents(self, params: Dict[str, Any]) -> Dict[str, Any]:
         checks = []
@@ -307,5 +327,29 @@ class ComplianceAgent(BaseAgent):
 
         return {
             "compliance_report": report,
+            "compliance_subgraph": self._resolve_subgraph(context),
             "narrative": raw_text[:600] if raw_text else "Compliance check completed.",
         }
+
+    def _resolve_subgraph(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Return the compliance context subgraph for the UI.
+
+        Prefer the queryComplianceGraph tool output if the agent called it; otherwise
+        synthesize the same structure from the validateDocuments / checkPortRestrictions
+        tool inputs, so the graph renders even if the hosted agent hasn't been
+        re-provisioned with the new tool yet.
+        """
+        crew: Dict[str, Any] = {}
+        port = context.get("port") or "Singapore"
+        for tc in self.execution.tool_calls:
+            if tc.tool_name == "queryComplianceGraph" and isinstance(tc.output, dict):
+                return tc.output  # already the subgraph
+            if tc.tool_name == "validateDocuments":
+                crew.update({k: v for k, v in (tc.input or {}).items() if v is not None})
+            if tc.tool_name == "checkPortRestrictions":
+                pin = tc.input or {}
+                if pin.get("nationality"):
+                    crew["nationality"] = pin["nationality"]
+                if pin.get("port"):
+                    port = pin["port"]
+        return build_compliance_subgraph(crew, port)

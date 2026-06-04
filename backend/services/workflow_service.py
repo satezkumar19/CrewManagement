@@ -148,6 +148,9 @@ class WorkflowService:
         await state_service.update_workflow(updated)
 
         report = (updated.compliance_result or {}).get("compliance_report") or {}
+        # The context subgraph the Compliance Agent reasoned over — streamed to the
+        # UI so the decision is shown as a graph, not just a verdict.
+        subgraph = (updated.compliance_result or {}).get("compliance_subgraph")
         status = report.get("overall_status", "unknown")
         score = report.get("compliance_score")
         warnings = report.get("warnings", []) or []
@@ -169,6 +172,7 @@ class WorkflowService:
                     "compliance_score": score,
                     "warnings": warnings,            # conditional-approval caveats, if any
                     "recommendation": recommendation,
+                    "subgraph": subgraph,            # compliance context graph for the UI
                     "message": (
                         f"{candidate.get('name')} cleared compliance "
                         f"({status}, {score}%) — added to onboard crew (Sign-Off tab)"
@@ -188,6 +192,7 @@ class WorkflowService:
                 "compliance_score": score,
                 "failures": failures,               # the reason(s) for rejection
                 "recommendation": recommendation,
+                "subgraph": subgraph,               # compliance context graph for the UI
                 "message": (
                     f"{candidate.get('name')} did not clear compliance ({status}) — not signed on"
                 ),
@@ -279,3 +284,4 @@ class WorkflowService:
         workflow.status = WorkflowStatus.CANCELLED
         await self._event_callback("workflow_cancelled", "Master Agent", {"workflow_id": workflow_id})
         return await state_service.update_workflow(workflow)
+# end of WorkflowService

@@ -6,6 +6,7 @@ import type {
   WSEvent,
   AgentExecution,
   AgentStatus,
+  ComplianceSubgraph,
 } from "@/types";
 
 interface AgentLiveState {
@@ -36,6 +37,7 @@ export interface SignOnOutcome {
   complianceScore?: number;
   reasons?: string[]; // warnings (conditional) or failures (rejected)
   recommendation?: string;
+  subgraph?: ComplianceSubgraph; // compliance context graph the agent reasoned over
 }
 
 interface WorkflowStore {
@@ -199,6 +201,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 complianceScore: data.compliance_score as number,
                 reasons: (data.warnings as string[]) || [],
                 recommendation: data.recommendation as string,
+                subgraph: (data.subgraph as ComplianceSubgraph) || undefined,
               },
             });
             break;
@@ -215,6 +218,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 complianceScore: data.compliance_score as number,
                 reasons: (data.failures as string[]) || [],
                 recommendation: data.recommendation as string,
+                subgraph: (data.subgraph as ComplianceSubgraph) || undefined,
               },
             });
             break;
