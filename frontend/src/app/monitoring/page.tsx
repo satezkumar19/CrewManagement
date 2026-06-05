@@ -100,6 +100,7 @@ export default function MonitoringPage() {
               <ArrowLeft className="w-4 h-4" /> Dashboard
             </Link>
             <Link href="/workflow" className="px-4 py-2 text-gray-400 hover:text-white text-sm">Workflow</Link>
+            <Link href="/decisions" className="px-4 py-2 text-gray-400 hover:text-white text-sm">Decisions</Link>
             <button onClick={loadData} className="p-2 text-gray-400 hover:text-white">
               <RefreshCw className="w-4 h-4" />
             </button>

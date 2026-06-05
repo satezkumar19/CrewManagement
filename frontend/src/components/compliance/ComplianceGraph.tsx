@@ -52,7 +52,9 @@ function GraphNode({ data }: NodeProps<GraphNodeData>) {
     <div
       style={{
         background: "rgba(13,31,60,0.95)",
-        border: `2px solid ${ring}`,
+        borderTop: `2px solid ${ring}`,
+        borderRight: `2px solid ${ring}`,
+        borderBottom: `2px solid ${ring}`,
         borderLeft: `5px solid ${accent}`,
         borderRadius: 10,
         padding: "6px 10px",

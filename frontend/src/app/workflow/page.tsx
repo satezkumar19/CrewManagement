@@ -51,6 +51,7 @@ export default function WorkflowPage() {
               <ArrowLeft className="w-4 h-4" /> Dashboard
             </Link>
             <Link href="/monitoring" className="px-4 py-2 text-gray-400 hover:text-white text-sm">Monitoring</Link>
+            <Link href="/decisions" className="px-4 py-2 text-gray-400 hover:text-white text-sm">Decisions</Link>
             <button onClick={loadWorkflows} className="p-2 text-gray-400 hover:text-white">
               <RefreshCw className="w-4 h-4" />
             </button>

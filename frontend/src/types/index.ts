@@ -313,6 +313,61 @@ export interface ROIMetrics {
   agent_metrics: Record<string, AgentMetrics>;
 }
 
+// ─── Decision Trace (L4 Decision Graph) ───────────────────────────────────────
+
+export type DecisionOutcomeStatus = "pending" | "signed_on" | "rejected";
+
+export interface DecisionTrajectoryStep {
+  kind: "agent" | "tool";
+  agent_name: string;
+  // agent-step fields
+  agent_type?: string;
+  status?: string;
+  confidence_score?: number;
+  tokens_used?: number;
+  // tool-step fields
+  tool_name?: string;
+  input?: string;
+  output?: string;
+  duration_ms?: number;
+  timestamp?: string;
+}
+
+export interface DecisionAlternative {
+  crew_id: string;
+  name: string;
+  rank?: string;
+  confidence_score: number;
+  match_reasons?: string[];
+}
+
+export interface DecisionTrace {
+  decision_id: string;
+  workflow_id: string;
+  created_at?: string;
+  resolved_at?: string;
+  trigger?: string;
+  query_context: {
+    departing_crew?: Partial<CrewMember>;
+    reason?: string;
+  };
+  chosen_crew_id?: string;
+  chosen_crew: Partial<CrewMember>;
+  confidence_score?: number;
+  match_reasons: string[];
+  alternatives: DecisionAlternative[];
+  trajectory: DecisionTrajectoryStep[];
+  outcome_status: DecisionOutcomeStatus;
+  compliance_status?: string;
+  compliance_score?: number;
+  outcome_reasons: string[];
+  session_id?: string;
+  total_tokens: number;
+  total_cost: number;
+  cache_read_tokens: number;
+  cache_creation_tokens: number;
+}
+
 // ─── WebSocket Event ──────────────────────────────────────────────────────────
 
 export interface WSEvent {

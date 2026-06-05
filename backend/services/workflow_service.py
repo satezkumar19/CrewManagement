@@ -12,6 +12,7 @@ from agents.master_agent import MasterAgent
 from database.models import WorkflowState, WorkflowStatus
 from database.crew_repository import get_crew_by_id, get_sign_on_crew, update_crew
 from services.state_service import state_service
+from services.decision_trace_service import decision_trace_service
 
 log = structlog.get_logger()
 
@@ -83,6 +84,11 @@ class WorkflowService:
             master = MasterAgent(event_callback=self._event_callback)
             updated = await master.orchestrate_sign_off(workflow, sign_off_crew, auto_proceed=True)
             await state_service.update_workflow(updated)
+
+            # L4: capture the placement decision L3 just produced (matched crew +
+            # ranked alternatives + agent trajectory) as a persisted Decision trace.
+            # Read-only consumer of WorkflowState; best-effort (never raises).
+            await decision_trace_service.capture(updated, broadcast=self._event_callback)
 
             # Persist the sign-off outcome to the crew table: the departing crew
             # member leaves the onboard (signoff) pool and becomes available for
@@ -159,6 +165,15 @@ class WorkflowService:
 
         # Pass rule: 'passed' or 'warning' (conditional) sign the crew on; 'failed' rejects.
         if status in ("passed", "warning"):
+            # L4: stamp the decision's outcome (closes the trace's loop).
+            await decision_trace_service.record_outcome(
+                workflow.workflow_id,
+                outcome_status="signed_on",
+                compliance_status=status,
+                compliance_score=score,
+                outcome_reasons=warnings,
+                broadcast=self._event_callback,
+            )
             row = await update_crew(matched_id, pool="signoff", status="Onboard")
             if row:
                 log.info("auto_compliance.signed_on", crew_id=matched_id, status=status)
@@ -182,6 +197,15 @@ class WorkflowService:
                 log.warning("auto_compliance.signon_crew_not_found", crew_id=matched_id)
         else:
             log.info("auto_compliance.rejected", crew_id=matched_id, status=status)
+            # L4: stamp the decision's outcome (rejected at the compliance gate).
+            await decision_trace_service.record_outcome(
+                workflow.workflow_id,
+                outcome_status="rejected",
+                compliance_status=status,
+                compliance_score=score,
+                outcome_reasons=failures,
+                broadcast=self._event_callback,
+            )
             await self._event_callback("sign_on_rejected", "Compliance Agent", {
                 "workflow_id": workflow.workflow_id,
                 "crew_id": matched_id,

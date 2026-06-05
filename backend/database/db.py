@@ -24,6 +24,7 @@ async def init_db() -> None:
     """Create tables that don't exist yet. Safe to call on every startup."""
     # Import models so they register on Base.metadata before create_all.
     from database import crew_orm  # noqa: F401
+    from database import decision_orm  # noqa: F401 — L4 decision_traces table
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

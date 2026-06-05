@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CrewMember, WorkflowState, SystemMetrics, ROIMetrics } from "@/types";
+import type { CrewMember, WorkflowState, SystemMetrics, ROIMetrics, DecisionTrace } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -56,6 +56,18 @@ export const monitoringApi = {
 
   getAgentSkills: () =>
     api.get<{ agents: AgentSkills[] }>("/monitoring/agents/skills").then(r => r.data.agents),
+};
+
+// ── Decisions (L4 Decision Graph) ──────────────────────────────────────────────
+export const decisionApi = {
+  list: (limit?: number) =>
+    api.get<DecisionTrace[]>("/decisions/", { params: { limit } }).then(r => r.data),
+
+  get: (id: string) =>
+    api.get<DecisionTrace>(`/decisions/${id}`).then(r => r.data),
+
+  seedDemo: () =>
+    api.post<{ seeded: number; decisions: DecisionTrace[] }>("/decisions/demo-seed").then(r => r.data),
 };
 
 // Capabilities of each managed agent. `tools` are its functions (custom tools
