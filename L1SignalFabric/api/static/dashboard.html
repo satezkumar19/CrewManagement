@@ -42,6 +42,9 @@
   .arrow { align-self:center; color:#3b496f; font-size:22px; padding:0 8px; }
   .stage.l2 .s-count { color:var(--crew); }
   .stage.tail .s-count { color:var(--slack); }
+  .stage.tail { min-width:220px; }
+  .tailrow { display:flex; align-items:flex-end; gap:12px; }
+  .spark { flex:1; height:40px; min-width:90px; display:block; }
 
   .wrap { padding:8px 22px 22px; display:grid; grid-template-columns: 1.15fr .85fr; gap:18px; }
   .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; }
@@ -101,7 +104,13 @@
   <div class="arrow">→</div>
   <div class="stage l2" id="st-l2"><div class="s-name">④ L2 store</div><div class="s-count" id="n-l2">0</div><div class="s-sub" id="n-signoff">0 SignOffEvent</div></div>
   <div class="arrow">→</div>
-  <div class="stage tail" id="st-tail"><div class="s-name">⑤ Live tail</div><div class="s-count" id="n-rate">0</div><div class="s-sub">signals / sec</div></div>
+  <div class="stage tail" id="st-tail">
+    <div class="s-name">⑤ Live tail</div>
+    <div class="tailrow">
+      <div><div class="s-count" id="n-rate">0</div><div class="s-sub">signals / sec</div></div>
+      <canvas id="spark" class="spark" title="signals per second (last 60s)"></canvas>
+    </div>
+  </div>
 </div>
 
 <div class="wrap">
@@ -155,7 +164,34 @@ function addRow(d){
   windowCount++;
 }
 
-setInterval(()=>{ $("n-rate").textContent = windowCount; windowCount = 0; }, 1000);
+// ---- signals/sec sparkline (last 60s) ----
+const HIST = 60;
+const hist = [];
+function drawSpark(){
+  const c = $("spark"); if(!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.width = Math.max(1, c.clientWidth * dpr);
+  const h = c.height = Math.max(1, c.clientHeight * dpr);
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0,0,w,h);
+  if(hist.length < 2) return;
+  const max = Math.max(1, ...hist);
+  const x = i => (i/(HIST-1)) * w;
+  const y = v => h - (v/max)*(h-6) - 3;
+  ctx.beginPath();
+  hist.forEach((v,i)=> i ? ctx.lineTo(x(i+HIST-hist.length), y(v)) : ctx.moveTo(x(HIST-hist.length), y(v)));
+  ctx.strokeStyle = "#7c5cff"; ctx.lineWidth = 2*dpr; ctx.lineJoin = "round"; ctx.stroke();
+  ctx.lineTo(w, h); ctx.lineTo(x(HIST-hist.length), h); ctx.closePath();
+  ctx.fillStyle = "rgba(124,92,255,.16)"; ctx.fill();
+}
+setInterval(()=>{
+  $("n-rate").textContent = windowCount;
+  hist.push(windowCount);
+  if(hist.length > HIST) hist.shift();
+  windowCount = 0;
+  drawSpark();
+}, 1000);
+window.addEventListener("resize", drawSpark);
 
 // ---- Demo 1: render the per-stage trace ----
 function laneHtml(item){
