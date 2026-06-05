@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.erp_watermark.json
+# editor lock files (e.g. LibreOffice on the .docx)
+.~lock.*#
