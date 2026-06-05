@@ -74,6 +74,10 @@ class DemoStreamer:
             return email_to_signal(raw, self.tenant_id)
         return []
 
+    def _note_ingress(self, source: str, n: int = 1) -> None:
+        if hasattr(self.bus, "note_ingress"):
+            self.bus.note_ingress(source, n)
+
     async def _emit(self, events: list[SignalEvent]) -> int:
         for ev in events:
             await self.bus.publish(ev)
@@ -105,12 +109,15 @@ class DemoStreamer:
         for r in erp_rows:
             self._erp_outbox.append(table=r["table"], op=r["op"],
                                     occurred_at=r["occurred_at"], data=r["data"])
+        self._note_ingress("erp", len(erp_rows))
         total = await self._emit(await self.erp.poll())
 
         # Slack + Email inline
         for ln in slack_lines:
+            self._note_ingress("slack")
             total += await self._emit(await self.slack.ingest(ln["raw"]))
         for ln in email_lines:
+            self._note_ingress("email")
             total += await self._emit(email_to_signal(ln["raw"], self.tenant_id))
 
         # Idempotency second pass over the dedup-capable connectors:
@@ -142,6 +149,7 @@ class DemoStreamer:
             virtual_now = self.anchor + timedelta(seconds=elapsed * speed)
             while idx < len(future) and \
                     datetime.fromisoformat(future[idx]["occurred_at"]) <= virtual_now:
+                self._note_ingress(future[idx]["source"])
                 applied += await self._emit(await self._route(future[idx]))
                 idx += 1
             if on_tick:

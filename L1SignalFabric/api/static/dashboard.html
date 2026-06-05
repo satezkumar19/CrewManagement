@@ -3,93 +3,120 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>L1 SignalFabric — Live</title>
+<title>L1 SignalFabric — Demo 1</title>
 <style>
   :root {
     --bg:#0b1020; --panel:#141b33; --panel2:#1b2440; --ink:#e6ecff; --muted:#8da2c8;
     --line:#26314f; --slack:#7c5cff; --email:#f59e0b; --crew:#22c55e;
-    --contract:#06b6d4; --vessel:#ec4899; --signoff:#f43f5e;
+    --contract:#06b6d4; --vessel:#ec4899; --signoff:#f43f5e; --ok:#22c55e;
   }
   * { box-sizing:border-box; }
   body { margin:0; font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
          background:var(--bg); color:var(--ink); }
-  header { padding:16px 22px; border-bottom:1px solid var(--line);
-           display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
-  h1 { font-size:17px; margin:0; font-weight:650; letter-spacing:.2px; }
+  header { padding:14px 22px; border-bottom:1px solid var(--line);
+           display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  h1 { font-size:16px; margin:0; font-weight:650; }
+  .pill { font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px;
+          border:1px solid var(--line); color:var(--muted); }
+  .pill.green { color:#062; background:var(--ok); border-color:var(--ok); }
+  .pill.red { color:#fff; background:#b91c1c; border-color:#b91c1c; }
   .dot { width:9px; height:9px; border-radius:50%; background:#475569; display:inline-block; margin-right:6px; }
-  .dot.on { background:#22c55e; box-shadow:0 0 8px #22c55e; }
+  .dot.on { background:var(--ok); box-shadow:0 0 8px var(--ok); }
   .controls { margin-left:auto; display:flex; gap:8px; align-items:center; }
   button { background:var(--panel2); color:var(--ink); border:1px solid var(--line);
-           padding:7px 12px; border-radius:8px; cursor:pointer; font-weight:600; }
+           padding:8px 13px; border-radius:8px; cursor:pointer; font-weight:600; }
   button:hover { border-color:#3b496f; }
   button.primary { background:#2547d0; border-color:#2547d0; }
   button.stop { background:#7f1d2e; border-color:#7f1d2e; }
-  input { width:64px; background:var(--panel2); color:var(--ink); border:1px solid var(--line);
+  input { width:62px; background:var(--panel2); color:var(--ink); border:1px solid var(--line);
           border-radius:8px; padding:6px 8px; }
-  .wrap { padding:18px 22px; display:grid; grid-template-columns: 320px 1fr; gap:18px; }
-  .cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
-  .card .n { font-size:26px; font-weight:750; }
-  .card .l { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.6px; }
-  .card.total .n { color:#fff; } .card.signoff .n { color:var(--signoff); }
-  .feed { background:var(--panel); border:1px solid var(--line); border-radius:12px;
-          height:calc(100vh - 150px); overflow:hidden; display:flex; flex-direction:column; }
-  .feed h2 { margin:0; padding:12px 14px; font-size:12px; color:var(--muted);
-             text-transform:uppercase; letter-spacing:.6px; border-bottom:1px solid var(--line); }
-  #rows { overflow-y:auto; padding:6px; }
-  .row { display:flex; gap:10px; align-items:baseline; padding:7px 8px; border-radius:8px; }
+
+  /* pipeline */
+  .pipe { display:flex; align-items:stretch; gap:0; padding:18px 22px 6px; overflow-x:auto; }
+  .stage { background:var(--panel); border:1px solid var(--line); border-radius:12px;
+           padding:12px 16px; min-width:150px; transition:.25s; position:relative; }
+  .stage.active { border-color:#6ea8ff; box-shadow:0 0 0 2px rgba(110,168,255,.35), 0 0 22px rgba(110,168,255,.25); transform:translateY(-2px); }
+  .stage .s-name { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
+  .stage .s-count { font-size:28px; font-weight:780; line-height:1.1; }
+  .stage .s-sub { font-size:11px; color:var(--muted); }
+  .arrow { align-self:center; color:#3b496f; font-size:22px; padding:0 8px; }
+  .stage.l2 .s-count { color:var(--crew); }
+  .stage.tail .s-count { color:var(--slack); }
+
+  .wrap { padding:8px 22px 22px; display:grid; grid-template-columns: 1.15fr .85fr; gap:18px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; }
+  .card h2 { margin:0; padding:11px 14px; font-size:12px; color:var(--muted);
+             text-transform:uppercase; letter-spacing:.6px; border-bottom:1px solid var(--line);
+             display:flex; align-items:center; gap:8px; }
+  .hint { color:var(--muted); font-size:12px; padding:10px 14px; }
+
+  /* trace */
+  .flow { padding:12px 14px; display:flex; flex-direction:column; gap:14px; }
+  .lane { border:1px dashed var(--line); border-radius:10px; padding:10px; }
+  .lane .lane-h { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .steps { display:grid; grid-template-columns: 1fr 18px 1fr 18px 1fr; align-items:stretch; gap:6px; }
+  .step { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:8px; min-width:0; }
+  .step .t { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+  .step pre { margin:0; font:11px/1.4 ui-monospace,Menlo,Consolas,monospace; color:#cdd8f5;
+              white-space:pre-wrap; word-break:break-word; max-height:150px; overflow:auto; }
+  .chev { align-self:center; color:#3b496f; text-align:center; }
+
+  /* feed */
+  .feed-rows { max-height:62vh; overflow-y:auto; padding:6px; }
+  .row { display:flex; gap:9px; align-items:baseline; padding:6px 8px; border-radius:8px; }
   .row:nth-child(odd){ background:#0f1730; }
   .row.so { background:rgba(244,63,94,.12); border:1px solid rgba(244,63,94,.4); }
-  .badge { font-size:10px; font-weight:800; padding:2px 7px; border-radius:999px; white-space:nowrap;
-           letter-spacing:.4px; color:#0b1020; }
+  .badge { font-size:10px; font-weight:800; padding:2px 7px; border-radius:999px; white-space:nowrap; color:#0b1020; }
   .b-SLACK{background:var(--slack);color:#fff;} .b-EMAIL{background:var(--email);}
   .b-CREW_DB{background:var(--crew);} .b-CONTRACT_CLM{background:var(--contract);}
   .b-VESSEL_PORT_DB{background:var(--vessel);color:#fff;}
-  .ent { color:var(--muted); font-size:12px; min-width:88px; }
+  .ent { color:var(--muted); font-size:12px; min-width:84px; }
   .sum { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .time { color:#5f719b; font-size:11px; white-space:nowrap; }
-  .pill { font-size:10px; font-weight:800; color:#fff; background:var(--signoff);
-          padding:1px 6px; border-radius:6px; margin-left:6px; }
-  .legend { display:flex; gap:12px; flex-wrap:wrap; margin-top:12px; color:var(--muted); font-size:11px; }
-  .legend i { width:9px; height:9px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:middle; }
+  .time { color:#5f719b; font-size:11px; }
+  .tag { font-size:10px; font-weight:800; color:#fff; background:var(--signoff); padding:1px 6px; border-radius:6px; margin-left:6px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>🛰️ L1 SignalFabric — live stream</h1>
-  <span id="conn"><span class="dot" id="dot"></span><span id="connlbl" style="color:var(--muted)">connecting…</span></span>
+  <h1>🛰️ L1 SignalFabric</h1>
+  <span class="pill" id="health">health: …</span>
+  <span><span class="dot" id="dot"></span><span id="connlbl" style="color:var(--muted)">connecting…</span></span>
   <div class="controls">
-    speed <input id="speed" type="number" value="6000" />×
-    <button class="primary" onclick="start()">▶ Start live</button>
-    <button onclick="backlog()">⏬ Load history</button>
-    <button class="stop" onclick="stop()">■ Stop</button>
+    <button type="button" class="primary" onclick="demo1()">▶ Run Demo 1 (inject Slack + email)</button>
+    <label for="speed">speed</label>
+    <input id="speed" type="number" value="6000" title="live replay speed multiplier" aria-label="live replay speed multiplier" />×
+    <button type="button" onclick="start()">Start live</button>
+    <button type="button" onclick="backlog()">Load history</button>
+    <button type="button" class="stop" onclick="stop()">■ Stop</button>
   </div>
 </header>
 
+<!-- pipeline -->
+<div class="pipe">
+  <div class="stage" id="st-ingress"><div class="s-name">① Ingress</div><div class="s-count" id="n-ingress">0</div><div class="s-sub">raw events in</div></div>
+  <div class="arrow">→</div>
+  <div class="stage" id="st-normalizer"><div class="s-name">② Normalizer</div><div class="s-count" id="n-normalized">0</div><div class="s-sub">→ SignalEvent</div></div>
+  <div class="arrow">→</div>
+  <div class="stage" id="st-bus"><div class="s-name">③ Bus</div><div class="s-count" id="n-bus">0</div><div class="s-sub">fan-out</div></div>
+  <div class="arrow">→</div>
+  <div class="stage l2" id="st-l2"><div class="s-name">④ L2 store</div><div class="s-count" id="n-l2">0</div><div class="s-sub" id="n-signoff">0 SignOffEvent</div></div>
+  <div class="arrow">→</div>
+  <div class="stage tail" id="st-tail"><div class="s-name">⑤ Live tail</div><div class="s-count" id="n-rate">0</div><div class="s-sub">signals / sec</div></div>
+</div>
+
 <div class="wrap">
-  <div>
-    <div class="cards">
-      <div class="card total"><div class="n" id="c-total">0</div><div class="l">Total signals</div></div>
-      <div class="card signoff"><div class="n" id="c-signoff">0</div><div class="l">Sign-off → L2</div></div>
-      <div class="card"><div class="n" id="c-SLACK">0</div><div class="l">Slack</div></div>
-      <div class="card"><div class="n" id="c-EMAIL">0</div><div class="l">Email</div></div>
-      <div class="card"><div class="n" id="c-CREW_DB">0</div><div class="l">Crew DB</div></div>
-      <div class="card"><div class="n" id="c-CONTRACT_CLM">0</div><div class="l">Contract CLM</div></div>
-      <div class="card"><div class="n" id="c-VESSEL_PORT_DB">0</div><div class="l">Vessel/Port</div></div>
-      <div class="card"><div class="n" id="c-rate">0</div><div class="l">Signals / sec</div></div>
-    </div>
-    <div class="legend">
-      <span><i style="background:var(--slack)"></i>Slack</span>
-      <span><i style="background:var(--email)"></i>Email</span>
-      <span><i style="background:var(--crew)"></i>Crew DB</span>
-      <span><i style="background:var(--contract)"></i>Contract</span>
-      <span><i style="background:var(--vessel)"></i>Vessel/Port</span>
-    </div>
+  <!-- trace -->
+  <div class="card">
+    <h2>Demo&nbsp;1 — one event through the whole pipe (raw → normalized → L2)</h2>
+    <div id="trace" class="hint">Click <b>Run Demo 1</b> to inject a mock Slack message + a mock
+      sign-off email (built from the generated mock data) and watch them flow ingress → normalizer →
+      bus → L2 store, then scroll in the live tail. →</div>
   </div>
 
-  <div class="feed">
-    <h2>Live signal feed (newest first)</h2>
-    <div id="rows"></div>
+  <!-- feed -->
+  <div class="card">
+    <h2>⑤ Live tail (SSE) <span style="margin-left:auto;color:var(--muted)">newest first</span></h2>
+    <div id="rows" class="feed-rows"></div>
   </div>
 </div>
 
@@ -100,51 +127,86 @@ let windowCount = 0;
 
 function setTotals(t){
   if(!t) return;
-  $("c-total").textContent = t.total ?? 0;
-  $("c-signoff").textContent = t.signoff ?? 0;
-  SRC.forEach(s => $("c-"+s).textContent = (t.by_source && t.by_source[s]) || 0);
+  $("n-ingress").textContent   = t.ingress ?? 0;
+  $("n-normalized").textContent= t.normalized ?? t.total ?? 0;
+  $("n-bus").textContent       = t.bus ?? t.total ?? 0;
+  $("n-l2").textContent        = t.l2 ?? 0;
+  $("n-signoff").textContent   = (t.signoff ?? 0) + " SignOffEvent";
 }
+function pulse(id, delay=0){ setTimeout(()=>{ const e=$(id); e.classList.add("active"); setTimeout(()=>e.classList.remove("active"), 750); }, delay); }
+function pulsePipe(){ ["st-ingress","st-normalizer","st-bus","st-l2","st-tail"].forEach((id,i)=>pulse(id, i*180)); }
+
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function pretty(o){ return escapeHtml(JSON.stringify(o, null, 2)); }
 
 function addRow(d){
   const rows = $("rows");
   const el = document.createElement("div");
   el.className = "row" + (d.signoff ? " so" : "");
   const t = (d.ts||"").slice(11,19);
+  const lbl = d.l2 && d.l2.label ? ` <span style="color:#5f719b">→ ${d.l2.label}</span>` : "";
   el.innerHTML =
     `<span class="badge b-${d.source}">${d.source.replace("_DB","").replace("_PORT","")}</span>`+
     `<span class="ent">${d.entity}</span>`+
-    `<span class="sum">${escapeHtml(d.summary||"")}${d.signoff?'<span class="pill">SignOffEvent</span>':''}</span>`+
+    `<span class="sum">${escapeHtml(d.summary||"")}${lbl}${d.signoff?'<span class="tag">SignOffEvent</span>':''}</span>`+
     `<span class="time">${t}</span>`;
   rows.insertBefore(el, rows.firstChild);
   while(rows.childElementCount > 250) rows.removeChild(rows.lastChild);
   windowCount++;
 }
-function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 
-// signals/sec gauge
-setInterval(()=>{ $("c-rate").textContent = windowCount; windowCount = 0; }, 1000);
+setInterval(()=>{ $("n-rate").textContent = windowCount; windowCount = 0; }, 1000);
+
+// ---- Demo 1: render the per-stage trace ----
+function laneHtml(item){
+  const so = (item.l2 && item.l2.kind === "signoff_event");
+  const src = item.source.toUpperCase();
+  const badge = src === "SLACK" ? "SLACK" : "EMAIL";
+  return `<div class="lane">
+    <div class="lane-h"><span class="badge b-${src==='SLACK'?'SLACK':'EMAIL'}">${badge}</span>
+      <b>${item.source} ingress</b>${so?'<span class="tag">→ SignOffEvent</span>':''}</div>
+    <div class="steps">
+      <div class="step"><div class="t">① raw input (ingress)</div><pre>${pretty(item.raw)}</pre></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">② normalized (SignalEvent)</div><pre>${pretty(item.normalized)}</pre></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">④ L2 record</div><pre>${pretty(item.l2)}</pre></div>
+    </div></div>`;
+}
+
+async function demo1(){
+  pulsePipe();
+  const r = await post("/demo/inject");
+  if(r.error){ $("trace").innerHTML = `<div class="hint" style="color:#f87171">${r.error}</div>`; return; }
+  const ctx = r.context || {};
+  const head = `<div class="hint">Injected <b>${r.injected}</b> events for
+     <b>${escapeHtml(ctx.crew||'')}</b> (${escapeHtml(ctx.rank||'')}) — ${escapeHtml(ctx.vessel||'')} at ${escapeHtml(ctx.port||'')}.
+     L2 store now holds <b>${r.l2_store?.total ?? '?'}</b> records (${r.l2_store?.signoff ?? 0} SignOffEvent).</div>`;
+  $("trace").innerHTML = head + `<div class="flow">${r.trace.map(laneHtml).join("")}</div>`;
+}
 
 function connect(){
   const es = new EventSource("/stream");
-  es.addEventListener("snapshot", e => {
-    const d = JSON.parse(e.data);
-    setTotals(d.totals);
-    (d.recent||[]).forEach(addRow);
-  });
-  es.onmessage = e => {
-    const d = JSON.parse(e.data);
-    if(d.type === "signal"){ setTotals(d.totals); addRow(d); }
-  };
+  es.addEventListener("snapshot", e => { const d=JSON.parse(e.data); setTotals(d.totals); (d.recent||[]).forEach(addRow); });
+  es.onmessage = e => { const d=JSON.parse(e.data); if(d.type==="signal"){ setTotals(d.totals); addRow(d); } };
   es.onopen = () => { $("dot").className="dot on"; $("connlbl").textContent="connected"; };
   es.onerror = () => { $("dot").className="dot"; $("connlbl").textContent="reconnecting…"; };
 }
 
 async function post(url){ try{ const r=await fetch(url,{method:"POST"}); return await r.json(); }catch(e){ return {error:String(e)}; } }
-async function start(){ const s=$("speed").value||6000; await post(`/demo/start?speed=${s}`); }
+async function start(){ pulsePipe(); await post(`/demo/start?speed=${$("speed").value||6000}`); }
 async function stop(){ await post("/demo/stop"); }
-async function backlog(){ await post("/demo/backlog"); }
+async function backlog(){ pulsePipe(); await post("/demo/backlog"); }
 
-connect();
+async function health(){
+  try{
+    const h = await (await fetch("/healthz")).json();
+    $("health").textContent = `health: ${h.status} · ${h.connectors.length} connectors · L2 ${h.l2_records ?? 0}`;
+    $("health").className = "pill " + (h.status==="ok" ? "green" : "red");
+  }catch(e){ $("health").textContent="health: down"; $("health").className="pill red"; }
+}
+
+connect(); health(); setInterval(health, 5000);
 </script>
 </body>
 </html>

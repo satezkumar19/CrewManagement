@@ -35,6 +35,9 @@ class Settings:
     # ERP
     erp_watermark_path: str = os.getenv("ERP_WATERMARK_PATH", "")  # "" => in-memory
 
+    # L2 store (append-only JSONL written by the demo L2 sink)
+    l2_store_path: str = os.getenv("L2_STORE_PATH", "./data/l2_store.jsonl")
+
     def __post_init__(self) -> None:
         if not self.slack_signing_secret and not self.slack_dev_allow_unverified:
             raise ValueError(

@@ -23,6 +23,7 @@ async def healthz(request: Request) -> dict:
         for c in getattr(state, "connectors", [])
     ]
     bus = getattr(state, "bus", None)
+    l2 = getattr(state, "l2_store", None)
     return {
         "status": "ok",
         "service": SERVICE_NAME,
@@ -30,4 +31,5 @@ async def healthz(request: Request) -> dict:
         "time": utcnow().isoformat(),
         "connectors": connectors,
         "bus_events": getattr(bus, "count", None),
+        "l2_records": getattr(l2, "count", None),
     }

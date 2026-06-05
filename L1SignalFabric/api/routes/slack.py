@@ -50,6 +50,8 @@ async def slack_events(request: Request) -> Response:
         return JSONResponse({"error": "unauthorized", "reason": result.reason}, status_code=401)
 
     # 3) Authentic — normalize and publish, then ack.
+    if hasattr(bus, "note_ingress"):
+        bus.note_ingress("slack")
     events = await connector.ingest(body_json)
     for event in events:
         await bus.publish(event)

@@ -71,19 +71,30 @@ make stream         # drain the historical backlog through the connectors (idemp
 make stream-live    # replay the future runway on a virtual clock (world in motion)
 ```
 
-### Live browser dashboard
+### Demo 1 — the whole pipe in the browser
 
 ```bash
-make seed           # once, if you haven't
-make dashboard      # serves on :8001
-# open http://localhost:8001/  → click "Start live" (or "Load history")
+make up && make demo      # start server (bg) + inject one Slack msg + one sign-off email
+# then open the dashboard:
+open http://localhost:8001/
+make down                 # stop the server
 ```
 
-`GET /` is a single-file dashboard ([`api/static/dashboard.html`](api/static/dashboard.html))
-that subscribes to **`GET /stream`** (Server-Sent Events) and shows per-source
-counters, a sign-off→L2 tally, a signals/sec gauge, and a live feed. The
-`POST /demo/{start,stop,backlog}` routes drive the replay *inside the server* via
-the `BroadcastBus` (an SSE-capable `EventBus`; swap in the real InMemoryBus later).
+**Goal:** one synthetic event flows **ingress → normalizer → bus → L2 store → live
+tail**. `make demo` injects a mock Slack message and a mock sign-off email (built
+from the generated mock data); they are normalized to `SignalEvent`s, published on
+the bus, written to the **L2 JSONL store** (`data/l2_store.jsonl`) — the sign-off
+email becoming a **SignOffEvent** node — and scroll live on the dashboard. Health
+is green throughout.
+
+`GET /` is a single-file dashboard ([`api/static/dashboard.html`](api/static/dashboard.html)):
+a **pipeline view** with a live count at each stage, a **Run Demo 1** button that
+shows each event's `raw → normalized → L2 record` trace, plus **Start live** /
+**Load history** to replay the full dataset. It subscribes to **`GET /stream`**
+(SSE); `POST /demo/{inject,start,stop,backlog}` drive it. The L2 sink
+([`l2/store.py`](l2/store.py)) and the SSE `BroadcastBus`
+([`api/live.py`](api/live.py)) both implement swap-in seams for Sruthy's real
+InMemoryBus + L2 graph sink.
 
 ## Layout
 
@@ -94,10 +105,12 @@ L1SignalFabric/
     slack/              # connector + signature verify + url_verification + mappers
     erp/                # connector + outbox fetch adapter + mappers
   api/
-    app.py              # FastAPI factory (wires connectors + bus)
+    app.py              # FastAPI factory (wires connectors + bus + L2 sink)
     routes/             # health.py (/healthz), slack.py (/slack/events)
     live.py             # BroadcastBus + /stream (SSE) + / (dashboard) + /demo/*
-    static/dashboard.html  # single-file live dashboard
+    static/dashboard.html  # single-file pipeline dashboard
+  l2/
+    store.py            # L2 JSONL store + sink (SignalEvent -> OrgMap/SignOffEvent)
   demo/                 # generator + seed + stream (Freight-style demo data)
   data/                 # generated dataset (reproducible via `make seed`)
   scripts/smoke.py      # Day-1 ingress smoke

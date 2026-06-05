@@ -17,6 +17,7 @@ from config import settings as default_settings
 from connectors.erp import ErpConnector, InMemoryOutboxAdapter
 from connectors.slack import SlackConnector
 from core.bus import EventBus
+from l2 import L2JsonlStore
 
 from . import live
 from .routes import health, slack
@@ -31,10 +32,20 @@ def create_app(
 ) -> FastAPI:
     cfg = settings or default_settings
     app = FastAPI(title=SERVICE_NAME, version=SERVICE_VERSION)
+    app.state.tenant_id = cfg.tenant_id
 
     # --- bus: SSE-broadcasting viewer bus by default (drives the dashboard);
     #     pass Sruthy's InMemoryBus to create_app(bus=...) to integrate L2 ---
-    app.state.bus = bus or live.BroadcastBus()
+    bus_obj = bus or live.BroadcastBus()
+    app.state.bus = bus_obj
+
+    # --- L2 store + sink: project every published event into the L2 JSONL store
+    #     (the downstream end of the demo pipe). Only when the bus supports a sink. ---
+    app.state.l2_store = None
+    if isinstance(bus_obj, live.BroadcastBus):
+        store = L2JsonlStore(cfg.l2_store_path)
+        app.state.l2_store = store
+        bus_obj.set_sink(store.append)
 
     # --- connectors ---
     app.state.slack = SlackConnector(
