@@ -11,7 +11,11 @@ from database.models import ComplianceStatus
 # Compliance rules now live as DATA in the context-graph module (single source of
 # truth) instead of being hardcoded here. The subgraph builder turns a seafarer +
 # port into the graph the agent reasons over and the UI renders.
-from database.compliance_graph import PORT_RESTRICTIONS, build_compliance_subgraph
+from database.compliance_graph import (
+    PORT_RESTRICTIONS,
+    build_compliance_subgraph,
+    get_compliance_subgraph,
+)
 
 TOOLS = [
     {
@@ -128,7 +132,7 @@ class ComplianceAgent(BaseAgent):
 
     async def _execute_tool(self, tool_name: str, tool_input: Dict[str, Any]) -> Any:
         if tool_name == "queryComplianceGraph":
-            return self._query_compliance_graph(tool_input)
+            return await self._query_compliance_graph(tool_input)
         if tool_name == "validateDocuments":
             return self._validate_documents(tool_input)
         if tool_name == "checkPortRestrictions":
@@ -137,10 +141,15 @@ class ComplianceAgent(BaseAgent):
             return self._generate_compliance_report(tool_input)
         return {"error": f"Unknown tool: {tool_name}"}
 
-    def _query_compliance_graph(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Build the seafarer's compliance context subgraph (GraphRAG retrieval)."""
+    async def _query_compliance_graph(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Build the seafarer's compliance context subgraph (GraphRAG retrieval).
+
+        Routes through the async dispatcher so AGE-stored port restrictions are
+        consulted when GRAPH_BACKEND=age; falls back to the in-memory rules dict
+        otherwise. Output shape is identical either way — only `backend` differs.
+        """
         port = params.get("port") or "Singapore"
-        return build_compliance_subgraph(params, port)
+        return await get_compliance_subgraph(params, port)
 
     def _validate_documents(self, params: Dict[str, Any]) -> Dict[str, Any]:
         checks = []

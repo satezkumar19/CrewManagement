@@ -49,7 +49,7 @@ if age_enabled():
         try:
             cur = dbapi_conn.cursor()
             cur.execute("LOAD 'age';")
-            cur.execute('SET search_path = ag_catalog, "$user", public;')
+            cur.execute('SET search_path = "$user", public, ag_catalog;')
             cur.close()
         except Exception as exc:
             log.warning("age.load_failed", error=str(exc))
@@ -63,15 +63,28 @@ async def run_cypher(query: str) -> List[Dict[str, Any]]:
     """
     if not age_enabled():
         return []
-    sql = text(f"SELECT * FROM cypher('{GRAPH_NAME}', $$ {query} $$) AS (v agtype);")
+    sql = f"SELECT * FROM cypher('{GRAPH_NAME}', $$ {query} $$) AS (v agtype);"
     async with AsyncSessionLocal() as session:
-        rows = (await session.execute(sql)).fetchall()
+        # exec_driver_sql bypasses SQLAlchemy's `:name` bind-param parsing, which
+        # would otherwise mangle Cypher label syntax like `(p)-[:RESTRICTS]->(c)`
+        # into a $1 placeholder and fail with "A value is required for ...".
+        conn = await session.connection()
+        # AGE is session-local: LOAD 'age' + ag_catalog on search_path must be set
+        # on EVERY connection before cypher() resolves. The connect-event hook isn't
+        # reliable under the asyncpg adapter (sync cursor → async bridge can drop
+        # the SET), so we re-do it inline here, idempotent and cheap.
+        await conn.exec_driver_sql("LOAD 'age';")
+        await conn.exec_driver_sql('SET search_path = ag_catalog, "$user", public;')
+        rows = (await conn.exec_driver_sql(sql)).fetchall()
         out: List[Dict[str, Any]] = []
         for r in rows:
             try:
                 out.append(json.loads(r[0]))
             except Exception:
                 out.append({"raw": str(r[0])})
+        # MERGE / CREATE are wrapped in an implicit transaction by the session;
+        # commit so writes persist (no-op for read-only MATCH queries).
+        await session.commit()
         return out
 
 
@@ -84,7 +97,7 @@ async def ensure_graph() -> None:
     async with AsyncSessionLocal() as session:
         await session.execute(text("CREATE EXTENSION IF NOT EXISTS age;"))
         await session.execute(text("LOAD 'age';"))
-        await session.execute(text('SET search_path = ag_catalog, "$user", public;'))
+        await session.execute(text('SET search_path = "$user", public, ag_catalog;'))
         try:
             await session.execute(text(f"SELECT create_graph('{GRAPH_NAME}');"))
         except Exception:
