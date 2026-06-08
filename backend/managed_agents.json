@@ -1,27 +1,21 @@
 {
-  "environment_id": "env_019A2DbnrkJpoGat3segbVpa",
-  "coordinator_agent_id": "agent_01K4H9tKKQcA4r82zGJTQyEM",
+  "environment_id": "env_01QyerCtmCZcegMD3yd9isiW",
+  "coordinator_agent_id": "agent_016PGVte6Ux4uYoAxkEeMwLX",
   "specialists": {
     "crew_matching": {
-      "agent_id": "agent_013ztWoUYztKUwrrwKLW6NvG",
+      "agent_id": "agent_012yNubPMKLD9Xftg7GaTuci",
       "name": "Crew Matching Agent"
     },
     "travel": {
-      "agent_id": "agent_01Ctt1zPdMP5SU5fNkrEr1XB",
-      "name": "Travel Agent",
-      "skill_ids": [
-        "skill_01RrKgQVEukmGXUGSM4TwTjH",
-        "skill_01NQi61Cypaie8e1g638GWqR",
-        "skill_01Aup8ENioYRnhGpL11fXbKJ",
-        "skill_014nF9kb9Cdg6raqxiDyvw1p"
-      ]
+      "agent_id": "agent_01DikWaZ6FaZe6im7VQJTS1L",
+      "name": "Travel Agent"
     },
     "notification": {
-      "agent_id": "agent_01AnNFdrPoDKU6JUCtAhSRTD",
+      "agent_id": "agent_01MZV71CMLMmANnb89pVbZe7",
       "name": "Notification Agent"
     },
     "compliance": {
-      "agent_id": "agent_01SLVYgNAsNn3ArmRZpD6FLg",
+      "agent_id": "agent_018aNXnK64fa5FdFwPXWCxAJ",
       "name": "Compliance Agent"
     }
   },

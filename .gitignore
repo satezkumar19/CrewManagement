@@ -19,3 +19,7 @@ out/
 
 # Docker volumes
 postgres-data/
+
+# Large local artifacts
+L2_implementation_June5.zip
+L2_implementation_June5/
