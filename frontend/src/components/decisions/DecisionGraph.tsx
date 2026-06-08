@@ -174,6 +174,10 @@ export default function DecisionGraph({
         return {
           ...ed,
           animated: on && !!ed.animated,
+          // The label (and its background box) render independently of the path's
+          // opacity, so hide it entirely until this edge's stage is revealed —
+          // otherwise "selects/considered/outcome" show before the flow reaches them.
+          label: on ? ed.label : undefined,
           style: { ...ed.style, opacity: on ? 1 : 0, transition: "opacity 420ms ease" },
         };
       }),
@@ -279,7 +283,7 @@ function buildDefaultGraph(decision: DecisionTrace): { nodes: Node<DGNodeData>[]
   n.push({
     id: "decision", type: "dgNode", position: { x: 250, y: 130 },
     data: {
-      tag: "Decision", kind: "decision", ring: KIND_ACCENT.decision, stage: 1, visible: true,
+      tag: "Decision · L3", kind: "decision", ring: KIND_ACCENT.decision, glow: true, stage: 1, visible: true,
       label: "Placement",
       sub: decision.confidence_score != null ? `${decision.confidence_score}% confidence` : undefined,
     },
@@ -366,7 +370,7 @@ function buildRetryGraph(decision: DecisionTrace): { nodes: Node<DGNodeData>[]; 
     id: "decision", type: "dgNode", position: { x: 250, y: yc },
     data: {
       tag: "Decision · L3", kind: "decision", ring: KIND_ACCENT.decision, glow: true, stage: 1, visible: true,
-      label: "L3 selection",
+      label: "Placement",
       sub: decision.confidence_score != null ? `${decision.confidence_score}% confidence` : undefined,
     },
   });

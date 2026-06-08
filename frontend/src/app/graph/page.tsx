@@ -9,7 +9,7 @@ import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import {
   Anchor, Ship, Activity, BarChart3, Share2, Search, X, Loader2, Database,
-  ArrowRight, ArrowLeft,
+  ArrowRight, ArrowLeft, GitBranch,
 } from "lucide-react";
 
 import {
@@ -110,6 +110,7 @@ export default function GraphPage() {
             <NavLink href="/workflow" icon={<Activity className="w-4 h-4" />} label="Workflow" />
             <NavLink href="/graph" icon={<Share2 className="w-4 h-4" />} label="Graph" active />
             <NavLink href="/monitoring" icon={<BarChart3 className="w-4 h-4" />} label="Monitoring" />
+            <NavLink href="/decisions" icon={<GitBranch className="w-4 h-4" />} label="Decisions" />
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <Database className="w-3.5 h-3.5 text-ocean-accent" />

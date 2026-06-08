@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CrewMember, WorkflowState, SystemMetrics, ROIMetrics, DecisionTrace, PatternReport } from "@/types";
+import type { CrewMember, WorkflowState, SystemMetrics, ROIMetrics, DecisionTrace, PatternReport, SimilarCrewResponse } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -136,6 +136,12 @@ export const decisionApi = {
 export const patternApi = {
   get: (limit?: number) =>
     api.get<PatternReport>("/patterns/", { params: { limit } }).then(r => r.data),
+};
+
+// ── Structural Embeddings (L4 #3) ──────────────────────────────────────────────
+export const embeddingApi = {
+  similar: (crewId: string, pool?: string, limit?: number) =>
+    api.get<SimilarCrewResponse>(`/embeddings/similar/${crewId}`, { params: { pool, limit } }).then(r => r.data),
 };
 
 // Capabilities of each managed agent. `tools` are its functions (custom tools

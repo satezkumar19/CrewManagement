@@ -34,6 +34,9 @@ class Crew(Base):
     match_score = Column(Float, nullable=True)            # CrewMember.match_score
     match_reason = Column(String, nullable=True)          # CrewMember.match_reason
     status = Column(String, default="Available")          # CrewMember.status
+    # L4 #3 — structural embedding (fixed-length float list; see embedding_service).
+    # Stored as JSON so it works on any Postgres; pgvector reads it via an inline cast.
+    embedding = Column(JSON, nullable=True)               # List[float] | None
 
     def to_dict(self) -> dict:
         return {
@@ -55,4 +58,5 @@ class Crew(Base):
             "match_score": self.match_score,
             "match_reason": self.match_reason,
             "status": self.status,
+            "embedding": self.embedding,
         }

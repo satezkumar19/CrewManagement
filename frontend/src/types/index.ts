@@ -479,6 +479,27 @@ export interface PatternReport {
   generated_at: string;
 }
 
+// ─── Structural Embeddings (L4 #3) ─────────────────────────────────────────────
+export interface SimilarCrew {
+  crew_id: string;
+  name?: string;
+  rank?: string;
+  grade?: string;
+  nationality?: string;
+  vessel?: string;
+  port?: string;
+  status?: string;
+  pool?: string;
+  similarity: number;          // cosine similarity in [0, 1]
+}
+
+export interface SimilarCrewResponse {
+  crew_id: string;
+  backend: string;             // "pgvector" | "fallback"
+  count: number;
+  matches: SimilarCrew[];
+}
+
 // ─── WebSocket Event ──────────────────────────────────────────────────────────
 
 export interface WSEvent {

@@ -31,6 +31,18 @@ async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+    # L4 #3 — pgvector extension for structural-embedding similarity. Best-effort in
+    # its own transaction (mirrors the AGE bring-up): only attempted when the
+    # pgvector backend is selected, and a missing extension degrades to the Python
+    # fallback rather than blocking startup.
+    if settings.vector_backend.lower() == "pgvector":
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            log.info("pgvector_enabled")
+        except Exception as exc:  # noqa: BLE001
+            log.warning("pgvector_extension_failed", error=str(exc))
+
     # Lightweight, idempotent migrations. create_all only CREATES missing tables —
     # it never ADDs columns to a table that already exists. The L4 #2 columns were
     # added to decision_traces after Phase 1 created it, so older databases need
@@ -48,6 +60,8 @@ async def init_db() -> None:
         # human reason for a still-pending decision.
         "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS attempts JSON",
         "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS pending_reason VARCHAR",
+        # L4 #3 — structural embedding on each crew row.
+        "ALTER TABLE crew ADD COLUMN IF NOT EXISTS embedding JSON",
     )
     try:
         async with engine.begin() as conn:
@@ -55,5 +69,13 @@ async def init_db() -> None:
                 await conn.execute(text(stmt))
     except Exception as exc:  # noqa: BLE001 - non-fatal; log and continue
         log.warning("db_migrate_failed", error=str(exc))
+
+    # L4 #3 — ensure every crew row has a structural embedding (best-effort; safe to
+    # run every startup since it only fills rows that lack one).
+    try:
+        from database.embedding_repository import backfill_embeddings
+        await backfill_embeddings()
+    except Exception as exc:  # noqa: BLE001
+        log.warning("embedding_backfill_failed", error=str(exc))
 
     log.info("db_initialized", url=settings.database_url.rsplit("@", 1)[-1])

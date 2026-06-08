@@ -51,7 +51,14 @@ async def seed() -> None:
         session.add_all([_to_row(c, "signoff") for c in sign_off])
         await session.commit()
 
-    print(f"Seeded {len(sign_on)} sign-on + {len(sign_off)} sign-off crew into Postgres.")
+    # L4 #3 — compute the structural embedding for every freshly-seeded crew row.
+    from database.embedding_repository import backfill_embeddings
+    embedded = await backfill_embeddings(force=True)
+
+    print(
+        f"Seeded {len(sign_on)} sign-on + {len(sign_off)} sign-off crew into Postgres "
+        f"({embedded} embeddings)."
+    )
 
 
 if __name__ == "__main__":

@@ -73,6 +73,17 @@ _PREFER_NAT_MAX = 10.0    # nationality matched a prior signed-on placement
 _PREFER_GRADE_MAX = 4.0   # grade matched a prior signed-on placement
 _AVOID_NAT_MAX = 12.0     # nationality matched a prior rejected placement (subtracted)
 
+# L4 #3 (embeddings) — max points the blended structural-similarity signal can add.
+_SIM_MAX = 8.0
+_SIM_REASON_THRESHOLD = 0.55   # only surface a similarity reason above this cosine
+
+
+def _embedding_funcs():
+    """Lazy accessor for the embedding helpers — imported inside calls because
+    `services/__init__` eagerly pulls in the agents stack (circular at import time)."""
+    from services.embedding_service import cosine, embed_crew
+    return cosine, embed_crew
+
 
 class CrewMatchingAgent(BaseAgent):
     def __init__(self, event_callback=None):
@@ -87,10 +98,24 @@ class CrewMatchingAgent(BaseAgent):
         # L4 #3 — precedent guidance injected per workflow before ranking (see
         # PrecedentService.derive_guidance). None/has_precedent=False ⇒ no boost.
         self._precedent_guidance: Dict[str, Any] = None
+        # L4 #3 (embeddings) — similarity context for this workflow:
+        # {"departing": [float], "precedents": [[float], ...]}. None ⇒ no boost.
+        self._similarity_context: Dict[str, Any] = None
 
     def set_precedent_guidance(self, guidance: Dict[str, Any]) -> None:
         """Inject the precedent-derived re-rank guidance for this workflow (L4 #3)."""
         self._precedent_guidance = guidance or None
+
+    def set_similarity_context(
+        self, departing_embedding=None, precedent_embeddings=None
+    ) -> None:
+        """Inject the structural-embedding similarity context for this workflow:
+        the departing crew's embedding and the embeddings of prior signed-on crew
+        for this vacancy profile. Either may be None/empty (then that signal is 0)."""
+        self._similarity_context = {
+            "departing": departing_embedding,
+            "precedents": precedent_embeddings or [],
+        }
 
     async def _ensure_crew_loaded(self) -> None:
         if self._all_crew is None:
@@ -219,8 +244,14 @@ class CrewMatchingAgent(BaseAgent):
             # on cleanly, away from ones that were rejected. base_score already
             # carries the jitter, so the boost is the ONLY difference (lift == boost).
             boost, boost_reasons = self._precedent_boost(crew)
-            adjusted = round(max(0, min(100, base_score + boost)), 1)
             reasons.extend(boost_reasons)
+
+            # L4 #3 (embeddings) — blended structural-similarity boost (to the
+            # departing crew and to prior signed-on crew for this profile).
+            sim_boost, sim_reasons, sim_dep, sim_prec = self._similarity_boost(crew)
+            reasons.extend(sim_reasons)
+
+            adjusted = round(max(0, min(100, base_score + boost + sim_boost)), 1)
 
             ranked.append({
                 "crew_id": cid,
@@ -232,6 +263,9 @@ class CrewMatchingAgent(BaseAgent):
                 "confidence_score": adjusted,
                 "base_confidence_score": base_score,
                 "precedent_boost": round(boost, 1),
+                "similarity_boost": round(sim_boost, 1),
+                "similarity_departing": sim_dep,
+                "similarity_precedent": sim_prec,
                 "match_reasons": reasons,
             })
 
@@ -264,6 +298,39 @@ class CrewMatchingAgent(BaseAgent):
         if grade in prefer_grade:
             boost += prefer_grade[grade] * _PREFER_GRADE_MAX
         return boost, reasons
+
+    def _similarity_boost(self, crew: Dict[str, Any]) -> tuple:
+        """Blended structural-similarity boost for one candidate (L4 #3 embeddings).
+
+        Returns (boost_points, reasons, sim_departing, sim_precedent). With no
+        similarity context injected, returns (0.0, [], None, None) — a no-op, so
+        ranking is unchanged without embeddings (same guard as the precedent boost).
+        """
+        ctx = self._similarity_context or {}
+        departing = ctx.get("departing")
+        precedents = ctx.get("precedents") or []
+        if not departing and not precedents:
+            return 0.0, [], None, None
+
+        cosine, embed_crew = _embedding_funcs()
+        emb = crew.get("embedding") or embed_crew(crew)
+        sim_dep = max(0.0, cosine(emb, departing)) if departing else 0.0
+        sim_prec = max((max(0.0, cosine(emb, pe)) for pe in precedents), default=0.0) if precedents else 0.0
+
+        if departing and precedents:
+            blend = 0.6 * sim_dep + 0.4 * sim_prec
+        elif precedents:
+            blend = sim_prec
+        else:
+            blend = sim_dep
+        boost = blend * _SIM_MAX
+
+        reasons: List[str] = []
+        if sim_dep >= _SIM_REASON_THRESHOLD:
+            reasons.append(f"Structurally similar to departing crew: {round(sim_dep * 100)}%")
+        if sim_prec >= _SIM_REASON_THRESHOLD:
+            reasons.append(f"Resembles prior signed-on crew: {round(sim_prec * 100)}%")
+        return boost, reasons, round(sim_dep, 3), round(sim_prec, 3)
 
     def _build_precedent_feedback(
         self, ranked: List[Dict[str, Any]], base_winner: Dict[str, Any]

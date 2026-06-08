@@ -13,6 +13,9 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/maritime_crew
       - REDIS_URL=redis://redis:6379
+      # L4 #3 — use pgvector for structural-embedding similarity (the postgres image
+      # below provides it). Set to "fallback" to compute cosine in Python instead.
+      - VECTOR_BACKEND=pgvector
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,16 +42,22 @@ services:
     networks:
       - maritime-net
 
-  # ── PostgreSQL (Apache AGE enabled) ─────────────────────────────────────────
-  # AGE-enabled Postgres 16 image — the context graph runs INSIDE this same DB.
-  # It is a superset of stock Postgres, so it works for BOTH backends:
-  #   GRAPH_BACKEND=fallback → subgraph built in Python (AGE unused)
-  #   GRAPH_BACKEND=age      → real AGE graph; after `up`, seed it once:
-  #                            docker-compose exec backend python -m scripts.seed_crew
-  #                            docker-compose exec backend python -m scripts.seed_graph
+  # ── PostgreSQL (Apache AGE + pgvector) ──────────────────────────────────────
+  # Custom image built from L2Knowledge_graph/deploy/postgres-age.Dockerfile:
+  # pgvector/pgvector:pg16 (provides the `vector` extension) with Apache AGE compiled
+  # on top. One DB serves every backend:
+  #   GRAPH_BACKEND=fallback  → subgraph built in Python (AGE unused)
+  #   GRAPH_BACKEND=age       → real AGE graph (seed via scripts.seed_graph)
+  #   VECTOR_BACKEND=fallback → embedding cosine computed in Python (pgvector unused)
+  #   VECTOR_BACKEND=pgvector → pgvector `<=>` similarity in the DB
+  # After `up`, seed once:
+  #   docker-compose exec backend python -m scripts.seed_crew
+  #   docker-compose exec backend python -m scripts.seed_graph
   # NOTE: switching the image requires a fresh volume — run `docker-compose down -v` once.
   postgres:
-    image: apache/age:release_PG16_1.6.0
+    build:
+      context: ./backend/L2Knowledge_graph/deploy
+      dockerfile: postgres-age.Dockerfile
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password

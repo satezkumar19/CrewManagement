@@ -50,6 +50,13 @@ class Settings(BaseSettings):
     # seeded by scripts/seed_graph.py). See database/graph_db.py.
     graph_backend: str = os.getenv("GRAPH_BACKEND", "fallback")
 
+    # Structural-embedding similarity backend (L4 #3): "fallback" (compute cosine in
+    # Python over the JSON embeddings — no extra infra, the default) or "pgvector"
+    # (use the pgvector `<=>` operator inside PostgreSQL; requires the pgvector image
+    # — see L2Knowledge_graph/deploy/postgres-age.Dockerfile). See
+    # database/embedding_repository.py.
+    vector_backend: str = os.getenv("VECTOR_BACKEND", "fallback")
+
     # Email / SMTP — the Notification Agent sends real mail here.
     # Defaults target MailHog (dev SMTP sink: SMTP on 1025, web UI on http://localhost:8025).
     mail_enabled: bool = os.getenv("MAIL_ENABLED", "true").lower() == "true"

@@ -16,7 +16,7 @@ import toast, { Toaster } from "react-hot-toast";
 import {
   Anchor, Ship, Activity, BarChart3, GitBranch, Wifi, WifiOff,
   RefreshCw, Sparkles, CheckCircle, XCircle, Clock, ChevronRight, Cpu, Wrench,
-  Play, Square, AlertTriangle, RotateCcw,
+  Play, Square, AlertTriangle, RotateCcw, Share2,
 } from "lucide-react";
 
 import { decisionApi } from "@/lib/api";
@@ -25,6 +25,7 @@ import { useWorkflowStore } from "@/store/workflowStore";
 import DecisionGraph from "@/components/decisions/DecisionGraph";
 import PrecedentPanel from "@/components/decisions/PrecedentPanel";
 import PatternPanel from "@/components/decisions/PatternPanel";
+import SimilarCrewPanel from "@/components/decisions/SimilarCrewPanel";
 import type { DecisionTrace, DecisionTrajectoryStep, ComplianceAttempt } from "@/types";
 
 // How long each decision stays on screen during the auto-play walkthrough.
@@ -204,6 +205,7 @@ export default function DecisionsPage() {
           <div className="flex items-center gap-2">
             <NavLink href="/" icon={<Ship className="w-4 h-4" />} label="Dashboard" />
             <NavLink href="/workflow" icon={<Activity className="w-4 h-4" />} label="Workflow" />
+            <NavLink href="/graph" icon={<Share2 className="w-4 h-4" />} label="Graph" />
             <NavLink href="/monitoring" icon={<BarChart3 className="w-4 h-4" />} label="Monitoring" />
             <NavLink href="/decisions" icon={<GitBranch className="w-4 h-4" />} label="Decisions" active />
           </div>
@@ -223,7 +225,6 @@ export default function DecisionsPage() {
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <GitBranch className="w-5 h-5 text-ocean-accent" /> Decision Graph
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-ocean-accent/15 text-ocean-accent border border-ocean-accent/30">L4</span>
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
               Every placement decision L3 makes, captured as a trace: query → decision → chosen crew → outcome.
@@ -295,6 +296,10 @@ export default function DecisionsPage() {
             them one crew member at a time), so counts/reject-rate/recurring-gap start
             at zero and grow as each outcome lands. */}
         <PatternPanel decisions={decisions.filter((d) => revealedOutcomes.has(d.decision_id))} />
+
+        {/* L4 #3 — Structural Embeddings made visible: pick a crew member, see the
+            structurally nearest crew (pgvector / fallback). */}
+        <SimilarCrewPanel />
 
         <div className="grid grid-cols-12 gap-6">
           {/* Left: decision list */}

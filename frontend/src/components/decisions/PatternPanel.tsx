@@ -27,7 +27,6 @@ export default function PatternPanel({ decisions }: { decisions: DecisionTrace[]
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-white flex items-center gap-2">
           <Activity className="w-4 h-4 text-ocean-accent" /> Pattern Detection
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-ocean-accent/15 text-ocean-accent border border-ocean-accent/30">L4</span>
         </h3>
         <div className="flex items-center gap-2 text-[11px]">
           <Chip label="Decisions" value={s.total} color="#94a3b8" />

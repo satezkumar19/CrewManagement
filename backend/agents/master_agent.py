@@ -84,6 +84,12 @@ class MasterAgent:
                 "rationale": guidance.get("rationale"),
             })
 
+        # L4 #3 (embeddings) — inject the structural-similarity context: the departing
+        # crew's embedding (like-for-like replacement) and the embeddings of prior
+        # signed-on crew for this profile (structurally resemble what worked before).
+        if cm_agent is not None and hasattr(cm_agent, "set_similarity_context"):
+            await self._inject_similarity_context(cm_agent, sign_off_crew, precedent)
+
         await self._emit_timeline(workflow, "Dispatching specialists: Crew Matching, Travel, Notification")
 
         turn = await self.client.run_turn(
@@ -239,6 +245,28 @@ class MasterAgent:
             "final sign-on decision.\n\n"
             "Summarize the compliance verdict and stop."
         )
+
+    async def _inject_similarity_context(
+        self, cm_agent, sign_off_crew: Dict[str, Any], precedent: Optional[Dict[str, Any]]
+    ) -> None:
+        """Compute the departing crew's structural embedding and the embeddings of
+        prior signed-on crew for this profile, and hand them to the matching agent.
+        Best-effort; lazy imports avoid the services/__init__ import cycle."""
+        try:
+            from services.embedding_service import embed_crew
+            from database.embedding_repository import get_crew_embedding
+
+            departing = embed_crew(sign_off_crew or {})
+            precedents = []
+            for m in ((precedent or {}).get("matches") or []):
+                if m.get("outcome_status") == "signed_on" and m.get("chosen_crew_id"):
+                    emb = await get_crew_embedding(m["chosen_crew_id"])
+                    if emb:
+                        precedents.append(emb)
+            cm_agent.set_similarity_context(departing, precedents)
+            log.info("similarity_context.injected", precedents=len(precedents))
+        except Exception:
+            log.warning("similarity_context.inject_failed", exc_info=True)
 
     # ── Event relay + bookkeeping ──────────────────────────────────────────────────
 
