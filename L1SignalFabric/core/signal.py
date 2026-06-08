@@ -30,16 +30,31 @@ def utcnow() -> datetime:
 class SourceSystem(str, Enum):
     """Source systems L1 SignalFabric ingests from.
 
-    SLACK / EMAIL already exist in the upstream Conduit enum; the three ERP
-    members are the L1 extension (the "ERP family": Crew DB, Contract/CLM,
-    Vessel/Port DB).
+    SLACK / EMAIL already exist in the upstream Conduit enum; the ERP members
+    (Crew DB, Contract/CLM, Vessel/Port DB) and the real-connector members
+    (Notion, Gmail, Outlook, SharePoint, generic Database) are the L1 extension.
+
+    ``GMAIL`` / ``OUTLOOK`` are concrete e-mail providers; both belong to the
+    "e-mail family" (see :data:`EMAIL_FAMILY`) that the L2 sink treats uniformly
+    for OrgMap edges and SignOffEvent materialization. ``EMAIL`` is retained for
+    the provider-agnostic demo normalizer and for upstream-Conduit compatibility.
     """
 
-    SLACK = "SLACK"                      # Slack Events API (OrgMap tribal knowledge)
-    EMAIL = "EMAIL"                      # Gmail metadata (OrgMap + SignOffEvent)
+    SLACK = "SLACK"                      # Slack Events API + Web API backfill
+    EMAIL = "EMAIL"                      # provider-agnostic e-mail metadata (demo)
+    GMAIL = "GMAIL"                      # Gmail API (Pub/Sub push + history backfill)
+    OUTLOOK = "OUTLOOK"                  # Microsoft Graph mail (webhook + delta)
+    NOTION = "NOTION"                    # Notion API (pages / databases / blocks)
+    SHAREPOINT = "SHAREPOINT"            # Microsoft Graph (sites / drives / lists)
+    DATABASE = "DATABASE"                # generic SQL CDC / outbox feed
     CREW_DB = "CREW_DB"                  # ERP — crew master
     CONTRACT_CLM = "CONTRACT_CLM"        # ERP — contract lifecycle mgmt
     VESSEL_PORT_DB = "VESSEL_PORT_DB"    # ERP — vessel / port reference
+
+
+#: Source systems whose events the L2 sink projects as e-mail OrgMap edges and
+#: that can carry an ``l2Intent = CREATE_SIGNOFF_EVENT`` sign-off marker.
+EMAIL_FAMILY = frozenset({SourceSystem.EMAIL, SourceSystem.GMAIL, SourceSystem.OUTLOOK})
 
 
 class Operation(str, Enum):

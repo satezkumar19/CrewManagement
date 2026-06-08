@@ -40,6 +40,7 @@ class InboundRequest:
     headers: dict[str, str] = field(default_factory=dict)
     body: bytes = b""
     json: Optional[dict[str, Any]] = None
+    query: dict[str, str] = field(default_factory=dict)
 
     def header(self, name: str, default: str = "") -> str:
         # HTTP headers are case-insensitive.
@@ -48,6 +49,11 @@ class InboundRequest:
             if k.lower() == lname:
                 return v
         return default
+
+    def q(self, name: str, default: str = "") -> str:
+        """Read a query-string parameter (used by webhook handshakes such as
+        Microsoft Graph's ``validationToken`` and Gmail Pub/Sub's ``token``)."""
+        return self.query.get(name, default)
 
 
 class VerifyOutcome(str, Enum):

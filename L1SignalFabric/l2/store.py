@@ -61,7 +61,8 @@ class L2JsonlStore:
             return {**base, "id": f"edge:{rid}", "kind": "edge",
                     "label": _SLACK_LABEL.get(event.entity, "SLACK"),
                     "props": {"user": d.get("user"), "channel": d.get("channel")}}
-        if ss == "EMAIL":
+        # e-mail family (EMAIL / GMAIL / OUTLOOK) → sender↔recipient edge
+        if ss in {"EMAIL", "GMAIL", "OUTLOOK"}:
             return {**base, "id": f"edge:{rid}", "kind": "edge", "label": "EMAILED",
                     "props": {"from": d.get("from"), "to": d.get("to"),
                               "subject": d.get("subject")}}

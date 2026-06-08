@@ -100,3 +100,36 @@ MAPPERS = {
     "reaction_added": map_reaction,
     "member_joined_channel": map_member_joined,
 }
+
+
+def message_model_to_signal(msg: Any, tenant_id: str) -> SignalEvent:
+    """Backfill mapper: a rich :class:`~connectors.slack.models.SlackMessage`
+    (from the Web-API scrape path) → a canonical ``message`` SignalEvent.
+
+    Deliberately produces the **same** ``entity``/``key`` shape as
+    :func:`map_message` (the live Events-API path) so a backfilled message and a
+    later live delta for the same Slack message share a ``dedup_id`` and the bus
+    drops the duplicate.
+    """
+    return SignalEvent(
+        entity="message",
+        key={"channel_id": msg.channel_id, "ts": msg.ts},
+        source_system=SourceSystem.SLACK,
+        tenant_id=tenant_id,
+        data={
+            "channel": msg.channel,
+            "user": msg.user.user_id,
+            "user_name": msg.user.name,
+            "user_email": msg.user.email,
+            "text": msg.text,
+            "thread_ts": msg.thread_ts,
+            "reactions": [r.model_dump() for r in msg.reactions],
+            "reply_count": msg.reply_count,
+        },
+        timestamp=_ts_to_dt(msg.ts),
+        lineage=Lineage(
+            extraction_id=f"slack-backfill-{msg.channel_id}-{msg.ts}",
+            source_endpoint="slack.web_api",
+        ),
+        metadata={"schemaVersion": "1.0", "backfill": True},
+    )

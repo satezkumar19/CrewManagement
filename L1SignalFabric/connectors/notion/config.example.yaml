@@ -1,0 +1,14 @@
+# Notion connector config (used by `python -m connectors.notion.cli ... --config`).
+# Resolution order for the token: --token > NOTION_TOKEN env > this file > --token-secret-arn.
+
+token: "ntn_your_internal_integration_token"
+# token_secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:notion-token"
+
+# Only re-emit pages edited since this instant (incremental sync). Optional.
+since_timestamp: "2024-01-01T00:00:00Z"
+
+# Politeness pacing — 350 ms ≈ 3 calls/s (Notion's limit); stop after 3 consecutive 429s.
+rate_limit_delay_ms: 350
+max_rate_limit_errors: 3
+
+output_dir: "./output"

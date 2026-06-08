@@ -35,6 +35,37 @@ class Settings:
     # ERP
     erp_watermark_path: str = os.getenv("ERP_WATERMARK_PATH", "")  # "" => in-memory
 
+    # --- real connectors (all dev-safe: blank creds => fixture/replay mode) ---
+    # Notion
+    notion_token: str = os.getenv("NOTION_TOKEN", "")
+    notion_token_secret_arn: str = os.getenv("NOTION_TOKEN_SECRET_ARN", "")
+
+    # Gmail (Pub/Sub push, metadata only)
+    gmail_access_token: str = os.getenv("GMAIL_ACCESS_TOKEN", "")
+    gmail_pubsub_token: str = os.getenv("GMAIL_PUBSUB_TOKEN", "")          # shared-secret push auth
+    gmail_oidc_audience: str = os.getenv("GMAIL_OIDC_AUDIENCE", "")        # OIDC JWT audience
+    gmail_dev_allow_unverified: bool = _flag("GMAIL_DEV_ALLOW_UNVERIFIED", True)
+
+    # Outlook (Microsoft Graph mail webhook, metadata only)
+    outlook_access_token: str = os.getenv("OUTLOOK_ACCESS_TOKEN", "")
+    outlook_client_state: str = os.getenv("OUTLOOK_CLIENT_STATE", "")
+    outlook_dev_allow_unverified: bool = _flag("OUTLOOK_DEV_ALLOW_UNVERIFIED", True)
+
+    # SharePoint (Microsoft Graph drives/lists webhook)
+    sharepoint_access_token: str = os.getenv("SHAREPOINT_ACCESS_TOKEN", "")
+    sharepoint_client_state: str = os.getenv("SHAREPOINT_CLIENT_STATE", "")
+    sharepoint_dev_allow_unverified: bool = _flag("SHAREPOINT_DEV_ALLOW_UNVERIFIED", True)
+
+    # Microsoft 365 app credentials (shared by Outlook + SharePoint client-credentials grant)
+    ms_tenant_id: str = os.getenv("MS_TENANT_ID", "")
+    ms_client_id: str = os.getenv("MS_CLIENT_ID", "")
+    ms_client_secret: str = os.getenv("MS_CLIENT_SECRET", "")
+
+    # Database (generic SQL CDC/outbox); "" => in-memory mimic adapter
+    database_url: str = os.getenv("DATABASE_URL", "")
+    database_outbox_table: str = os.getenv("DATABASE_OUTBOX_TABLE", "signal_outbox")
+    database_watermark_path: str = os.getenv("DATABASE_WATERMARK_PATH", "")
+
     # L2 store (append-only JSONL written by the demo L2 sink)
     l2_store_path: str = os.getenv("L2_STORE_PATH", "./data/l2_store.jsonl")
 
