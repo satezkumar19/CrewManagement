@@ -709,6 +709,79 @@ def _u_demo_email() -> Probe:
                  {"body_absent": "body" not in routine.data, "intent": signoff.metadata.get("l2Intent")}, "")
 
 
+# ---- l2.store crew sign-on/off detail extraction (Day-2 live enrichment) ----
+def _u_crew_parse() -> Probe:
+    from l2.store import extract_crew_change
+    labelled = extract_crew_change(
+        "Crew Sign-Off Notification\nName: Diego Silva\nRole: Oiler\nEmail: diego@x.io\n"
+        "Crew ID: CR-1001\nVessel: MV Pacific Dawn\nPort: Rotterdam")
+    inline = extract_crew_change("Sign-off confirmed: Diego Silva (Oiler) ex MV Pacific Dawn at Rotterdam.")
+    chatter = extract_crew_change("can someone sign off on the PR when you get a sec")
+    ok = (labelled == {"action": "sign_off", "crew_member": "Diego Silva", "role": "Oiler",
+                       "email": "diego@x.io", "crew_id": "CR-1001",
+                       "vessel": "MV Pacific Dawn", "port": "Rotterdam"}
+          and inline.get("crew_member") == "Diego Silva" and inline.get("role") == "Oiler"
+          and inline.get("vessel") == "MV Pacific Dawn" and inline.get("port") == "Rotterdam"
+          and chatter is None)
+    return Probe(ok, "labelled + inline notifications, and casual chatter",
+                 {"labelled": labelled, "inline": inline, "chatter": chatter}, "")
+
+
+def _u_crew_mrkdwn() -> Probe:
+    from l2.store import extract_crew_change
+    real = extract_crew_change(  # exact Slack mrkdwn italics on labels
+        "_Crew Sign-Off Notification_\n_Crew Member:_ Diego Silva (Oiler)\n"
+        " _Vessel:_ MV Pacific Dawn\n _Port:_ Rotterdam")
+    underscores = extract_crew_change(  # underscores inside email/id must survive
+        "Sign-off\n_Name:_ Ada Lee\n_Email:_ ada_lee@x.io\n_Crew ID:_ CR_2002")
+    partial = extract_crew_change("_Sign-Off_\n_Vessel:_ MV Orion Star\n_Port:_ Busan")
+    ok = (real.get("role") == "Oiler" and real.get("crew_member") == "Diego Silva"
+          and real.get("vessel") == "MV Pacific Dawn" and real.get("port") == "Rotterdam"
+          and underscores.get("email") == "ada_lee@x.io" and underscores.get("crew_id") == "CR_2002"
+          and set(partial) == {"action", "vessel", "port"})
+    return Probe(ok, "Slack italic labels parsed; email/id underscores kept; only-present fields",
+                 {"real": real, "underscores": underscores, "partial": partial}, "")
+
+
+def _u_l2_crew_props() -> Probe:
+    ev = SignalEvent(entity="message", key={"channel_id": "C1", "ts": "1.1"},
+                     source_system=SourceSystem.SLACK, tenant_id="t",
+                     timestamp=datetime(2026, 6, 8, tzinfo=timezone.utc),
+                     data={"user": "U1", "channel": "C1", "channel_name": "#crew-changes",
+                           "text": "Sign-Off Notification\nName: Diego Silva\nRole: Oiler\n"
+                                   "Vessel: MV Pacific Dawn\nPort: Rotterdam"})
+    p = L2JsonlStore.project(ev)["props"]
+    ok = (p.get("channel") == "#crew-changes" and p.get("channel_id") == "C1"
+          and p.get("crew_member") == "Diego Silva" and p.get("role") == "Oiler"
+          and p.get("vessel") == "MV Pacific Dawn" and p.get("port") == "Rotterdam"
+          and p.get("action") == "sign_off")
+    return Probe(ok, "Slack sign-off message", p, "")
+
+
+# ---- connectors.slack Web-API enrichment (channel/user id -> name) ----
+class _FakeSlackClient:
+    api_calls = 0
+    rate_limit_hits = 0
+
+    def get_channel_info(self, cid):
+        from connectors.slack.models import ChannelInfo
+        return ChannelInfo(id=cid, name="crew-changes", is_member=True)
+
+    def get_user_info(self, uid):
+        return {"profile": {"display_name": "Diego Silva", "email": "diego@x.io"}}
+
+
+def _u_slack_enrich() -> Probe:
+    from connectors.slack import SlackConnector
+    c = SlackConnector(tenant_id="t", client=_FakeSlackClient())
+    raw = {"type": "event_callback", "event_id": "Ev-E", "team_id": "T",
+           "event": {"type": "message", "channel": "C9", "user": "U9", "text": "hi", "ts": "1.1"}}
+    ev = _run(c.ingest(raw))[0]
+    ok = ev.data.get("channel_name") == "#crew-changes" and ev.data.get("user_name") == "Diego Silva"
+    return Probe(ok, "ingest with an injected Web-API client",
+                 {"channel_name": ev.data.get("channel_name"), "user_name": ev.data.get("user_name")}, "")
+
+
 # ============================================================================ #
 # INTEGRATION SCENARIOS — through the real bus + L2 sink (or the FastAPI app)
 # ============================================================================ #
@@ -830,6 +903,27 @@ def _i_app_healthz_and_slack() -> Probe:
                  {"healthz": hz.json().get("status"), "handshake": hs.text, "ingest": msg.json()}, "")
 
 
+def _i_slack_route_raw() -> Probe:
+    # the live /slack/events route must attach the raw payload so the dashboard
+    # drawer can render raw → normalized → L2 for real (non-demo) events.
+    from fastapi.testclient import TestClient
+
+    from api.app import create_app
+    from config import Settings
+    cfg = Settings()
+    cfg.l2_store_path = str(Path(tempfile.mkdtemp(prefix="rawagent_")) / "l2.jsonl")
+    cfg.slack_signing_secret = ""   # dev-bypass for the unsigned test post
+    cfg.slack_token = ""
+    client = TestClient(create_app(settings=cfg))
+    r = client.post("/slack/events", json=_slack_message_envelope(event_id="Ev-RAW"))
+    bus = client.app.state.bus
+    raw = bus.recent[-1].get("raw") if getattr(bus, "recent", None) else None
+    ok = (r.status_code == 200 and r.json().get("ingested") == 1
+          and raw is not None and raw.get("event_id") == "Ev-RAW")
+    return Probe(ok, "POST /slack/events then inspect the dashboard payload",
+                 {"ingested": r.json().get("ingested"), "raw_event_id": (raw or {}).get("event_id")}, "")
+
+
 # ============================================================================ #
 # Registry
 # ============================================================================ #
@@ -913,6 +1007,18 @@ SCENARIOS: list[Scenario] = [
        "the OutputWriter emits one JSONL record per event", _u_common_writer),
     _s("u-demo-email", "demo email normalizer", UNIT, "demo.email_normalize", ["demo.email_normalize"],
        "routine and sign-off emails normalize metadata-only with tz-aware timestamps", _u_demo_email),
+    _s("u-crew-parse", "crew sign-off parser", UNIT, "l2.store", ["l2.store"],
+       "labelled + inline sign-off notices parse to crew_member/role/email/crew_id/vessel/port; chatter→none",
+       _u_crew_parse),
+    _s("u-crew-mrkdwn", "crew parser handles Slack mrkdwn", UNIT, "l2.store", ["l2.store"],
+       "Slack italic labels (_Role:_) parse; underscores in emails/ids preserved; only present fields kept",
+       _u_crew_mrkdwn),
+    _s("u-l2-crew-props", "L2 props enriched with crew + channel", UNIT, "l2.store", ["l2.store"],
+       "a Slack sign-off message projects with crew details + resolved channel name/id in props",
+       _u_l2_crew_props),
+    _s("u-slack-enrich", "Slack channel/user name resolution", UNIT, "slack", ["connectors.slack"],
+       "the connector resolves channel & user ids to human names via the Web API (injected client)",
+       _u_slack_enrich),
 
     # ---------------- INTEGRATION ----------------
     _s("i-slack-pipe", "Slack -> bus -> L2", INTEGRATION, "slack", ["connectors.slack", "core.bus", "l2.store"],
@@ -944,6 +1050,10 @@ SCENARIOS: list[Scenario] = [
        ["connectors.slack", "core.bus", "l2.store"],
        "the running app answers /healthz and the Slack route ingests a handshake + a message",
        _i_app_healthz_and_slack),
+    _s("i-slack-route-raw", "live route captures raw ingress", INTEGRATION, "api",
+       ["connectors.slack", "core.bus", "l2.store"],
+       "POST /slack/events attaches the raw payload so the dashboard drawer shows raw → normalized → L2",
+       _i_slack_route_raw),
 ]
 
 

@@ -167,6 +167,14 @@ ADVANCED_ROADMAP = [
     ("Observability", "platform",
      "Per-connector metrics (events/sec, lag vs deltaLink, dup-rate, subscriber-fail count, "
      "renewal failures) on the dashboard + alerts, so the live integration is operable, not just runnable."),
+    ("Structured crew-notice parsing", "slack + email",
+     "The crew sign-on/off props are lifted by regex/mrkdwn heuristics today. Parse Slack Block Kit "
+     "rich_text blocks (already in the event) and add an NER/LLM fallback for free-form notices, so "
+     "crew_member/role/vessel/port survive arbitrary phrasing — and reconcile the parsed crew_id "
+     "against the ERP crew row."),
+    ("Persistent enrichment cache", "slack",
+     "Channel/user name lookups are cached in-process; persist them (Redis) and pre-warm via "
+     "conversations.list/users.list so a restart doesn't re-hit the Slack API under rate limits."),
 ]
 
 
@@ -251,8 +259,9 @@ class CriticAgent:
         print("\n[3] WHAT WE HAVE CURRENTLY")
         print("-" * 96)
         have = [
-            ("Slack ingress", caps["slack_connector"],
-             "verify (handshake + HMAC + replay guard) + ingest + event_id dedup"),
+            ("Slack ingress (LIVE)", caps["slack_connector"],
+             "HMAC verify + ingest + event_id dedup; resolves channel/user ids → names; "
+             "live route captures raw payload for the dashboard drawer"),
             ("ERP ingress", caps["erp_connector"],
              "outbox poll across 3 systems + watermark + lossless resume"),
             ("Gmail (LIVE)", caps["gmail_connector"],
@@ -270,7 +279,8 @@ class CriticAgent:
             ("Event bus", caps["inmemory_bus"],
              "InMemoryBus: central dedup_id dedup + subscriber fan-out + replay + isolation"),
             ("L2 sink", caps["l2_sink"],
-             "projects to OrgMap edge / entity node / SignOffEvent node"),
+             "projects to OrgMap edge / entity node / SignOffEvent node; parses crew sign-on/off "
+             "notices (crew_member, role, email, crew_id, vessel, port — Slack-mrkdwn aware) into props"),
         ]
         for name, ok, desc in have:
             print(f"  [{'x' if ok else ' '}] {name:<22} {desc}")
