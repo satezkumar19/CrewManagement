@@ -73,3 +73,7 @@ python -m connectors.database.cli poll    --url postgresql+psycopg2://u:p@h/db -
 
 Credentials resolve as: CLI flag → environment variable → YAML `--config` → AWS
 Secrets Manager ARN. See `config.py` for every env var.
+
+To create and configure a **real** account/app for each connector (Slack app,
+Google Cloud + Pub/Sub, Azure AD app, Notion integration, SQL outbox) for a live
+demo, follow [`../docs/CONNECTOR_SETUP.md`](../docs/CONNECTOR_SETUP.md).

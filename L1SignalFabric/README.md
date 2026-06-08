@@ -113,6 +113,12 @@ auto-upgrades that connector to **live** with no other change. The wiring is in
 **Credential resolution order** (highest first): CLI flag → environment variable
 → YAML `--config` file → AWS Secrets Manager ARN (`pip install -e ".[aws]"`).
 
+> **Setting up real accounts?** [`docs/CONNECTOR_SETUP.md`](docs/CONNECTOR_SETUP.md)
+> ([`.docx`](docs/L1_SignalFabric_Connector_Setup.docx)) is a step-by-step guide to
+> creating and configuring an app/account for every connector (Slack app, Google
+> Cloud + Pub/Sub, Azure AD app for Outlook/SharePoint, Notion integration, SQL
+> outbox) for a **live** demo.
+
 ### Configuration (environment variables)
 
 ```bash
