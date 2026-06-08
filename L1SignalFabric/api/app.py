@@ -27,12 +27,13 @@ from connectors.sharepoint import SharePointConnector
 from connectors.slack import SlackConnector
 from core.bus import EventBus, InMemoryBus
 from core.watermark import FileWatermarkStore
-from l2 import L2JsonlStore
+from l2 import L2JsonlStore, OrgMap
 
 from . import live
 from .routes import graph_webhooks, gmail, health, slack
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("signalfabric.api.app")
 
 
 def create_app(
@@ -54,15 +55,28 @@ def create_app(
     #       * BroadcastBus (SSE viewer, default) — single sink via set_sink()
     #       * InMemoryBus (core transport)       — subscribe() the sink (fan-out)
     #     Either way "no change to any connector or route" (README seam). ---
+    #     Each projected record is also upserted into the in-memory OrgMap graph
+    #     (the real-graph counterpart to the JSONL store) for the OrgMap viewer.
     app.state.l2_store = None
-    if isinstance(bus_obj, live.BroadcastBus):
+    app.state.orgmap = None
+    if isinstance(bus_obj, (live.BroadcastBus, InMemoryBus)):
         store = L2JsonlStore(cfg.l2_store_path)
+        orgmap = OrgMap()
         app.state.l2_store = store
-        bus_obj.set_sink(store.append)
-    elif isinstance(bus_obj, InMemoryBus):
-        store = L2JsonlStore(cfg.l2_store_path)
-        app.state.l2_store = store
-        bus_obj.subscribe(store.append)
+        app.state.orgmap = orgmap
+
+        def _l2_sink(event, _store=store, _orgmap=orgmap):
+            rec = _store.append(event)
+            try:
+                _orgmap.upsert(rec)          # graph upsert is best-effort; never breaks the sink
+            except Exception:
+                logger.exception("orgmap upsert failed")
+            return rec
+
+        if isinstance(bus_obj, live.BroadcastBus):
+            bus_obj.set_sink(_l2_sink)       # single sink (drives SSE counters)
+        else:
+            bus_obj.subscribe(_l2_sink)      # fan-out subscriber
 
     # --- connectors ---
     # Each real connector boots in dev/fixture mode when its credentials are

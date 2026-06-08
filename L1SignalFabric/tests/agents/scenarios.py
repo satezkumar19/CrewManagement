@@ -110,6 +110,7 @@ COMPONENTS: list[tuple[str, str]] = [
     ("core.watermark", "Checkpoint stores — lossless resume"),
     ("core.connector", "Connector contract — verify outcomes / InboundRequest"),
     ("l2.store", "L2 projection — edge / node / SignOffEvent"),
+    ("l2.orgmap", "OrgMap graph — upsert nodes/edges, deduped"),
     ("connectors.slack", "Slack connector — verify + ingest + mappers"),
     ("connectors.erp", "ERP outbox connector"),
     ("connectors.gmail", "Gmail connector — Pub/Sub push + history"),
@@ -717,14 +718,18 @@ def _u_crew_parse() -> Probe:
         "Crew ID: CR-1001\nVessel: MV Pacific Dawn\nPort: Rotterdam")
     inline = extract_crew_change("Sign-off confirmed: Diego Silva (Oiler) ex MV Pacific Dawn at Rotterdam.")
     chatter = extract_crew_change("can someone sign off on the PR when you get a sec")
+    # a sign-ON that references the relieved person's sign-off must stay sign_on
+    reliever = extract_crew_change("Sign-on completed: Arjun Nair (Oiler) relieving Diego "
+                                   "who signed off MV Pacific Dawn at Rotterdam.")
     ok = (labelled == {"action": "sign_off", "crew_member": "Diego Silva", "role": "Oiler",
                        "email": "diego@x.io", "crew_id": "CR-1001",
                        "vessel": "MV Pacific Dawn", "port": "Rotterdam"}
           and inline.get("crew_member") == "Diego Silva" and inline.get("role") == "Oiler"
           and inline.get("vessel") == "MV Pacific Dawn" and inline.get("port") == "Rotterdam"
-          and chatter is None)
-    return Probe(ok, "labelled + inline notifications, and casual chatter",
-                 {"labelled": labelled, "inline": inline, "chatter": chatter}, "")
+          and chatter is None
+          and reliever.get("action") == "sign_on" and reliever.get("crew_member") == "Arjun Nair")
+    return Probe(ok, "labelled + inline + reliever sign-on + casual chatter",
+                 {"labelled": labelled, "inline": inline, "reliever": reliever, "chatter": chatter}, "")
 
 
 def _u_crew_mrkdwn() -> Probe:
@@ -780,6 +785,49 @@ def _u_slack_enrich() -> Probe:
     ok = ev.data.get("channel_name") == "#crew-changes" and ev.data.get("user_name") == "Diego Silva"
     return Probe(ok, "ingest with an injected Web-API client",
                  {"channel_name": ev.data.get("channel_name"), "user_name": ev.data.get("user_name")}, "")
+
+
+# ---- l2.orgmap upsert graph ----
+def _u_orgmap_upsert() -> Probe:
+    from l2.orgmap import OrgMap
+    om = OrgMap()
+    slack = SignalEvent(entity="message", key={"channel_id": "C1", "ts": "1.1"},
+                        source_system=SourceSystem.SLACK, tenant_id="t",
+                        timestamp=datetime(2026, 6, 8, tzinfo=timezone.utc),
+                        data={"user": "U1", "channel": "C1", "channel_name": "#crew-changes",
+                              "text": "Sign-Off Notification\nName: Diego Silva\nRole: Oiler\n"
+                                      "Vessel: MV Pacific Dawn\nPort: Rotterdam"})
+    rec = L2JsonlStore.project(slack)
+    om.upsert(rec)
+    om.upsert(rec)                       # identical event again → upsert, not duplicate
+    s = om.stats()
+    person = om.nodes.get("person:U1")
+    labels = set(s["by_node_label"])
+    ok = (person is not None and person["count"] == 2
+          and {"Person", "Channel", "Crew", "Vessel", "Port"} <= labels
+          and "ON_VESSEL" in s["by_edge_label"])
+    return Probe(ok, "two identical Slack sign-offs",
+                 {"nodes": s["nodes"], "edges": s["edges"],
+                  "person_count": person["count"] if person else None, "labels": sorted(labels)}, "")
+
+
+# ---- core.bus dead-letter queue ----
+def _u_bus_dlq() -> Probe:
+    bus = InMemoryBus()
+    good: list = []
+
+    def bad(_e):
+        raise RuntimeError("poison")
+
+    bus.subscribe(bad)
+    bus.subscribe(good.append)
+    _run(bus.publish(_sample_event()))
+    dl = bus.dlq.recent()
+    ok = (len(good) == 1 and bus.dlq.count == 1 and bus.stats()["dead_letters"] == 1
+          and bool(dl) and dl[0]["error"].startswith("RuntimeError"))
+    return Probe(ok, "publish with a poison subscriber + a good one",
+                 {"good_received": len(good), "dlq_count": bus.dlq.count,
+                  "dlq_error": dl[0]["error"] if dl else None}, "")
 
 
 # ============================================================================ #
@@ -924,6 +972,30 @@ def _i_slack_route_raw() -> Probe:
                  {"ingested": r.json().get("ingested"), "raw_event_id": (raw or {}).get("event_id")}, "")
 
 
+def _i_orgmap_graph() -> Probe:
+    # a Slack sign-off flows through the app and upserts the OrgMap graph
+    from fastapi.testclient import TestClient
+
+    from api.app import create_app
+    from config import Settings
+    cfg = Settings()
+    cfg.l2_store_path = str(Path(tempfile.mkdtemp(prefix="omagent_")) / "l2.jsonl")
+    cfg.slack_signing_secret = ""
+    cfg.slack_token = ""
+    client = TestClient(create_app(settings=cfg))
+    env = _slack_message_envelope(event_id="Ev-OM")
+    env["event"]["text"] = ("Sign-Off Notification\nName: Diego Silva\nRole: Oiler\n"
+                            "Vessel: MV Pacific Dawn\nPort: Rotterdam")
+    client.post("/slack/events", json=env)
+    om = client.get("/orgmap").json()
+    dlq = client.get("/bus/dlq").json()
+    labels = {n["label"] for n in om["nodes"]}
+    ok = (om["stats"]["nodes"] >= 4 and {"Person", "Crew", "Vessel"} <= labels
+          and dlq.get("count") == 0)
+    return Probe(ok, "POST /slack/events → GET /orgmap + /bus/dlq",
+                 {"nodes": om["stats"]["nodes"], "labels": sorted(labels), "dlq": dlq.get("count")}, "")
+
+
 # ============================================================================ #
 # Registry
 # ============================================================================ #
@@ -1019,6 +1091,12 @@ SCENARIOS: list[Scenario] = [
     _s("u-slack-enrich", "Slack channel/user name resolution", UNIT, "slack", ["connectors.slack"],
        "the connector resolves channel & user ids to human names via the Web API (injected client)",
        _u_slack_enrich),
+    _s("u-orgmap-upsert", "OrgMap upsert graph", UNIT, "l2.orgmap", ["l2.orgmap"],
+       "identical events upsert (not duplicate) into deduped Person/Channel/Crew/Vessel/Port nodes + edges",
+       _u_orgmap_upsert),
+    _s("u-bus-dlq", "bus dead-letter queue", UNIT, "core.bus", ["core.bus"],
+       "a poison subscriber is isolated and recorded in the DLQ; the good subscriber still receives",
+       _u_bus_dlq),
 
     # ---------------- INTEGRATION ----------------
     _s("i-slack-pipe", "Slack -> bus -> L2", INTEGRATION, "slack", ["connectors.slack", "core.bus", "l2.store"],
@@ -1054,6 +1132,10 @@ SCENARIOS: list[Scenario] = [
        ["connectors.slack", "core.bus", "l2.store"],
        "POST /slack/events attaches the raw payload so the dashboard drawer shows raw → normalized → L2",
        _i_slack_route_raw),
+    _s("i-orgmap-graph", "live OrgMap graph upsert", INTEGRATION, "api",
+       ["l2.orgmap", "core.bus", "l2.store"],
+       "a Slack sign-off through the app upserts the OrgMap (Person/Crew/Vessel) and /bus/dlq stays empty",
+       _i_orgmap_graph),
 ]
 
 
@@ -1186,6 +1268,7 @@ def probe_capabilities() -> dict[str, bool]:
         "common_infra": _importable("connectors.common"),
         "inmemory_bus": True,
         "l2_sink": _importable("l2"),
+        "orgmap_graph": _importable("l2") and hasattr(importlib.import_module("l2"), "OrgMap"),
         "email_normalizer_demo": _importable("demo.email_normalize"),
         "sharepoint_enum": "SHAREPOINT" in SourceSystem.__members__,
         "redis_streams_bus": hasattr(busmod, "RedisStreamsBus"),

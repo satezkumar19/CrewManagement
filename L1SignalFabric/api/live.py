@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import random
 import subprocess
@@ -30,9 +31,11 @@ from typing import Any, Callable, Optional
 from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse, StreamingResponse
 
-from core.bus import InMemoryBus
+from core.bus import DeadLetterQueue, InMemoryBus
 from core.signal import SignalEvent
 from demo.email_normalize import email_to_signal
+
+logger = logging.getLogger("signalfabric.api.live")
 
 _STATIC = Path(__file__).parent / "static"
 
@@ -52,6 +55,7 @@ class BroadcastBus:
         # subscribers here — the L2 sink stays wired via set_sink — so it adds
         # the bus's idempotency view alongside the viewer stream.
         self.inmem = InMemoryBus()
+        self.dlq = DeadLetterQueue()     # capture L2-sink failures (isolated, recorded)
         self.recent: deque[dict] = deque(maxlen=keep_last)
         self.recent_buslog: deque[dict] = deque(maxlen=keep_last)
         # stage counters
@@ -84,9 +88,13 @@ class BroadcastBus:
 
         l2rec: Optional[dict] = None
         if self._sink is not None:
-            l2rec = self._sink(event)
-            if l2rec is not None:
-                self.l2 += 1
+            try:                                  # a failing sink is isolated + dead-lettered,
+                l2rec = self._sink(event)         # never breaking the live stream
+                if l2rec is not None:
+                    self.l2 += 1
+            except Exception as exc:
+                self.dlq.add(event, exc, subscriber="l2_sink")
+                logger.exception("[live] L2 sink failed for %s (dead-lettered)", event.event_id)
 
         payload = self._payload(event, l2rec, is_signoff)
         self.recent.append(payload)
@@ -133,10 +141,12 @@ class BroadcastBus:
         }
 
     def snapshot(self) -> dict[str, Any]:
+        stats = self.inmem.stats()
+        stats["dead_letters"] = self.dlq.count   # surface the live sink DLQ in the UI
         return {"type": "snapshot", "totals": self.totals(),
                 "recent": list(self.recent)[-60:],
                 "buslog": list(self.recent_buslog)[-80:],
-                "bus_stats": self.inmem.stats()}
+                "bus_stats": stats}
 
     @staticmethod
     def _summary(ev: SignalEvent) -> str:
@@ -196,6 +206,26 @@ async def bus_log(request: Request, n: int = 200) -> dict:
     if inmem is None:
         return {"lines": [], "stats": None}
     return {"lines": inmem.recent_log(n), "stats": inmem.stats()}
+
+
+@router.get("/orgmap")
+async def orgmap(request: Request, nodes: int = 300, edges: int = 600) -> dict:
+    """Snapshot of the live OrgMap knowledge graph (nodes + edges + label stats),
+    upserted from every projected L2 record. Drives the OrgMap viewer tab."""
+    om = getattr(request.app.state, "orgmap", None)
+    if om is None:
+        return {"nodes": [], "edges": [], "stats": {"nodes": 0, "edges": 0}}
+    return om.snapshot(limit_nodes=nodes, limit_edges=edges)
+
+
+@router.get("/bus/dlq")
+async def bus_dlq(request: Request, n: int = 100) -> dict:
+    """Dead-letter queue: events whose L2 sink raised (isolated + recorded)."""
+    bus = request.app.state.bus
+    dlq = getattr(bus, "dlq", None)
+    if dlq is None:
+        return {"count": 0, "items": []}
+    return {"count": dlq.count, "items": dlq.recent(n)}
 
 
 @router.get("/stream")

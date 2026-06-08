@@ -281,12 +281,18 @@ class CriticAgent:
             ("L2 sink", caps["l2_sink"],
              "projects to OrgMap edge / entity node / SignOffEvent node; parses crew sign-on/off "
              "notices (crew_member, role, email, crew_id, vessel, port — Slack-mrkdwn aware) into props"),
+            ("OrgMap graph", caps.get("orgmap_graph"),
+             "in-memory knowledge graph upserted from the L2 stream (Person/Channel/Crew/Vessel/Port/"
+             "SignOffEvent nodes + edges, deduped) with a live viewer tab (GET /orgmap)"),
+            ("Dead-letter queue", caps["durable_dlq"],
+             "a failing L2 sink/subscriber is isolated AND recorded in the bus DLQ (GET /bus/dlq), "
+             "surfaced on the dashboard — no longer just a logged seam"),
         ]
         for name, ok, desc in have:
             print(f"  [{'x' if ok else ' '}] {name:<22} {desc}")
         print("\n  Still open (platform hardening, not the email/SharePoint feature):")
         print(f"  [{'x' if caps['redis_streams_bus'] else ' '}] RedisStreamsBus (durable transport, Day-4)")
-        print(f"  [{'x' if caps['durable_dlq'] else ' '}] Durable dead-letter queue (subscriber-isolation seam today)")
+        print("  [ ] Persist the DLQ + OrgMap off-process (Redis/graph DB) so they survive restarts")
 
     # ---- section 4: what to correct / build -------------------------------
     def _section_correct(self, results: list[ScenarioResult]) -> None:

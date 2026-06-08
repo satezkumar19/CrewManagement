@@ -41,6 +41,20 @@ _ACTION_PATTERNS = (
     ("sign_off", re.compile(r"sign[\s-]?off|signing off|signed off", re.I)),
     ("sign_on", re.compile(r"sign[\s-]?on|signing on|signed on", re.I)),
 )
+
+
+def _detect_action(text: str) -> Optional[str]:
+    """sign_on vs sign_off by **earliest mention** — a notification states its own
+    type first, so a sign-on that later references the relieved person's sign-off
+    is still classified sign_on (not sign_off just because it appears in the list
+    first)."""
+    best: Optional[str] = None
+    best_pos: Optional[int] = None
+    for name, rx in _ACTION_PATTERNS:
+        m = rx.search(text)
+        if m and (best_pos is None or m.start() < best_pos):
+            best, best_pos = name, m.start()
+    return best
 # any "Key: Value" line is captured dynamically; these aliases map a label to its
 # canonical prop name (so "Name", "Seafarer", "Crew Member" all → crew_member).
 _LABEL_ALIASES = {
@@ -142,7 +156,7 @@ def extract_crew_change(text: Optional[str]) -> Optional[dict[str, str]]:
     if not any(k in out for k in _DETAIL_KEYS):
         return None  # no concrete details — leave it as plain chatter
 
-    action = next((a for a, rx in _ACTION_PATTERNS if rx.search(text)), None)
+    action = _detect_action(text)
     return {**({"action": action} if action else {}), **out}
 
 

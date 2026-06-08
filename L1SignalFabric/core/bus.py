@@ -26,6 +26,39 @@ logger = logging.getLogger("signalfabric.bus")
 Subscriber = Callable[[SignalEvent], Union[None, Awaitable[None]]]
 
 
+class DeadLetterQueue:
+    """Durable-ish capture of deliveries that failed after their retries.
+
+    A bounded ring of the events whose subscriber raised, with the error and a
+    timestamp — so a poison event is *isolated and recorded* (inspectable via the
+    dashboard) rather than silently dropped. The Day-4 ``RedisStreamsBus`` backs
+    the same surface with a Redis pending-entries-list / XCLAIM."""
+
+    def __init__(self, maxlen: int = 500) -> None:
+        self._items: Deque[dict] = deque(maxlen=maxlen)
+        self.total = 0
+
+    def add(self, event: SignalEvent, error: BaseException, *, subscriber: str = "") -> None:
+        self.total += 1
+        self._items.append({
+            "event_id": event.event_id,
+            "dedup_id": event.dedup_id[:8],
+            "source": event.source_system.value,
+            "entity": event.entity,
+            "key": event.key,
+            "subscriber": subscriber,
+            "error": f"{type(error).__name__}: {error}"[:300],
+            "ts": utcnow().isoformat(),
+        })
+
+    def recent(self, n: int = 100) -> List[dict]:
+        return list(self._items)[-n:]
+
+    @property
+    def count(self) -> int:
+        return self.total
+
+
 @runtime_checkable
 class EventBus(Protocol):
     """Anything a connector can publish a normalized event to."""
@@ -86,8 +119,13 @@ class InMemoryBus:
     """
 
     def __init__(self, *, history: int = 500, dedup_window: int = 50_000,
-                 log_buffer: int = 500) -> None:
+                 log_buffer: int = 500, subscriber_retries: int = 0) -> None:
         self._subscribers: List[Subscriber] = []
+        # retry a failing subscriber this many extra times before dead-lettering
+        # (default 0 — preserves the original call-once behaviour); the DLQ keeps
+        # any event whose subscriber still fails, so it is never silently lost.
+        self._subscriber_retries = subscriber_retries
+        self.dlq = DeadLetterQueue()
         self._history: Deque[SignalEvent] = deque(maxlen=history)
         self._seen: "OrderedDict[str, None]" = OrderedDict()
         self._dedup_window = dedup_window
@@ -147,13 +185,22 @@ class InMemoryBus:
                            f"key={event.key} dedup={dkey[:8]} -> subs={len(self._subscribers)}")
 
         for subscriber in list(self._subscribers):
-            try:
-                result = subscriber(event)
-                if inspect.isawaitable(result):
-                    await result
-            except Exception:  # a bad subscriber must not lose the event for others
-                self._emit("error", f"SUBSCRIBER-FAIL {event.event_id}")
-                logger.exception("[bus] subscriber failed for %s", event.event_id)
+            last_exc: Optional[BaseException] = None
+            for attempt in range(self._subscriber_retries + 1):
+                try:
+                    result = subscriber(event)
+                    if inspect.isawaitable(result):
+                        await result
+                    last_exc = None
+                    break
+                except Exception as exc:  # a bad subscriber must not lose the event for others
+                    last_exc = exc
+            if last_exc is not None:
+                # isolated + recorded: log, dead-letter, and move on to the next subscriber
+                self.dlq.add(event, last_exc,
+                             subscriber=getattr(subscriber, "__name__", repr(subscriber)))
+                self._emit("error", f"SUBSCRIBER-FAIL {event.event_id} -> DLQ (#{self.dlq.count})")
+                logger.exception("[bus] subscriber failed for %s (dead-lettered)", event.event_id)
 
     # --- replay (bring a late subscriber / viewer current) ---
     def replay(self) -> List[SignalEvent]:
@@ -170,6 +217,7 @@ class InMemoryBus:
             "duplicates_dropped": self.duplicate_count,
             "subscribers": len(self._subscribers),
             "history_size": len(self._history),
+            "dead_letters": self.dlq.count,
             "by_source": dict(self.by_source),
             "by_entity": dict(self.by_entity),
         }

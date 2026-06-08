@@ -189,8 +189,22 @@
       <button type="button" onclick="start()">Start live</button>
       <button type="button" onclick="backlog()">Load history</button>
       <button type="button" class="stop" onclick="stop()">■ Stop</button>
+      <button type="button" id="btn-orgmap" onclick="toggleOrgMap()" style="margin-left:auto">🕸️ OrgMap</button>
     </div>
     <div id="rows" class="feed-rows"></div>
+    <!-- OrgMap graph: toggled in-place over the live tail by the OrgMap button -->
+    <div id="orgview" hidden>
+      <div class="toolbar" style="border-top:1px solid var(--line)">
+        <button type="button" onclick="loadOrgMap()">↻ Refresh</button>
+        <span id="orgstats" style="color:var(--muted)">0 nodes · 0 edges</span>
+        <span id="orglegend" style="display:flex;gap:10px;flex-wrap:wrap;margin-left:8px"></span>
+        <span class="hint" style="padding:0;margin-left:auto">deduped &amp; upserted from the L2 stream · ×N = mentions · auto-refresh</span>
+      </div>
+      <div style="overflow:auto;max-height:58vh;background:#070b18">
+        <canvas id="orggraph" style="display:block"></canvas>
+        <div id="orgempty" class="hint">No graph yet — <b>Load history</b> or post a Slack message, then ↻ Refresh.</div>
+      </div>
+    </div>
   </section>
 
   <!-- bus log -->
@@ -218,6 +232,7 @@
     </div>
     <div id="agentout" class="console" style="white-space:pre-wrap">Click <b>Run Test Agent</b> or <b>Run Critic Agent</b> to run the harness on the server and see its output here.</div>
   </section>
+
 </div>
 
 <!-- detail drawer: raw → normalized → L2 for a clicked live-tail row -->
@@ -255,6 +270,16 @@ function showTab(name){
   });
   if(name === "tail"){ unread = 0; const b=$("tailbadge"); b.hidden=true; b.textContent="0"; }
   if(name === "buslog"){ busUnread = 0; const b=$("busbadge"); b.hidden=true; b.textContent="0"; }
+}
+
+// OrgMap is toggled in-place inside the Live tail panel by the OrgMap button.
+function toggleOrgMap(){
+  const show = $("orgview").hidden;            // currently hidden → turn it on
+  $("orgview").hidden = !show;
+  $("rows").hidden = show;
+  $("btn-orgmap").classList.toggle("primary", show);
+  $("btn-orgmap").textContent = show ? "← Live rows" : "🕸️ OrgMap";
+  if(show) loadOrgMap();
 }
 
 function setTotals(t){
@@ -317,8 +342,77 @@ function addBusLine(d){
 }
 function setBusStats(s){
   if(!s) return;
-  $("busstats").textContent = `published ${s.published ?? 0} · dup-drop ${s.duplicates_dropped ?? 0} · subs ${s.subscribers ?? 0}`;
+  const dlq = s.dead_letters ?? 0;
+  $("busstats").textContent = `published ${s.published ?? 0} · dup-drop ${s.duplicates_dropped ?? 0} · `+
+    `subs ${s.subscribers ?? 0} · DLQ ${dlq}`;
 }
+
+// ---- OrgMap graph viewer ----
+const ORG_COLORS = {Person:"#7c5cff",Channel:"#22c55e",Crew:"#f59e0b",Vessel:"#ec4899",
+  Port:"#06b6d4",SignOffEvent:"#f43f5e",Contract:"#06b6d4",Vessel_Port:"#ec4899"};
+const ORG_ORDER = ["Person","Channel","Crew","Vessel","Port","SignOffEvent"];
+function orgColor(l){ return ORG_COLORS[l] || "#64748b"; }
+
+async function loadOrgMap(){
+  let d;
+  try { d = await (await fetch("/orgmap?nodes=200&edges=400")).json(); }
+  catch(e){ $("orgstats").textContent = "error: "+e; return; }
+  const s = d.stats || {};
+  $("orgstats").textContent = `${s.nodes||0} nodes · ${s.edges||0} edges · ${s.upserts||0} upserts`;
+  $("orgempty").style.display = (d.nodes && d.nodes.length) ? "none" : "block";
+  drawOrgMap(d);
+}
+function drawOrgMap(d){
+  const cv = $("orggraph"); const ctx = cv.getContext("2d");
+  const nodes = d.nodes||[], edges = d.edges||[];
+  const labels = [...new Set(nodes.map(n=>n.label))].sort((a,b)=>{
+    const ia=ORG_ORDER.indexOf(a), ib=ORG_ORDER.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib) || a.localeCompare(b);
+  });
+  // legend
+  $("orglegend").innerHTML = labels.map(l=>
+    `<span style="font-size:11px;color:var(--muted)"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${orgColor(l)};margin-right:4px"></span>${l}</span>`).join("");
+  const PER=20, COLW=210, ROWH=30, PADX=20, PADTOP=46;
+  const colNodes={}; labels.forEach(l=>colNodes[l]=[]);
+  nodes.forEach(n=>colNodes[n.label].push(n));
+  let maxRows=1; labels.forEach(l=>maxRows=Math.max(maxRows, Math.min(colNodes[l].length,PER)));
+  const W=Math.max(1, PADX*2+labels.length*COLW), H=PADTOP+maxRows*ROWH+20;
+  const dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+"px"; cv.style.height=H+"px";
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  ctx.font="11px ui-monospace,Menlo,Consolas,monospace";
+  const pos={};
+  labels.forEach((l,ci)=>{
+    const left = PADX+ci*COLW;
+    ctx.fillStyle="#8da2c8"; ctx.textAlign="left";
+    ctx.fillText(`${l} (${colNodes[l].length})`, left, PADTOP-22);
+    colNodes[l].slice(0,PER).forEach((n,r)=>{ pos[n.id]={x:left+8, y:PADTOP+r*ROWH}; });
+  });
+  // edges under nodes
+  edges.forEach(e=>{
+    const a=pos[e.src], b=pos[e.dst]; if(!a||!b) return;
+    ctx.strokeStyle="rgba(140,162,200,.22)"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y);
+    const mx=(a.x+b.x)/2; ctx.bezierCurveTo(mx,a.y,mx,b.y,b.x,b.y); ctx.stroke();
+  });
+  // nodes
+  labels.forEach(l=>{
+    colNodes[l].slice(0,PER).forEach(n=>{
+      const p=pos[n.id]; if(!p) return;
+      ctx.fillStyle=orgColor(l);
+      ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#e6ecff"; ctx.textAlign="left";
+      const nm=(n.props&&(n.props.name||n.props.subject))||n.id;
+      ctx.fillText(String(nm).slice(0,22)+(n.count>1?"  ×"+n.count:""), p.x+10, p.y+4);
+    });
+    if(colNodes[l].length>PER){
+      const left=PADX+labels.indexOf(l)*COLW;
+      ctx.fillStyle="#5f719b"; ctx.fillText(`+${colNodes[l].length-PER} more…`, left+8, PADTOP+PER*ROWH);
+    }
+  });
+}
+// auto-refresh the graph while it's toggled on inside the Live tail tab
+setInterval(()=>{ if(!$("panel-tail").hidden && !$("orgview").hidden) loadOrgMap(); }, 5000);
 function clearBusLog(){ $("buslog").innerHTML=""; }
 
 // ---- detail drawer: raw → normalized → L2 for a clicked row ----
