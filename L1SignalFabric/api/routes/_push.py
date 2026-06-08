@@ -56,5 +56,8 @@ async def handle_push(request: Request, connector, *, source: str) -> Response:
         bus.note_ingress(source)
     events = await connector.ingest(inbound.json or {})
     for event in events:
+        # carry the raw webhook push so the dashboard drawer can show
+        # raw → normalized → L2 for live events (not just demo injections).
+        event.metadata["_ingress_raw"] = inbound.json
         await bus.publish(event)
     return JSONResponse({"ok": True, "ingested": len(events)})

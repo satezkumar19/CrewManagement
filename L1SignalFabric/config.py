@@ -7,6 +7,7 @@ default so a fresh checkout boots and the Day-1 demo runs without secrets.
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,7 +20,10 @@ def _load_dotenv() -> None:
 
     Real process env always wins (an exported var overrides the file), so this
     only fills in what isn't already set. Searches this service dir first, then
-    the sibling ``backend/.env`` (shared monorepo secrets)."""
+    the sibling ``backend/.env`` (shared monorepo secrets). Skipped under pytest
+    so the suite always runs against clean dev-safe defaults (no real secrets)."""
+    if "pytest" in sys.modules:
+        return
     here = Path(__file__).resolve().parent
     for candidate in (here / ".env", here.parent / "backend" / ".env"):
         if not candidate.is_file():
@@ -50,6 +54,7 @@ class Settings:
 
     # Slack
     slack_signing_secret: str = os.getenv("SLACK_SIGNING_SECRET", "")
+    slack_token: str = os.getenv("SLACK_TOKEN", "")  # bot token (xoxb-…) — channel/user enrichment
     # When no signing secret is configured (local dev / demo), accept unsigned
     # requests so the url_verification handshake and replayed fixtures work.
     slack_dev_allow_unverified: bool = _flag("SLACK_DEV_ALLOW_UNVERIFIED", True)

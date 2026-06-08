@@ -17,6 +17,7 @@ semantics on ``X-Slack-Retry-Num``.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any, Optional
 
@@ -40,6 +41,8 @@ class SlackConnector(EventStreamConnector):
         signing_secret: str = "",
         dev_allow_unverified: bool = True,
         replay_window_sec: int = 300,
+        token: str = "",
+        client: Any = None,
     ) -> None:
         self._tenant_id = tenant_id
         self._signing_secret = signing_secret
@@ -47,6 +50,13 @@ class SlackConnector(EventStreamConnector):
         self._replay_window_sec = replay_window_sec
         # in-memory seen-set of Slack event_ids (Day-1 dedup; Day-2 → bus dedup)
         self._seen_event_ids: set[str] = set()
+        # optional Web-API enrichment: resolve channel/user ids → human names
+        # (needs a bot token with channels:read + users:read). Cached per id.
+        self._token = token
+        self._client = client
+        self._users: Any = None
+        self._channel_names: dict[str, str] = {}
+        self._user_names: dict[str, str] = {}
 
     # ------------------------------------------------------------------ verify
     def verify(self, request: InboundRequest) -> VerifyResult:
@@ -97,4 +107,74 @@ class SlackConnector(EventStreamConnector):
             logger.debug("slack event type ignored: %s", event.get("type"))
             return []
 
-        return [mapper(event, raw, self._tenant_id)]
+        events = [mapper(event, raw, self._tenant_id)]
+        await self._enrich(events)
+        return events
+
+    # --------------------------------------------------------------- enrichment
+    def _ensure_client(self) -> Any:
+        """Build the Web-API client + user cache lazily from the bot token."""
+        if self._client is None and self._token:
+            try:
+                from connectors.common import StructuredLogger
+
+                from .client import SlackClient
+                from .user_cache import UserCache
+                log = StructuredLogger(console_output=False)
+                self._client = SlackClient(self._token, log)
+                self._users = UserCache(self._client, log)
+            except Exception as exc:  # missing dep / bad token — enrichment is best-effort
+                logger.warning("slack enrichment disabled: %s", exc)
+                self._client = None
+        elif self._client is not None and self._users is None:
+            try:
+                from connectors.common import StructuredLogger
+
+                from .user_cache import UserCache
+                self._users = UserCache(self._client, StructuredLogger(console_output=False))
+            except Exception:
+                self._users = None
+        return self._client
+
+    async def _enrich(self, events: list[SignalEvent]) -> None:
+        if not (self._token or self._client):
+            return
+        for ev in events:
+            d = ev.data
+            cid = d.get("channel")
+            if cid and "channel_name" not in d:
+                name = await self._cached(self._channel_names, cid, self._channel_name_sync)
+                if name:
+                    d["channel_name"] = name
+            uid = d.get("user")
+            if uid and "user_name" not in d:
+                uname = await self._cached(self._user_names, uid, self._user_name_sync)
+                if uname:
+                    d["user_name"] = uname
+
+    async def _cached(self, cache: dict[str, str], key: str, fn) -> str:
+        if key in cache:
+            return cache[key]
+        val = await asyncio.to_thread(fn, key)   # sync HTTP off the event loop
+        cache[key] = val or ""                   # cache misses too (don't re-hit the API)
+        return cache[key]
+
+    def _channel_name_sync(self, channel_id: str) -> str:
+        client = self._ensure_client()
+        if client is None:
+            return ""
+        try:
+            info = client.get_channel_info(channel_id)
+            return f"#{info.name}" if info and getattr(info, "name", "") else ""
+        except Exception:
+            return ""
+
+    def _user_name_sync(self, user_id: str) -> str:
+        self._ensure_client()
+        if self._users is None:
+            return ""
+        try:
+            user = self._users.get_user(user_id)
+            return getattr(user, "name", "") or ""
+        except Exception:
+            return ""

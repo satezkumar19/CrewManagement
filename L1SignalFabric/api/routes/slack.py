@@ -54,6 +54,9 @@ async def slack_events(request: Request) -> Response:
         bus.note_ingress("slack")
     events = await connector.ingest(body_json)
     for event in events:
+        # carry the raw Slack push so the dashboard drawer can show
+        # raw → normalized → L2 for live events (not just demo injections).
+        event.metadata["_ingress_raw"] = body_json
         await bus.publish(event)
 
     return JSONResponse({"ok": True, "ingested": len(events)})

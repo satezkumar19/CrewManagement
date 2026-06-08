@@ -74,6 +74,7 @@ def create_app(
         signing_secret=cfg.slack_signing_secret,
         dev_allow_unverified=cfg.slack_dev_allow_unverified,
         replay_window_sec=cfg.slack_replay_window_sec,
+        token=cfg.slack_token,   # resolve channel/user ids → human names when set
     )
     app.state.erp = ErpConnector(
         tenant_id=cfg.tenant_id,

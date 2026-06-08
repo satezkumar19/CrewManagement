@@ -817,6 +817,8 @@ def _i_app_healthz_and_slack() -> Probe:
     from config import Settings
     cfg = Settings()
     cfg.l2_store_path = str(Path(tempfile.mkdtemp(prefix="apiagent_")) / "l2.jsonl")
+    cfg.slack_signing_secret = ""   # dev-bypass: this scenario posts unsigned events
+    cfg.slack_token = ""            # no live Slack enrichment in the offline scenario
     client = TestClient(create_app(settings=cfg))
     hz = client.get("/healthz")
     hs = client.post("/slack/events", json={"type": "url_verification", "challenge": "xyz"})
@@ -1012,6 +1014,11 @@ def run_pytest_suite(timeout: int = 180) -> dict[str, Any]:
     env["L2_STORE_PATH"] = str(Path(tempfile.mkdtemp(prefix="pytest_l2_")) / "l2.jsonl")
     env["ERP_WATERMARK_PATH"] = ""          # force in-memory watermarks
     env["DATABASE_WATERMARK_PATH"] = ""
+    # neutralize inherited Slack secrets so the suite runs on dev-safe defaults
+    # (unsigned test requests rely on dev-bypass; no live API enrichment)
+    env["SLACK_SIGNING_SECRET"] = ""
+    env["SLACK_TOKEN"] = ""
+    env["SLACK_DEV_ALLOW_UNVERIFIED"] = "1"
     cmd = [sys.executable, "-m", "pytest", "tests", "--ignore=tests/agents",
            "-v", "-p", "no:cacheprovider", "--no-header", "-rN"]
     try:
