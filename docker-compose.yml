@@ -8,12 +8,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/maritime_crew
       - REDIS_URL=redis://redis:6379
-      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
-      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,15 +39,22 @@ services:
     networks:
       - maritime-net
 
-  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  # ── PostgreSQL (Apache AGE enabled) ─────────────────────────────────────────
+  # AGE-enabled Postgres 16 image — the context graph runs INSIDE this same DB.
+  # It is a superset of stock Postgres, so it works for BOTH backends:
+  #   GRAPH_BACKEND=fallback → subgraph built in Python (AGE unused)
+  #   GRAPH_BACKEND=age      → real AGE graph; after `up`, seed it once:
+  #                            docker-compose exec backend python -m scripts.seed_crew
+  #                            docker-compose exec backend python -m scripts.seed_graph
+  # NOTE: switching the image requires a fresh volume — run `docker-compose down -v` once.
   postgres:
-    image: postgres:16-alpine
+    image: apache/age:release_PG16_1.6.0
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: maritime_crew
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:

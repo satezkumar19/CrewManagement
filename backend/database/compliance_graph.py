@@ -23,6 +23,10 @@ Cypher (see database.graph_db); callers don't care which path ran.
 from datetime import date
 from typing import Any, Dict, List, Optional
 
+import structlog
+
+log = structlog.get_logger()
+
 # ── Rules as data (moved out of compliance_agent.py) ───────────────────────────
 
 # Port -> restricted nationalities + minimum medical-certificate validity (days).
@@ -72,11 +76,20 @@ def _worst(statuses: List[str]) -> str:
     return worst
 
 
-def build_compliance_subgraph(crew: Dict[str, Any], port: str, backend: str = "fallback") -> Dict[str, Any]:
+def build_compliance_subgraph(
+    crew: Dict[str, Any],
+    port: str,
+    backend: str = "fallback",
+    port_restrictions: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """Build the compliance context subgraph for one seafarer + boarding port.
 
     Returns a dict: {nodes, edges, findings, verdict, backend}. Node/edge `status`
     is one of "ok" | "warn" | "block". Node x/y are layout hints for the UI.
+
+    `port_restrictions` lets the caller inject the rules from an external source
+    (e.g. fetched from AGE via the maritime graph) instead of looking them up in
+    the local PORT_RESTRICTIONS dict. Same shape: {visa_required, min_medical_days}.
     """
     crew = crew or {}
     crew_id = str(crew.get("crew_id") or "unknown")
@@ -100,7 +113,7 @@ def build_compliance_subgraph(crew: Dict[str, Any], port: str, backend: str = "f
     nodes.append({"id": country_id, "type": "Country", "label": nationality, "sub": "nationality", "status": "ok", "x": 280, "y": 40})
     nodes.append({"id": vessel_id, "type": "Vessel", "label": vessel, "sub": "assigned", "status": "ok", "x": 280, "y": 200})
 
-    restrictions = PORT_RESTRICTIONS.get(port, {})
+    restrictions = port_restrictions if port_restrictions is not None else PORT_RESTRICTIONS.get(port, {})
     min_medical_days = restrictions.get("min_medical_days", 30)
     nodes.append({"id": port_id, "type": "Port", "label": port, "sub": f"min medical {min_medical_days}d", "status": "ok", "x": 280, "y": 360})
 
@@ -195,3 +208,73 @@ def build_compliance_subgraph(crew: Dict[str, Any], port: str, backend: str = "f
         "backend": backend,
         "subject": {"crew_id": crew_id, "name": name, "rank": rank, "port": port},
     }
+
+
+# ── AGE-backed retrieval (optional path) ───────────────────────────────────────
+
+
+def _q_cypher(value: str) -> str:
+    """Minimal escaping for string literals embedded inline in a Cypher query."""
+    return str(value or "").replace("\\", "\\\\").replace("'", "\\'")
+
+
+def _unwrap_agtype(value: Any) -> Any:
+    """run_cypher returns each column as a JSON-parsed agtype value. Strings come
+    back JSON-quoted ("Filipino" → 'Filipino' after json.loads); numbers come back
+    as int/float; vertices/edges come back as dicts. This collapses the strings
+    to their bare value and leaves everything else alone."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict) and "raw" in value:
+        # fallback path in run_cypher when json.loads failed
+        return str(value["raw"]).strip('"')
+    return value
+
+
+async def _age_port_restrictions(port: str) -> Optional[Dict[str, Any]]:
+    """Fetch the port's restriction rules from the AGE maritime graph.
+
+    Returns None when AGE is disabled, when the port isn't in the graph, or on any
+    failure — caller falls back to the in-memory PORT_RESTRICTIONS dict. Importing
+    lazily keeps compliance_graph importable when graph_db's SQLAlchemy engine
+    hasn't been initialised (e.g. unit tests of the rules).
+    """
+    try:
+        from database.graph_db import age_enabled, run_cypher
+    except Exception:
+        return None
+    if not age_enabled():
+        return None
+    try:
+        port_q = _q_cypher(port)
+        port_rows = await run_cypher(
+            f"MATCH (p:Port {{name:'{port_q}'}}) RETURN p.min_medical_days"
+        )
+        if not port_rows:
+            return None
+        raw = port_rows[0]
+        try:
+            min_medical_days = int(raw) if isinstance(raw, (int, float)) else int(str(raw).strip('"'))
+        except (TypeError, ValueError):
+            min_medical_days = 30
+
+        nat_rows = await run_cypher(
+            f"MATCH (p:Port {{name:'{port_q}'}})-[:RESTRICTS]->(c:Country) RETURN c.name"
+        )
+        visa_required = [str(_unwrap_agtype(r)) for r in nat_rows if r is not None]
+        return {"visa_required": visa_required, "min_medical_days": min_medical_days}
+    except Exception as exc:
+        log.warning("graph.age_port_restrictions_failed", error=str(exc), port=port)
+        return None
+
+
+async def get_compliance_subgraph(crew: Dict[str, Any], port: str) -> Dict[str, Any]:
+    """Async dispatcher: prefer AGE-retrieved rules, fall back to the in-memory
+    PORT_RESTRICTIONS dict on any failure. The returned shape is identical in
+    both branches, only the `backend` field differs."""
+    age_restrictions = await _age_port_restrictions(port)
+    if age_restrictions is not None:
+        return build_compliance_subgraph(
+            crew, port, backend="age", port_restrictions=age_restrictions
+        )
+    return build_compliance_subgraph(crew, port, backend="fallback")
