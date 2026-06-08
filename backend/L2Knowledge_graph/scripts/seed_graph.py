@@ -9,7 +9,7 @@ and needs no seeding.
 Usage:
     # 1. point docker-compose / DATABASE_URL at an AGE-enabled Postgres
     # 2. set GRAPH_BACKEND=age in the environment / .env
-    python -m scripts.seed_graph
+    python -m L2Knowledge_graph.scripts.seed_graph
 
 What it builds (see database.compliance_graph for the ontology):
     (:Seafarer)-[:NATIONAL_OF]->(:Country)
@@ -23,9 +23,9 @@ import asyncio
 
 import structlog
 
-from database.compliance_graph import PORT_RESTRICTIONS, required_certs_for_rank
+from L2Knowledge_graph.compliance_graph import PORT_RESTRICTIONS, required_certs_for_rank
 from database.crew_repository import get_sign_on_crew
-from database.graph_db import GRAPH_NAME, age_enabled, ensure_graph, run_cypher
+from L2Knowledge_graph.graph_db import GRAPH_NAME, age_enabled, ensure_graph, run_cypher
 
 log = structlog.get_logger()
 

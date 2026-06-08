@@ -240,7 +240,7 @@ async def _age_port_restrictions(port: str) -> Optional[Dict[str, Any]]:
     hasn't been initialised (e.g. unit tests of the rules).
     """
     try:
-        from database.graph_db import age_enabled, run_cypher
+        from L2Knowledge_graph.graph_db import age_enabled, run_cypher
     except Exception:
         return None
     if not age_enabled():

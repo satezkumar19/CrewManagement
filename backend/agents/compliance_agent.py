@@ -11,7 +11,7 @@ from database.models import ComplianceStatus
 # Compliance rules now live as DATA in the context-graph module (single source of
 # truth) instead of being hardcoded here. The subgraph builder turns a seafarer +
 # port into the graph the agent reasons over and the UI renders.
-from database.compliance_graph import (
+from L2Knowledge_graph.compliance_graph import (
     PORT_RESTRICTIONS,
     build_compliance_subgraph,
     get_compliance_subgraph,

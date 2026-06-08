@@ -5,7 +5,7 @@ import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import {
   Ship, Users, Activity, BarChart3, Radio, Bell,
-  Wifi, WifiOff, Anchor, Navigation, RefreshCw, Database, GitBranch
+  Wifi, WifiOff, Anchor, Navigation, RefreshCw, Database, Share2, GitBranch
 } from "lucide-react";
 
 import { useWorkflowStore } from "@/store/workflowStore";
@@ -115,6 +115,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <NavLink href="/" icon={<Ship className="w-4 h-4" />} label="Dashboard" active />
             <NavLink href="/workflow" icon={<Activity className="w-4 h-4" />} label="Workflow" />
+            <NavLink href="/graph" icon={<Share2 className="w-4 h-4" />} label="Graph" />
             <NavLink href="/monitoring" icon={<BarChart3 className="w-4 h-4" />} label="Monitoring" />
             <NavLink href="/decisions" icon={<GitBranch className="w-4 h-4" />} label="Decisions" />
           </div>

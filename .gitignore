@@ -12,6 +12,10 @@ node_modules/
 out/
 .env.local
 
+# TypeScript incremental build cache — machine-local, must NOT be committed
+# (a merged/stale copy desyncs incremental builds after conflict fixes).
+*.tsbuildinfo
+
 # Editor
 .DS_Store
 *.swp
@@ -19,3 +23,7 @@ out/
 
 # Docker volumes
 postgres-data/
+
+# Large local artifacts
+L2_implementation_June5.zip
+L2_implementation_June5/
