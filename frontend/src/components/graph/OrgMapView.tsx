@@ -8,26 +8,65 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
-  Building2, Layers, Ship, Users, RefreshCw, Loader2, Share2, AlertTriangle, CheckCircle2,
+  Building2, Layers, Ship, Users, RefreshCw, Loader2, Share2, AlertTriangle, CheckCircle2, X,
 } from "lucide-react";
 
 import {
   orgMapApi,
   type OrgMapSummary, type OrgMapStructure, type OrgMapManningGap,
 } from "@/lib/api";
-import OrgMapGraph, { ORG_TYPE_COLOR } from "./OrgMapGraph";
+import OrgMapGraph, { ORG_TYPE_COLOR, type OrgGraphNode } from "./OrgMapGraph";
 
-// Scope key encodes the manning-gap filter: "" = whole org, "company:X", "fleet:X".
-function scopeToParams(key: string): { company?: string; fleet?: string } {
+// Scope key encodes the filter: "" = whole org, "company:X", "fleet:X", "vessel:X".
+function scopeToParams(key: string): { company?: string; fleet?: string; vessel?: string } {
   if (key.startsWith("company:")) return { company: key.slice(8) };
   if (key.startsWith("fleet:")) return { fleet: key.slice(6) };
+  if (key.startsWith("vessel:")) return { vessel: key.slice(7) };
   return {};
 }
 // Map a scope key to the structure-graph node id, so the graph highlights the scope.
 function scopeToNodeId(key: string): string | null {
   if (key.startsWith("company:")) return `co:${key.slice(8)}`;
   if (key.startsWith("fleet:")) return `f:${key.slice(6)}`;
+  if (key.startsWith("vessel:")) return `v:${key.slice(7)}`;
   return null;
+}
+
+// Filter the full Company→Fleet→Vessel structure down to the subtree connected to a
+// selected node — its descendants (fleets/vessels) plus its ancestors (parent company),
+// so a fleet/company selection redraws as an independent, focused graph. Edges are kept
+// only when both endpoints survive. No selection ("" scope) returns the structure as-is.
+function filterStructure(
+  structure: OrgMapStructure,
+  scopeKey: string,
+): { nodes: OrgGraphNode[]; edges: OrgMapStructure["edges"] } {
+  const rootId = scopeToNodeId(scopeKey);
+  if (!rootId) return { nodes: structure.nodes, edges: structure.edges };
+
+  const forward = new Map<string, string[]>();   // source → targets (down the hierarchy)
+  const backward = new Map<string, string[]>();   // target → sources (up the hierarchy)
+  for (const e of structure.edges) {
+    (forward.get(e.source) ?? forward.set(e.source, []).get(e.source)!).push(e.target);
+    (backward.get(e.target) ?? backward.set(e.target, []).get(e.target)!).push(e.source);
+  }
+
+  const keep = new Set<string>();
+  const walk = (start: string, adj: Map<string, string[]>) => {
+    const stack = [start];
+    while (stack.length) {
+      const id = stack.pop()!;
+      if (keep.has(id)) continue;
+      keep.add(id);
+      for (const next of adj.get(id) ?? []) stack.push(next);
+    }
+  };
+  walk(rootId, forward);   // descendants
+  walk(rootId, backward);  // ancestors
+
+  return {
+    nodes: structure.nodes.filter((n) => keep.has(n.id)),
+    edges: structure.edges.filter((e) => keep.has(e.source) && keep.has(e.target)),
+  };
 }
 
 export default function OrgMapView() {
@@ -65,10 +104,49 @@ export default function OrgMapView() {
 
   const selectedId = useMemo(() => scopeToNodeId(scopeKey), [scopeKey]);
 
-  // Clicking a Company/Fleet node scopes the manning gap; vessel clicks are ignored.
+  // The structure redrawn for the current scope: whole org, or just the selected
+  // company/fleet/vessel subtree (an independent graph). Recomputed client-side, no
+  // refetch. When a vessel is scoped, its role layer (Rank nodes from the manning data)
+  // is appended as a 4th column so the per-vessel role hierarchy is visible inline.
+  const view = useMemo(() => {
+    if (!structure) return null;
+    const base = filterStructure(structure, scopeKey);
+    const { vessel } = scopeToParams(scopeKey);
+    if (!vessel || !manning || manning.scope.vessel !== vessel) return base;
+
+    const vId = `v:${vessel}`;
+    const rankNodes: OrgGraphNode[] = manning.rows.map((r) => ({
+      id: `r:${r.rank}`, type: "Rank", label: r.rank,
+      sublabel: `${r.have}/${r.required}`, short: r.gap > 0,
+    }));
+    const rankEdges = manning.rows.map((r) => ({
+      id: `${vId}->r:${r.rank}`, source: vId, target: `r:${r.rank}`,
+      label: `×${r.required}`,
+    }));
+    return { nodes: [...base.nodes, ...rankNodes], edges: [...base.edges, ...rankEdges] };
+  }, [structure, scopeKey, manning]);
+
+  // Vessel names (for the scope dropdown) — pulled from the structure graph.
+  const vesselNames = useMemo(
+    () => (structure?.nodes ?? []).filter((n) => n.type === "Vessel").map((n) => n.label),
+    [structure],
+  );
+
+  // Human-readable label for the active filter banner.
+  const scopeLabel = useMemo(() => {
+    const p = scopeToParams(scopeKey);
+    if (p.company) return { kind: "Company", name: p.company };
+    if (p.fleet) return { kind: "Fleet", name: p.fleet };
+    if (p.vessel) return { kind: "Vessel", name: p.vessel };
+    return null;
+  }, [scopeKey]);
+
+  // Clicking a node redraws the graph to that subtree + scopes the manning gap.
+  // Company/Fleet drill down the ownership tree; a Vessel reveals its role/rank layer.
   const handleNodeClick = useCallback((id: string) => {
     if (id.startsWith("co:")) setScopeKey(`company:${id.slice(3)}`);
     else if (id.startsWith("f:")) setScopeKey(`fleet:${id.slice(2)}`);
+    else if (id.startsWith("v:")) setScopeKey(`vessel:${id.slice(2)}`);
   }, []);
 
   if (unavailable) {
@@ -115,10 +193,34 @@ export default function OrgMapView() {
           {/* ── Structure graph ─────────────────────────────────────────────── */}
           <div className="glass rounded-2xl border border-ocean-border/50 p-4 flex-1 min-w-0">
             <Legend />
-            {structure && (
+            {scopeLabel && (
+              <div className="flex items-center gap-2 mb-3 text-xs">
+                <span className="text-gray-500">Filtered to</span>
+                <span
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border font-medium"
+                  style={{
+                    borderColor: `${ORG_TYPE_COLOR[scopeLabel.kind]}66`,
+                    color: ORG_TYPE_COLOR[scopeLabel.kind],
+                  }}
+                >
+                  {scopeLabel.kind === "Company" ? <Building2 className="w-3 h-3" />
+                    : scopeLabel.kind === "Fleet" ? <Layers className="w-3 h-3" />
+                    : <Ship className="w-3 h-3" />}
+                  {scopeLabel.kind} · {scopeLabel.name}
+                </span>
+                <button
+                  onClick={() => setScopeKey("")}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-gray-400 hover:text-white bg-ocean-card border border-ocean-border/60 hover:border-ocean-accent/50 transition"
+                >
+                  <X className="w-3 h-3" /> Show all
+                </button>
+              </div>
+            )}
+            {view && (
               <OrgMapGraph
-                nodes={structure.nodes}
-                edges={structure.edges}
+                key={scopeKey || "all"}
+                nodes={view.nodes}
+                edges={view.edges}
                 height={560}
                 selectedId={selectedId}
                 onNodeClick={handleNodeClick}
@@ -130,6 +232,7 @@ export default function OrgMapView() {
           <div className="w-full xl:w-[400px] shrink-0">
             <ManningPanel
               summary={summary}
+              vessels={vesselNames}
               manning={manning}
               scopeKey={scopeKey}
               onScopeChange={setScopeKey}
@@ -142,9 +245,10 @@ export default function OrgMapView() {
 }
 
 function ManningPanel({
-  summary, manning, scopeKey, onScopeChange,
+  summary, vessels, manning, scopeKey, onScopeChange,
 }: {
   summary: OrgMapSummary | null;
+  vessels: string[];
   manning: OrgMapManningGap | null;
   scopeKey: string;
   onScopeChange: (k: string) => void;
@@ -170,6 +274,9 @@ function ManningPanel({
         ))}
         {summary?.fleets.map((f) => (
           <option key={`fleet:${f}`} value={`fleet:${f}`}>Fleet · {f}</option>
+        ))}
+        {vessels.map((v) => (
+          <option key={`vessel:${v}`} value={`vessel:${v}`}>Vessel · {v}</option>
         ))}
       </select>
 
@@ -254,7 +361,7 @@ function Legend() {
         </span>
       ))}
       <span className="ml-auto flex items-center gap-1.5 text-gray-600">
-        <Share2 className="w-3 h-3" /> click a Company or Fleet to scope the manning gap
+        <Share2 className="w-3 h-3" /> click a Company/Fleet to filter · click a Vessel to reveal its roles
       </span>
     </div>
   );

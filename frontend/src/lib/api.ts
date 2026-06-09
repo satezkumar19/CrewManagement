@@ -317,7 +317,7 @@ export interface OrgMapManningRow {
   gap: number;
 }
 export interface OrgMapManningGap {
-  scope: { company: string | null; fleet: string | null; vessels: string[] };
+  scope: { company: string | null; fleet: string | null; vessel: string | null; vessels: string[] };
   rows: OrgMapManningRow[];
   totals: { required: number; have: number; gap: number };
 }
@@ -325,7 +325,7 @@ export interface OrgMapManningGap {
 export const orgMapApi = {
   getSummary: () => api.get<OrgMapSummary>("/graph/orgmap/summary").then(r => r.data),
   getStructure: () => api.get<OrgMapStructure>("/graph/orgmap/structure").then(r => r.data),
-  getManningGap: (params: { company?: string; fleet?: string } = {}) =>
+  getManningGap: (params: { company?: string; fleet?: string; vessel?: string } = {}) =>
     api.get<OrgMapManningGap>("/graph/orgmap/manning-gap", { params }).then(r => r.data),
 };
 

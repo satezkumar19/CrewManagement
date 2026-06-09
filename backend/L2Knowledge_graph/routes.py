@@ -232,8 +232,9 @@ async def orgmap_structure():
 async def orgmap_manning_gap(
     company: str | None = Query(None, description="Scope to one company's whole fleet"),
     fleet: str | None = Query(None, description="Scope to a single fleet"),
+    vessel: str | None = Query(None, description="Scope to a single vessel (its role/rank manning)"),
 ):
-    """Headline OrgMap query — required vs. have headcount per rank for a company,
-    a fleet, or (no filter) the whole organization, with the staffing gap."""
+    """Headline OrgMap query — required vs. have headcount per rank for a single vessel,
+    a company, a fleet, or (no filter) the whole organization, with the staffing gap."""
     _require_age()
-    return await org_map.manning_gap(company=company, fleet=fleet)
+    return await org_map.manning_gap(company=company, fleet=fleet, vessel=vessel)

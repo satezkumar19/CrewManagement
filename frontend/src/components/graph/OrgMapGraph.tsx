@@ -10,21 +10,34 @@ import ReactFlow, {
   type Node, type Edge, type NodeProps,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import type { OrgMapStructureNode, OrgMapStructureEdge } from "@/lib/api";
+import type { OrgMapStructureEdge } from "@/lib/api";
 
 export const ORG_TYPE_COLOR: Record<string, string> = {
   Company: "#a855f7",  // purple
   Fleet: "#2f81f7",    // blue
   Vessel: "#10b981",   // green (matches EntityMap Vessel)
+  Rank: "#94a3b8",     // slate (the role layer — shown when a vessel is selected)
 };
 
-const COLUMN: Record<string, number> = { Company: 0, Fleet: 1, Vessel: 2 };
+const COLUMN: Record<string, number> = { Company: 0, Fleet: 1, Vessel: 2, Rank: 3 };
 const COL_W = 260;
 const ROW_H = 84;
+
+// A graph node — the API structure nodes plus the role/Rank nodes the view appends
+// client-side when a vessel is selected (with an optional sublabel + short/over flag).
+export interface OrgGraphNode {
+  id: string;
+  type: "Company" | "Fleet" | "Vessel" | "Rank";
+  label: string;
+  sublabel?: string;   // e.g. "1/1" (have/required) on Rank nodes
+  short?: boolean;     // role under-manned (gap > 0) — tints the sublabel red
+}
 
 interface OrgNodeData {
   label: string;
   ntype: string;
+  sublabel?: string;
+  short?: boolean;
   selected?: boolean;
 }
 
@@ -48,7 +61,14 @@ function OrgNode({ data }: NodeProps<OrgNodeData>) {
       <div style={{ fontSize: 8, letterSpacing: 0.6, textTransform: "uppercase", color: accent }}>
         {data.ntype}
       </div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>{data.label}</div>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>{data.label}</span>
+        {data.sublabel && (
+          <span style={{ fontSize: 11, fontWeight: 700, color: data.short ? "#f87171" : "#34d399" }}>
+            {data.sublabel}
+          </span>
+        )}
+      </div>
       <Handle type="source" position={Position.Right} style={{ background: accent, width: 6, height: 6 }} />
     </div>
   );
@@ -56,7 +76,7 @@ function OrgNode({ data }: NodeProps<OrgNodeData>) {
 
 const nodeTypes = { orgNode: OrgNode };
 
-function layout(nodes: OrgMapStructureNode[]): Record<string, { x: number; y: number }> {
+function layout(nodes: OrgGraphNode[]): Record<string, { x: number; y: number }> {
   const perCol: Record<number, number> = {};
   const pos: Record<string, { x: number; y: number }> = {};
   for (const n of nodes) {
@@ -75,7 +95,7 @@ export default function OrgMapGraph({
   selectedId,
   onNodeClick,
 }: {
-  nodes: OrgMapStructureNode[];
+  nodes: OrgGraphNode[];
   edges: OrgMapStructureEdge[];
   height?: number;
   selectedId?: string | null;
@@ -87,7 +107,10 @@ export default function OrgMapGraph({
       id: n.id,
       type: "orgNode",
       position: pos[n.id] || { x: 0, y: 0 },
-      data: { label: n.label, ntype: n.type, selected: n.id === selectedId },
+      data: {
+        label: n.label, ntype: n.type, sublabel: n.sublabel, short: n.short,
+        selected: n.id === selectedId,
+      },
       draggable: true,
     }));
   }, [rawNodes, selectedId]);

@@ -174,10 +174,15 @@ async def org_structure() -> Dict[str, Any]:
     }
 
 
-def _scope_vessels(company: Optional[str], fleet: Optional[str]) -> List[str]:
-    """Resolve the set of vessels in scope from authored org data."""
+def _scope_vessels(
+    company: Optional[str], fleet: Optional[str], vessel: Optional[str] = None
+) -> List[str]:
+    """Resolve the set of vessels in scope from authored org data. A single vessel is
+    the narrowest scope (the per-vessel role view), then fleet, then company, then all."""
     fov = org_data.fleet_of_vessel()
     cof = org_data.company_of_fleet()
+    if vessel:
+        return [vessel] if vessel in fov else []
     if fleet:
         return [v for v, f in fov.items() if f == fleet]
     if company:
@@ -185,17 +190,21 @@ def _scope_vessels(company: Optional[str], fleet: Optional[str]) -> List[str]:
     return org_data.vessels()
 
 
-async def manning_gap(company: Optional[str] = None, fleet: Optional[str] = None) -> Dict[str, Any]:
+async def manning_gap(
+    company: Optional[str] = None,
+    fleet: Optional[str] = None,
+    vessel: Optional[str] = None,
+) -> Dict[str, Any]:
     """The headline OrgMap query: required vs. have headcount per rank for a scope
-    (a fleet, a company's whole fleet, or everything).
+    (a single vessel, a fleet, a company's whole fleet, or everything).
 
     required = sum of (:Vessel)-[:REQUIRES_RANK {count}]->(:Rank) over scope vessels.
     have     = crew (:Crew)-[:ASSIGNED_TO]->(:Vessel) on scope vessels, by rank.
     gap      = required - have  (positive = short-staffed).
     """
-    vessels = _scope_vessels(company, fleet)
+    vessels = _scope_vessels(company, fleet, vessel)
     if not vessels:
-        return {"scope": {"company": company, "fleet": fleet, "vessels": []},
+        return {"scope": {"company": company, "fleet": fleet, "vessel": vessel, "vessels": []},
                 "rows": [], "totals": {"required": 0, "have": 0, "gap": 0}}
 
     vlist = _in_list(vessels)
@@ -227,7 +236,7 @@ async def manning_gap(company: Optional[str] = None, fleet: Optional[str] = None
     rows.sort(key=lambda x: (-x["gap"], x["rank"]))
 
     return {
-        "scope": {"company": company, "fleet": fleet, "vessels": vessels},
+        "scope": {"company": company, "fleet": fleet, "vessel": vessel, "vessels": vessels},
         "rows": rows,
         "totals": {
             "required": sum(required.values()),
