@@ -9,8 +9,10 @@
  * start (the lookup performed before matching) — so this is the visible proof
  * the index was "consulted on the 2nd+ query".
  */
-import { History, CheckCircle, XCircle, Repeat, Sparkle, TrendingUp, ArrowUpDown, Zap } from "lucide-react";
+import { History, CheckCircle, XCircle, Repeat, Sparkle, TrendingUp, ArrowUpDown, Zap, UserCheck } from "lucide-react";
 import type { DecisionTrace } from "@/types";
+
+const HUMAN_COLOR = "#a78bfa";
 
 const OUTCOME_COLOR: Record<string, string> = {
   signed_on: "#22c55e",
@@ -153,6 +155,9 @@ function RepeatView({ decision }: { decision: DecisionTrace }) {
       <div className="flex flex-wrap gap-2 text-[11px]">
         <Stat label="Signed on" value={s.signed_on} color="#22c55e" />
         <Stat label="Rejected" value={s.rejected} color="#ef4444" />
+        {!!s.human_reviewed && s.human_reviewed > 0 && (
+          <Stat label="Human-reviewed" value={s.human_reviewed} color={HUMAN_COLOR} />
+        )}
         {s.avg_compliance_score != null && (
           <Stat label="Avg compliance" value={`${s.avg_compliance_score}%`} color="#00d4ff" />
         )}
@@ -173,6 +178,15 @@ function RepeatView({ decision }: { decision: DecisionTrace }) {
                 )}
                 <span className="text-xs text-white truncate">{m.chosen_crew_name || m.chosen_crew_id}</span>
                 <span className="text-[10px] text-gray-500 truncate">{m.chosen_crew_rank}</span>
+                {m.human_reviewed && (
+                  <span
+                    className="flex items-center gap-0.5 text-[9px] px-1 py-0.5 rounded shrink-0"
+                    style={{ color: HUMAN_COLOR, border: `1px solid ${HUMAN_COLOR}55`, background: `${HUMAN_COLOR}14` }}
+                    title={m.reviewed_by ? `Human-reviewed by ${m.reviewed_by}` : "Human-reviewed"}
+                  >
+                    <UserCheck className="w-2.5 h-2.5" /> Human
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {m.compliance_score != null && (

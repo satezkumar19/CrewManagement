@@ -45,6 +45,13 @@ class PlacementPrecedent(Base):
     compliance_status = Column(String)
     compliance_score = Column(Float)
 
+    # ── How this placement was decided (L4 HITL) ───────────────────────────────
+    # decision_source: 'ai' | 'human' | 'ai_then_human'. A human-reviewed precedent
+    # is a stronger signal than an AI auto-decision, so consult() weights it higher.
+    decision_source = Column(String, default="ai")
+    reviewed_by = Column(String, nullable=True)
+    review_reason = Column(String, nullable=True)
+
     def to_dict(self) -> dict:
         return {
             "precedent_id": self.precedent_id,
@@ -64,4 +71,8 @@ class PlacementPrecedent(Base):
             "outcome_status": self.outcome_status,
             "compliance_status": self.compliance_status,
             "compliance_score": self.compliance_score,
+            "decision_source": self.decision_source or "ai",
+            "reviewed_by": self.reviewed_by,
+            "review_reason": self.review_reason,
+            "human_reviewed": (self.decision_source or "ai") != "ai",
         }

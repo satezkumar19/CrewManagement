@@ -30,7 +30,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { GitBranch } from "lucide-react";
-import type { ComplianceAttempt, DecisionTrace } from "@/types";
+import type { DecisionTrace } from "@/types";
 
 // Mirrors backend MAX_SIGNON_ATTEMPTS — how many ranked candidates the orchestrator
 // tries (top match + fallbacks) before recording a final rejection. The live graph
@@ -67,6 +67,9 @@ const OUTCOME_COLOR: Record<string, string> = {
   rejected: "#ef4444",
   pending: "#f59e0b",
 };
+
+// Violet — marks a human-in-the-loop review node / edge (vs the AI-automated flow).
+const HUMAN_COLOR = "#a78bfa";
 
 // Per-compliance-status color for an attempt node / the final edge.
 const STATUS_COLOR: Record<string, string> = {
@@ -144,36 +147,47 @@ export default function DecisionGraph({
   // once the prior one is rejected.
   const queue = useMemo(() => buildLiveQueue(decision), [decision]);
 
-  // LIVE = the placement is still pending but candidates are already being tried. While
-  // live the graph mirrors the CURRENT state as events arrive (no staged replay): the
-  // active candidate pulses "Validating…", rejected ones turn red and loop back to L3,
-  // and the candidates still in line sit "Queued".
-  const live = decision?.outcome_status === "pending" && attempts.length > 0;
+  // Review state (L4 HITL): awaiting a human, or already resolved by one.
+  const pendingReview = decision?.review_status === "pending_review";
+  const humanDecided =
+    decision?.decision_source === "human" || decision?.decision_source === "ai_then_human";
 
-  // While live the full queue drives the layout; once resolved we fall back to the
-  // actual attempts journey (matches the completed / seed view).
+  // LIVE = pending + candidates being tried, and NOT yet awaiting review. While live the
+  // graph mirrors the current state as events arrive (no staged replay): the active
+  // candidate pulses "Validating…", rejected ones turn red and loop back to L3, and the
+  // candidates still in line sit "Queued".
+  const live = decision?.outcome_status === "pending" && attempts.length > 0 && !pendingReview;
+
+  // Candidate list on the chain: in-progress shows the full ranked queue; pending review
+  // or a resolved decision shows the actual attempts journey.
   const candidates = useMemo<RenderCandidate[]>(() => {
-    if (!retryFromAttempts(attempts, live, queue)) return [];
-    return live
-      ? queue
-      : attempts.map((a) => ({
-          crew_id: a.crew_id,
-          name: a.name,
-          rank: a.rank,
-          status: a.compliance_status || "failed",
-          score: a.compliance_score ?? null,
-          failures: a.failures || [],
-        }));
-  }, [attempts, live, queue]);
+    if (live) return queue;
+    return attempts.map((a) => ({
+      crew_id: a.crew_id,
+      name: a.name,
+      rank: a.rank,
+      status: a.compliance_status || "failed",
+      score: a.compliance_score ?? null,
+      failures: a.failures || [],
+    }));
+  }, [live, queue, attempts]);
 
-  const retryMode = candidates.length > 0;
+  // Retry-chain view when there's a real chain (≥2), an in-progress live run, OR any
+  // human involvement (so the review node always renders). A plain single-attempt AI
+  // decision keeps the simpler default graph.
+  const retryMode =
+    candidates.length >= 2 || ((live || pendingReview || humanDecided) && candidates.length >= 1);
   const chainLen = candidates.length;
 
-  // Default flow tops out at 4. The retry LOOP budgets two stages per candidate
-  // (selected by L3, then its verdict). Live shows everything at once, so maxStage just
-  // needs to cover every node + loop-back (2·len+1); completed reveals stage by stage
-  // up to the outcome node at 2n+1.
-  const maxStage = retryMode ? 2 * chainLen + 1 : 4;
+  // A dedicated review node sits before the outcome when a human is/was involved: a
+  // pending gate (no outcome yet) or a resolved human verdict (then the outcome).
+  const reviewNode = pendingReview || (humanDecided && !live);
+
+  // Stage budget: two stages per candidate, plus the tail — +1 for a pending gate or a
+  // plain AI outcome, +2 when a resolved human verdict adds a review node AND an outcome.
+  const maxStage = retryMode
+    ? 2 * chainLen + (reviewNode ? (pendingReview ? 1 : 2) : 1)
+    : 4;
 
   // Reveal stage, COUPLED to the decision it belongs to (a stale id counts as 0 so
   // nothing reveals early when the walkthrough advances to the next decision).
@@ -207,11 +221,11 @@ export default function DecisionGraph({
 
   useEffect(() => {
     // Reveal the (final) outcome label only once the decision has actually resolved —
-    // never while it's still live/pending (its outcome is not yet known).
-    if (!live && decisionId && reveal.id === decisionId && reveal.stage >= maxStage) {
+    // never while it's still live/pending or awaiting human review.
+    if (!live && !pendingReview && decisionId && reveal.id === decisionId && reveal.stage >= maxStage) {
       onOutcomeRevealed?.(decisionId);
     }
-  }, [reveal, decisionId, onOutcomeRevealed, maxStage, live]);
+  }, [reveal, decisionId, onOutcomeRevealed, maxStage, live, pendingReview]);
 
   // Build the full graph (with per-node stage tags) — rebuilds as the decision (and,
   // while live, its candidate statuses) change.
@@ -259,16 +273,19 @@ export default function DecisionGraph({
     stageLabels = ["Query", "Decision · L3"];
     candidates.forEach((c, i) => {
       stageLabels.push(`Candidate ${i + 1}`);
-      const passed = c.status === "passed" || c.status === "warning";
-      const checking = c.status === "checking";
-      const queued = c.status === "queued";
-      stageLabels.push(
-        checking ? "Validating…"
-          : queued ? "Queued"
-          : live ? "Feedback → L3"
-          : i === candidates.length - 1 || passed ? "Outcome" : "Feedback → L3"
-      );
+      const isLast = i === candidates.length - 1;
+      if (isLast) {
+        // The chain's tail: a human-review node (gate or verdict) or the AI outcome.
+        stageLabels.push(reviewNode ? "Human review" : "Outcome");
+      } else {
+        const passed = c.status === "passed" || c.status === "warning";
+        const checking = c.status === "checking";
+        const queued = c.status === "queued";
+        stageLabels.push(checking ? "Validating…" : queued ? "Queued" : passed ? "Outcome" : "Feedback → L3");
+      }
     });
+    // A resolved human verdict adds an outcome node AFTER the review node.
+    if (reviewNode && !pendingReview) stageLabels.push("Outcome");
   } else {
     stageLabels = ["Query", "Decision", "Chosen crew", "Alternatives", "Outcome"];
   }
@@ -325,6 +342,12 @@ export default function DecisionGraph({
                 <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-full animate-pulse" style={{ background: STATUS_COLOR.checking }} /> Validating</span>
                 <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-full" style={{ background: STATUS_COLOR.queued }} /> Queued</span>
               </>
+            )}
+            {(pendingReview || humanDecided) && (
+              <span className="flex items-center gap-1">
+                <i className={`w-2 h-2 rounded-full ${pendingReview ? "animate-pulse" : ""}`} style={{ background: pendingReview ? STATUS_COLOR.warning : HUMAN_COLOR }} />
+                {pendingReview ? "Awaiting human review" : "Human decision"}
+              </span>
             )}
           </>
         ) : (
@@ -467,13 +490,6 @@ function buildLiveQueue(decision: DecisionTrace | null): RenderCandidate[] {
   return queue;
 }
 
-// The retry-chain view is used when the placement is LIVE (≥1 queued candidate to
-// show) or, once completed, when it actually went through ≥2 attempts. A completed
-// single-attempt decision keeps the simpler default graph.
-function retryFromAttempts(attempts: ComplianceAttempt[], live: boolean, queue: RenderCandidate[]): boolean {
-  return live ? queue.length >= 1 : attempts.length >= 2;
-}
-
 // ── Retry graph — an L3-centered LOOP, not a straight line. Candidates branch from
 // the Decision (L3) node; a rejected candidate loops a "feedback to L3" edge back to
 // it, and L3 then selects the next-ranked candidate. The first to clear connects to
@@ -510,6 +526,13 @@ function buildRetryGraph(decision: DecisionTrace, candidates: RenderCandidate[],
   });
   edges.push(mkEdge("e-q-d", "query", "decision", "triggers", KIND_ACCENT.query, 1));
 
+  // Review state (L4 HITL) — read off the decision so the chain's tail can render a
+  // pending gate or a resolved human verdict.
+  const pendingReview = decision.review_status === "pending_review";
+  const humanDecided = decision.decision_source === "human" || decision.decision_source === "ai_then_human";
+  const overridden = decision.decision_source === "ai_then_human";
+  const reviewNode = pendingReview || (humanDecided && !live);
+
   // The candidate that clears is always the LAST one (the loop breaks on a pass).
   const last = candidates[n - 1] || ({} as RenderCandidate);
   const accepted = last.status === "passed" || last.status === "warning";
@@ -517,11 +540,13 @@ function buildRetryGraph(decision: DecisionTrace, candidates: RenderCandidate[],
 
   candidates.forEach((c, i) => {
     const status = c.status || "failed";
-    const color = STATUS_COLOR[status] || STATUS_COLOR.failed;
-    const passed = status === "passed" || status === "warning";
     const checking = status === "checking";   // live, in-progress candidate
     const queued = status === "queued";        // live, still in line
     const failed = status === "failed";
+    // A 'warning' candidate that's awaiting review is CONDITIONAL (amber), not cleared.
+    const conditional = pendingReview && status === "warning";
+    const passed = (status === "passed" || status === "warning") && !conditional;
+    const color = conditional ? STATUS_COLOR.warning : (STATUS_COLOR[status] || STATUS_COLOR.failed);
     const id = `att-${i}`;
     const nodeStage = 2 + 2 * i;     // L3 selects this candidate
     const resStage = 3 + 2 * i;      // its verdict resolves (loop-back or outcome)
@@ -530,6 +555,8 @@ function buildRetryGraph(decision: DecisionTrace, candidates: RenderCandidate[],
       ? "Cleared compliance"
       : checking
       ? "Validating…"
+      : conditional
+      ? "Conditional · review"
       : queued
       ? "Queued"
       : "Rejected";
@@ -538,7 +565,7 @@ function buildRetryGraph(decision: DecisionTrace, candidates: RenderCandidate[],
       id, type: "dgNode", position: { x: 620, y: 30 + i * ROW },
       data: {
         tag: i === 0 ? "Candidate 1 · top match" : `Candidate ${i + 1} · fallback`,
-        kind: "attempt", ring: color, accent: color, glow: passed || checking,
+        kind: "attempt", ring: color, accent: color, glow: passed || checking || conditional,
         dim: queued, stage: nodeStage, visible: true,
         label: c.name || c.crew_id || "Candidate",
         sub: `${subLabel}${c.score != null ? ` · ${c.score}%` : ""}`,
@@ -581,30 +608,74 @@ function buildRetryGraph(decision: DecisionTrace, candidates: RenderCandidate[],
     }
   });
 
-  // No resolved outcome node while live — the frontier is the in-progress (or
-  // just-rejected, awaiting-next) candidate. The outcome appears only once the
-  // placement actually resolves to signed_on / rejected.
-  if (!live) {
-    const outcomeStage = 3 + 2 * connectIdx;
+  // Chain tail. Three shapes:
+  //  • Live (in-progress) → nothing yet; the frontier is the active candidate.
+  //  • Human involved → a violet "Human review" node: a PENDING gate (awaiting a
+  //    verdict, no outcome yet), or a RESOLVED verdict that then leads to the outcome.
+  //  • Plain AI → the candidate connects straight to the outcome (the original flow).
+  let outcomeSource = `att-${connectIdx}`;
+  let outcomeStage = 3 + 2 * connectIdx;
+  let outcomeX = 980;
+
+  if (reviewNode) {
+    const revStage = 3 + 2 * connectIdx;
+    const reviewer = decision.reviewed_by || "reviewer";
+    const reviewColor = pendingReview ? STATUS_COLOR.warning : HUMAN_COLOR;
+    const reviewLabel = pendingReview
+      ? "Awaiting review"
+      : overridden
+      ? `Overridden by ${reviewer}`
+      : decision.outcome_status === "rejected"
+      ? `Rejected by ${reviewer}`
+      : `Approved by ${reviewer}`;
+    const reviewSub = pendingReview
+      ? decision.review_trigger === "exhausted" ? "All candidates failed" : "Conditional pass"
+      : overridden && decision.chosen_crew?.name
+      ? `Chose ${decision.chosen_crew.name}`
+      : decision.review_reason || "Human decision";
+    nodes.push({
+      id: "review", type: "dgNode", position: { x: 980, y: 30 + connectIdx * ROW },
+      data: {
+        tag: pendingReview ? "Human review · pending" : "Human review",
+        kind: "outcome", ring: reviewColor, accent: reviewColor, glow: true,
+        stage: revStage, visible: true,
+        label: reviewLabel, sub: reviewSub,
+      },
+    });
+    edges.push(mkEdge(
+      "e-att-rev", `att-${connectIdx}`, "review",
+      pendingReview ? "needs review" : "reviewed", reviewColor, revStage, true,
+    ));
+    outcomeSource = "review";
+    outcomeStage = revStage + 1;
+    outcomeX = 1240;
+  }
+
+  // Outcome node — shown once resolved (never while live or merely awaiting review).
+  if (!live && !pendingReview) {
     const outcomeLabel = decision.outcome_status === "signed_on"
       ? "Signed On"
       : decision.outcome_status === "rejected"
       ? "Rejected"
       : "Pending";
     nodes.push({
-      id: "outcome", type: "dgNode", position: { x: 980, y: 30 + connectIdx * ROW },
+      id: "outcome", type: "dgNode", position: { x: outcomeX, y: 30 + connectIdx * ROW },
       data: {
-        tag: "Outcome", kind: "outcome", ring: outcomeColor, accent: outcomeColor, glow: true,
+        tag: humanDecided ? "Outcome · Human" : "Outcome", kind: "outcome",
+        ring: outcomeColor, accent: outcomeColor, glow: true,
         stage: outcomeStage, visible: true,
         label: outcomeLabel,
         sub: decision.compliance_status
           ? `Compliance: ${decision.compliance_status}${decision.compliance_score != null ? ` (${decision.compliance_score}%)` : ""}`
+          : humanDecided
+          ? `by ${decision.reviewed_by || "reviewer"}`
           : undefined,
       },
     });
     edges.push(mkEdge(
-      "e-att-o", `att-${connectIdx}`, "outcome",
-      accepted ? "signed on" : "rejected", outcomeColor, outcomeStage,
+      "e-att-o", outcomeSource, "outcome",
+      humanDecided ? (overridden ? "human override" : "human decision") : accepted ? "signed on" : "rejected",
+      humanDecided ? HUMAN_COLOR : outcomeColor, outcomeStage,
       decision.outcome_status === "pending",
     ));
   }

@@ -21,10 +21,14 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 import structlog
 
 from database.decision_repository import (
+    apply_review_by_decision,
     count_demo_decisions,
+    delete_demo_audit,
     delete_demo_decisions,
+    insert_audit,
     insert_decision,
     list_decisions,
+    request_review_by_workflow,
     update_outcome_by_workflow,
     update_progress_by_workflow,
 )
@@ -170,6 +174,139 @@ class DecisionTraceService:
             log.warning("decision.outcome.failed", workflow_id=workflow_id, exc_info=True)
             return None
 
+    # ── Human-in-the-loop review (L4 HITL) ──────────────────────────────────────
+
+    async def request_review(
+        self,
+        workflow_id: str,
+        *,
+        review_trigger: str,
+        pending_reason: str,
+        ai_proposal: Optional[dict] = None,
+        attempts: Optional[list] = None,
+        compliance_status: Optional[str] = None,
+        compliance_score: Optional[float] = None,
+        outcome_reasons: Optional[list] = None,
+    ) -> Optional[dict]:
+        """Pause the workflow's decision for a human (review_status='pending_review').
+
+        Persists the gate + the AI's frozen proposal and writes an audit row. The
+        caller (WorkflowService) broadcasts the `review_requested` event, since it
+        carries the candidate context. Best-effort; never raises.
+        """
+        try:
+            updated = await request_review_by_workflow(
+                workflow_id,
+                review_trigger=review_trigger,
+                pending_reason=pending_reason,
+                ai_proposal=ai_proposal,
+                attempts=attempts,
+                compliance_status=compliance_status,
+                compliance_score=compliance_score,
+                outcome_reasons=outcome_reasons,
+            )
+            if updated is None:
+                log.info("decision.review.no_decision", workflow_id=workflow_id)
+                return None
+            await insert_audit(
+                updated["decision_id"],
+                actor="system",
+                action="review_requested",
+                from_state="pending",
+                to_state="pending_review",
+                reason=review_trigger,
+                comments=pending_reason,
+            )
+            log.info(
+                "decision.review.requested",
+                decision_id=updated["decision_id"], trigger=review_trigger,
+            )
+            return updated
+        except Exception:
+            log.warning("decision.request_review.failed", workflow_id=workflow_id, exc_info=True)
+            return None
+
+    async def apply_review(
+        self,
+        decision_id: str,
+        *,
+        action: str,                       # approve | reject | override
+        reviewer: Optional[str],
+        outcome_status: str,               # signed_on | rejected
+        decision_source: str,              # human | ai_then_human
+        chosen_crew: Optional[dict] = None,
+        chosen_crew_id: Optional[str] = None,
+        compliance_status: Optional[str] = None,
+        compliance_score: Optional[float] = None,
+        outcome_reasons: Optional[list] = None,
+        reason: Optional[str] = None,
+        comments: Optional[str] = None,
+        evidence: Optional[list] = None,
+        broadcast: Optional[Broadcast] = None,
+    ) -> Optional[dict]:
+        """Stamp a human verdict onto a decision, resolving it, and audit it.
+
+        Writes the review fields + an immutable audit row, then broadcasts
+        `decision_reviewed` so the Decision Graph resolves live. Best-effort; never
+        raises. Crew-pool / precedent side effects are handled by the caller
+        (WorkflowService.apply_human_review) so they mirror the automated path.
+        """
+        try:
+            review_status = {
+                "approve": "approved", "reject": "rejected", "override": "overridden",
+            }.get(action, "approved")
+            updated = await apply_review_by_decision(
+                decision_id,
+                review_status=review_status,
+                decision_source=decision_source,
+                outcome_status=outcome_status,
+                chosen_crew=chosen_crew,
+                chosen_crew_id=chosen_crew_id,
+                compliance_status=compliance_status,
+                compliance_score=compliance_score,
+                outcome_reasons=outcome_reasons,
+                reviewed_by=reviewer,
+                review_reason=reason,
+                review_comments=comments,
+                review_evidence=evidence,
+            )
+            if updated is None:
+                log.info("decision.review.apply_no_decision", decision_id=decision_id)
+                return None
+            await insert_audit(
+                decision_id,
+                actor=reviewer or "reviewer",
+                action=f"review_{action}",
+                from_state="pending_review",
+                to_state=outcome_status,
+                reason=reason,
+                comments=comments,
+                evidence=evidence,
+            )
+            log.info(
+                "decision.review.applied",
+                decision_id=decision_id, action=action, outcome=outcome_status,
+            )
+            if broadcast:
+                await self._safe_broadcast(broadcast, "decision_reviewed", "Human Reviewer", {
+                    "workflow_id": updated.get("workflow_id"),
+                    "decision_id": decision_id,
+                    "action": action,
+                    "reviewer": reviewer,
+                    "reason": reason,
+                    "outcome_status": outcome_status,
+                    "decision_source": decision_source,
+                    "chosen_crew": updated.get("chosen_crew"),
+                    "message": (
+                        f"Human review — {reviewer or 'reviewer'} {action}d "
+                        f"→ {outcome_status.replace('_', ' ')}"
+                    ),
+                })
+            return updated
+        except Exception:
+            log.warning("decision.apply_review.failed", decision_id=decision_id, exc_info=True)
+            return None
+
     # ── Assembly ────────────────────────────────────────────────────────────────
 
     def _assemble(self, workflow: WorkflowState) -> dict:
@@ -279,6 +416,10 @@ class DecisionTraceService:
         decision-trace and precedent stores. Live placements use a real workflow_id
         and are never matched, so real precedent history is preserved. Never raises."""
         try:
+            # Audit rows first (they key on decision_id — must be matched before the
+            # demo decisions they point at are deleted).
+            await delete_demo_audit()
+            await self._delete_demo_crew()
             decisions_removed = await delete_demo_decisions()
             precedents_removed = await delete_demo_precedents()
             log.info(
@@ -304,6 +445,9 @@ class DecisionTraceService:
         repeated seeding can't pile up duplicate rows); the existing sample set is
         returned for replay instead. Use clear_demo() to remove it first if you want
         a fresh batch."""
+        # Ensure the sign-on crew that pending-review fixtures propose actually exist,
+        # so a reviewer can APPROVE them end-to-end (idempotent; safe to call on replay).
+        await self._ensure_demo_crew()
         if await count_demo_decisions() > 0:
             existing = [
                 d for d in await list_decisions(limit=200)
@@ -322,10 +466,66 @@ class DecisionTraceService:
             record = self._mock_record(spec, precedent)
             stored = await insert_decision(record)
             seeded.append(stored)
+            # NOTE: no audit rows are seeded — the decision audit stays EMPTY after a
+            # fresh seed. It only fills when a human actually reviews a decision in the
+            # app: the first real review (on the pending-review case) writes the first
+            # audit entry, and that verdict then becomes a precedent later sign-offs
+            # weight up. Seeded placements (AI) still enter the Precedent Index.
             if spec["outcome_status"] in ("signed_on", "rejected"):
                 await precedent_service.record_placement(stored)
         log.info("decision.seed_demo", count=len(seeded))
         return {"seeded": len(seeded), "already_present": False, "decisions": seeded}
+
+    async def _ensure_demo_crew(self) -> None:
+        """Insert the sign-on crew referenced by pending-review demo fixtures so the
+        APPROVE action resolves end-to-end (apply_human_review looks the candidate up in
+        the sign-on pool). Idempotent (merge by crew_id); demo-only (CM- ids, which never
+        collide with live SNO-/SOF- crew); best-effort. Removed by clear_demo."""
+        try:
+            from database.crew_orm import Crew
+            from database.db import AsyncSessionLocal
+            specs = [s for s in _DEMO_DECISIONS if s.get("review_status") == "pending_review"]
+            if not specs:
+                return
+            async with AsyncSessionLocal() as session:
+                for s in specs:
+                    c = s["chosen"]
+                    await session.merge(Crew(
+                        crew_id=c["crew_id"], pool="signon", status="Available",
+                        name=c.get("name"), rank=c.get("rank"), grade=c.get("grade"),
+                        nationality=c.get("nationality"), port=c.get("port"),
+                        vessel="Available", availability="Available",
+                    ))
+                await session.commit()
+            # Invalidate the cached sign-on list so the new crew is visible immediately.
+            try:
+                from services.cache_service import cache_service
+                await cache_service.delete("crew:signon", "crew:signoff")
+            except Exception:
+                pass
+        except Exception:
+            log.warning("decision.ensure_demo_crew.failed", exc_info=True)
+
+    async def _delete_demo_crew(self) -> None:
+        """Remove the demo sign-on crew added by _ensure_demo_crew (by their CM- ids).
+        Best-effort; only touches the specific demo fixture candidates."""
+        try:
+            from sqlalchemy import delete as _delete
+            from database.crew_orm import Crew
+            from database.db import AsyncSessionLocal
+            ids = [s["chosen"]["crew_id"] for s in _DEMO_DECISIONS if s.get("review_status") == "pending_review"]
+            if not ids:
+                return
+            async with AsyncSessionLocal() as session:
+                await session.execute(_delete(Crew).where(Crew.crew_id.in_(ids)))
+                await session.commit()
+            try:
+                from services.cache_service import cache_service
+                await cache_service.delete("crew:signon", "crew:signoff")
+            except Exception:
+                pass
+        except Exception:
+            log.warning("decision.delete_demo_crew.failed", exc_info=True)
 
     def _mock_record(self, spec: Dict[str, Any], precedent: Dict[str, Any]) -> dict:
         return {
@@ -350,6 +550,21 @@ class DecisionTraceService:
             "compliance_score": spec.get("compliance_score"),
             "outcome_reasons": spec.get("outcome_reasons", []),
             "resolved_at": datetime.utcnow() if spec["outcome_status"] != "pending" else None,
+            # ── HITL (L4) — pass-through so seeded review fixtures render the same as
+            # a live human-reviewed decision. Defaults keep plain AI fixtures unchanged.
+            "decision_source": spec.get("decision_source", "ai"),
+            "review_status": spec.get("review_status"),
+            "review_trigger": spec.get("review_trigger"),
+            "reviewed_by": spec.get("reviewed_by"),
+            "reviewed_at": (
+                datetime.utcnow()
+                if spec.get("review_status") in ("approved", "rejected", "overridden")
+                else None
+            ),
+            "review_reason": spec.get("review_reason"),
+            "review_comments": spec.get("review_comments"),
+            "review_evidence": spec.get("review_evidence"),
+            "ai_proposal": spec.get("ai_proposal"),
             "session_id": f"sess-{uuid.uuid4().hex[:8]}",
             "total_tokens": spec["total_tokens"],
             "total_cost": spec["total_cost"],
@@ -570,6 +785,52 @@ _DEMO_DECISIONS: List[Dict[str, Any]] = [
         "total_cost": 0.205,
         "cache_read_tokens": 11800,
         "cache_creation_tokens": 2900,
+    },
+    {
+        # HITL — a CONDITIONAL pass the system won't auto-approve: routed to a human.
+        # Demonstrates the review queue, the amber "Awaiting human review" gate in the
+        # graph, and the Review panel. On this SEEDED row, Reject and Override (to a
+        # real sign-on candidate) act against the DB; Approve is meaningful on a LIVE
+        # review (where the proposed candidate is a real crew row).
+        "trigger": "Sign-off initiated for Anders Holm (CM-1420)",
+        "departing": {
+            "crew_id": "CM-1420", "name": "Anders Holm", "rank": "Third Officer",
+            "grade": "B", "vessel": "MV Baltic Trader", "port": "Hamburg", "nationality": "Norwegian",
+        },
+        "chosen": {
+            "crew_id": "CM-2810", "name": "Marco Bianchi", "rank": "Third Officer",
+            "grade": "B", "port": "Hamburg", "nationality": "Italian",
+        },
+        "confidence": 80.5,
+        "match_reasons": ["Exact rank match", "Grade matches", "Same port: Hamburg"],
+        "alternatives": [
+            {"crew_id": "CM-2844", "name": "Lars Eriksen", "rank": "Third Officer", "confidence_score": 74.0, "match_reasons": ["Exact rank match"]},
+        ],
+        "trajectory": [
+            {"kind": "agent", "agent_name": "Crew Matching Agent", "agent_type": "crew_matching", "status": "completed", "confidence_score": 0.805, "tokens_used": 0, "duration_ms": 3800},
+            {"kind": "tool", "agent_name": "Compliance Agent", "tool_name": "validateDocuments", "input": '{"crew_id": "CM-2810"}', "output": '{"overall_status": "warning"}', "duration_ms": 140, "timestamp": None},
+        ],
+        "attempts": [
+            {"order": 1, "crew_id": "CM-2810", "name": "Marco Bianchi", "rank": "Third Officer", "compliance_status": "warning", "compliance_score": 67.0, "failures": [], "warnings": ["Medical certificate expires in 21 days", "Flag-state endorsement pending renewal"]},
+        ],
+        "outcome_status": "pending",
+        "compliance_status": "warning",
+        "compliance_score": 67.0,
+        "review_status": "pending_review",
+        "review_trigger": "warning",
+        "ai_proposal": {
+            "crew_id": "CM-2810", "name": "Marco Bianchi", "rank": "Third Officer",
+            "grade": "B", "port": "Hamburg", "nationality": "Italian",
+            "compliance_status": "warning", "compliance_score": 67.0, "trigger": "warning",
+        },
+        "pending_reason": (
+            "Marco Bianchi cleared compliance only conditionally (warning, 67%) — "
+            "awaiting a human decision to approve the exception, reject, or pick another candidate."
+        ),
+        "total_tokens": 14300,
+        "total_cost": 0.168,
+        "cache_read_tokens": 8200,
+        "cache_creation_tokens": 2600,
     },
 ]
 

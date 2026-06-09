@@ -62,6 +62,24 @@ class DecisionTrace(Base):
     attempts = Column(JSON, nullable=True)                  # [{order, crew_id, name, compliance_status, ...}]
     pending_reason = Column(String, nullable=True)
 
+    # ── Human-in-the-loop review (L4 HITL) ─────────────────────────────────────
+    # How the decision was resolved, and (if a human was involved) their verdict.
+    # decision_source: 'ai' (fully automated) | 'human' (a reviewer approved/rejected
+    # a case the AI couldn't finish) | 'ai_then_human' (a human OVERRODE the AI's pick).
+    # review_status: NULL (never needed review) | 'pending_review' | 'approved' |
+    # 'rejected' | 'overridden'. review_trigger records WHY review was asked
+    # ('warning' | 'exhausted'). ai_proposal freezes what the AI wanted before any
+    # human override, so the audit shows what changed.
+    decision_source = Column(String, default="ai")
+    review_status = Column(String, nullable=True)
+    review_trigger = Column(String, nullable=True)
+    reviewed_by = Column(String, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    review_reason = Column(String, nullable=True)           # reason code/category
+    review_comments = Column(String, nullable=True)         # free-text rationale
+    review_evidence = Column(JSON, nullable=True)           # [{type, label, ref}]
+    ai_proposal = Column(JSON, nullable=True)               # frozen AI decision pre-override
+
     # ── Decision metadata (cost of reaching it) ────────────────────────────────
     session_id = Column(String, nullable=True)
     total_tokens = Column(Integer, default=0)
@@ -92,6 +110,15 @@ class DecisionTrace(Base):
             "outcome_reasons": self.outcome_reasons or [],
             "attempts": self.attempts or [],
             "pending_reason": self.pending_reason,
+            "decision_source": self.decision_source or "ai",
+            "review_status": self.review_status,
+            "review_trigger": self.review_trigger,
+            "reviewed_by": self.reviewed_by,
+            "reviewed_at": self.reviewed_at.isoformat() if self.reviewed_at else None,
+            "review_reason": self.review_reason,
+            "review_comments": self.review_comments,
+            "review_evidence": self.review_evidence or [],
+            "ai_proposal": self.ai_proposal,
             "session_id": self.session_id,
             "total_tokens": self.total_tokens or 0,
             "total_cost": round(self.total_cost or 0.0, 6),

@@ -83,6 +83,18 @@ class Settings(BaseSettings):
     agent_timeout_seconds: int = 120
     confidence_threshold: float = 0.75
 
+    # Human-in-the-loop review (L4 HITL). When the automated sign-on can't make a
+    # confident final call, it pauses the workflow (WorkflowStatus.WAITING) and marks
+    # the decision review_status="pending_review" instead of resolving itself; a human
+    # then approves / rejects / overrides via POST /decisions/{id}/review.
+    hitl_enabled: bool = os.getenv("HITL_ENABLED", "true").lower() == "true"
+    # Route a conditional (compliance == "warning") candidate to a human instead of
+    # auto-signing them on.
+    hitl_review_on_warning: bool = os.getenv("HITL_REVIEW_ON_WARNING", "true").lower() == "true"
+    # When every ranked candidate fails compliance, route to a human (who may
+    # override-approve a borderline candidate) instead of recording a final rejection.
+    hitl_review_on_exhausted: bool = os.getenv("HITL_REVIEW_ON_EXHAUSTED", "true").lower() == "true"
+
     class Config:
         env_file = ".env"
         extra = "ignore"

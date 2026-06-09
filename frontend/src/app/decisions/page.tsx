@@ -17,6 +17,7 @@ import {
   Anchor, Ship, Activity, BarChart3, GitBranch, Wifi, WifiOff,
   RefreshCw, Sparkles, CheckCircle, XCircle, Clock, ChevronRight, Cpu, Wrench,
   Play, Square, AlertTriangle, RotateCcw, Share2, Loader2,
+  UserCheck, Replace, ShieldQuestion,
 } from "lucide-react";
 
 import { decisionApi } from "@/lib/api";
@@ -26,6 +27,8 @@ import DecisionGraph from "@/components/decisions/DecisionGraph";
 import PrecedentPanel from "@/components/decisions/PrecedentPanel";
 import PatternPanel from "@/components/decisions/PatternPanel";
 import SimilarCrewPanel from "@/components/decisions/SimilarCrewPanel";
+import ReviewPanel from "@/components/decisions/ReviewPanel";
+import AuditTrail from "@/components/decisions/AuditTrail";
 import type { DecisionTrace, DecisionTrajectoryStep, ComplianceAttempt } from "@/types";
 
 // How long each decision stays on screen during the auto-play walkthrough.
@@ -35,6 +38,14 @@ const OUTCOME_BADGE: Record<string, { label: string; color: string; icon: React.
   signed_on: { label: "Signed On", color: "#22c55e", icon: <CheckCircle className="w-3.5 h-3.5" /> },
   rejected: { label: "Rejected", color: "#ef4444", icon: <XCircle className="w-3.5 h-3.5" /> },
   pending: { label: "Pending", color: "#f59e0b", icon: <Clock className="w-3.5 h-3.5" /> },
+};
+
+// Who made the call — AI vs human-reviewed (L4 HITL). Shown as a small chip so AI
+// decisions and human-reviewed ones are distinguishable at a glance.
+const SOURCE_BADGE: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  ai: { label: "AI", color: "#00d4ff", icon: <Cpu className="w-3 h-3" /> },
+  human: { label: "Human", color: "#a78bfa", icon: <UserCheck className="w-3 h-3" /> },
+  ai_then_human: { label: "AI → Human", color: "#a78bfa", icon: <Replace className="w-3 h-3" /> },
 };
 
 // A decision row is seeded sample data (vs. a real live capture) when its
@@ -57,6 +68,21 @@ export default function DecisionsPage() {
   const [showSample, setShowSample] = useState(false);
   const lastRefreshKey = useRef<string>("");
 
+  // HITL — decision_ids surfaced for human review (the pending_review queue, plus any
+  // reviewed this session). Always visible in the list so a reviewer can act on them
+  // even outside the live sign-off that produced them.
+  const [hitlVisibleIds, setHitlVisibleIds] = useState<Set<string>>(new Set());
+  // Bumped after a review submits so the audit accordion refetches.
+  const [auditRefresh, setAuditRefresh] = useState(0);
+  const surfaceHitl = useCallback((ids: string[]) => {
+    setHitlVisibleIds((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const id of ids) if (id && !next.has(id)) { next.add(id); changed = true; }
+      return changed ? next : prev;
+    });
+  }, []);
+
   // Auto-play walkthrough: a queue of decision_ids and the current position.
   // demoPos === -1 means idle (no walkthrough running).
   const [demoQueue, setDemoQueue] = useState<string[]>([]);
@@ -70,26 +96,46 @@ export default function DecisionsPage() {
     setRevealedOutcomes((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
   }, []);
 
+  // Decisions the walkthrough/user has actually reached (selected) this view. The
+  // "needs review" banner + card flag are gated on this so a pending-review decision
+  // only surfaces WHEN the seed flow arrives at it — not up front at the initial stage.
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+
   // Mirror demoPos in a ref so the live-event handler can tell whether a seed
   // walkthrough is running WITHOUT a live sign-off ever interrupting it.
   const demoActiveRef = useRef(false);
   useEffect(() => { demoActiveRef.current = demoPos >= 0; }, [demoPos]);
 
+  // Mark a decision "reached" once it becomes the selected one (walkthrough step,
+  // manual click, or a live review auto-select) — this is what un-hides its review flag.
+  useEffect(() => {
+    if (selectedId) setSeenIds((prev) => (prev.has(selectedId) ? prev : new Set(prev).add(selectedId)));
+  }, [selectedId]);
+
   const load = useCallback(async (): Promise<DecisionTrace[]> => {
     try {
-      const list = await decisionApi.list(50);
-      setDecisions(list);
+      // Fetch the recent list AND the HITL review queue, so decisions awaiting a human
+      // are always present even if they've aged out of the top-50 recent list.
+      const [list, queue] = await Promise.all([
+        decisionApi.list(50),
+        decisionApi.list(50, "pending_review"),
+      ]);
+      const byId = new Map(list.map((d) => [d.decision_id, d]));
+      for (const q of queue) if (!byId.has(q.decision_id)) byId.set(q.decision_id, q);
+      const merged = Array.from(byId.values());
+      setDecisions(merged);
+      if (queue.length) surfaceHitl(queue.map((q) => q.decision_id));
       // Intentionally do NOT auto-select a decision — the right panel starts on
       // its empty state and decisions are revealed one by one via the walkthrough
       // (or a manual click).
-      return list;
+      return merged;
     } catch {
       toast.error("Failed to load decisions", { id: "dec-load" });
       return [];
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [surfaceHitl]);
 
   useEffect(() => {
     load();
@@ -97,9 +143,10 @@ export default function DecisionsPage() {
 
   const startDemo = useCallback((ids: string[]) => {
     if (ids.length === 0) return;
-    // Reset gating so every card starts on "Awaiting outcome" — each label only
-    // reappears as the graph animates through to that decision's outcome.
+    // Reset gating so every card starts on "Awaiting outcome" — each label (and the
+    // review flag) only reappears as the walkthrough reaches that decision.
     setRevealedOutcomes(new Set());
+    setSeenIds(new Set());
     setSelectedId(null);
     setDemoQueue(ids);
     setDemoPos(0);
@@ -146,6 +193,59 @@ export default function DecisionsPage() {
           { icon: "📚" }
         );
       }
+      return;
+    }
+
+    // HITL — the automated process paused for a human. Flag the matching decision
+    // pending_review, surface it in the review queue, and toast the reviewer.
+    if (latest.event_type === "review_requested") {
+      const wfId = (latest.workflow_id as string) || (data.workflow_id as string) || "";
+      const decId = data.decision_id as string | undefined;
+      if (decId) surfaceHitl([decId]);
+      const patch = (d: DecisionTrace): DecisionTrace =>
+        d.workflow_id !== wfId
+          ? d
+          : {
+              ...d,
+              review_status: "pending_review",
+              review_trigger: (data.trigger as string) ?? d.review_trigger,
+              pending_reason: (data.message as string) ?? d.pending_reason,
+              outcome_status: "pending",
+            };
+      setDecisions((prev) => prev.map(patch));
+      load().then(() => setDecisions((prev) => prev.map(patch)));
+      if (!demoActiveRef.current) {
+        toast(`Human review needed — ${data.candidate_name || "candidate"}`, { icon: "🧑‍⚖️" });
+        if (decId) setSelectedId(decId);
+      }
+      return;
+    }
+
+    // HITL — a human verdict landed. Resolve the matching decision live (outcome +
+    // source + reviewer) so the card/graph reflect it without waiting for a reload.
+    if (latest.event_type === "decision_reviewed") {
+      const wfId = (latest.workflow_id as string) || (data.workflow_id as string) || "";
+      const decId = data.decision_id as string | undefined;
+      const action = data.action as string | undefined;
+      const reviewStatus =
+        action === "approve" ? "approved" : action === "override" ? "overridden" : "rejected";
+      if (decId) surfaceHitl([decId]);
+      const patch = (d: DecisionTrace): DecisionTrace =>
+        d.decision_id !== decId && d.workflow_id !== wfId
+          ? d
+          : {
+              ...d,
+              outcome_status: (data.outcome_status as DecisionTrace["outcome_status"]) ?? d.outcome_status,
+              decision_source: (data.decision_source as DecisionTrace["decision_source"]) ?? d.decision_source,
+              review_status: reviewStatus,
+              reviewed_by: (data.reviewer as string) ?? d.reviewed_by,
+              review_reason: (data.reason as string) ?? d.review_reason,
+              chosen_crew: (data.chosen_crew as DecisionTrace["chosen_crew"]) ?? d.chosen_crew,
+              pending_reason: null,
+            };
+      setDecisions((prev) => prev.map(patch));
+      setAuditRefresh((n) => n + 1);
+      load().then(() => setDecisions((prev) => prev.map(patch)));
       return;
     }
 
@@ -265,14 +365,38 @@ export default function DecisionsPage() {
 
   // The tab starts EMPTY and only fills on demand:
   //   • SEED/sample rows show after the user clicks Seed (showSample).
-  //   • LIVE rows show only for sign-offs surfaced THIS session (liveDecisionIds),
-  //     not for every decision already persisted in the DB.
+  //   • LIVE rows show only for sign-offs surfaced THIS session (liveDecisionIds).
+  //   • HITL rows (awaiting / acted-on review this session) ALWAYS show, so a
+  //     reviewer can act on the queue regardless of which session produced them.
   const visibleDecisions = useMemo(
     () =>
       decisions.filter((d) =>
-        isSeedDecision(d) ? showSample : liveDecisionIds.includes(d.decision_id)
+        isSeedDecision(d)
+          ? showSample
+          : liveDecisionIds.includes(d.decision_id) || hitlVisibleIds.has(d.decision_id)
       ),
-    [decisions, showSample, liveDecisionIds]
+    [decisions, showSample, liveDecisionIds, hitlVisibleIds]
+  );
+
+  // The HITL review queue — decisions awaiting a human. Gated to ones the flow has
+  // REACHED (seenIds), so during the seed walkthrough the banner only appears once the
+  // review candidate comes up, not at the initial stage.
+  const pendingReview = useMemo(
+    () => decisions.filter((d) => d.review_status === "pending_review" && seenIds.has(d.decision_id)),
+    [decisions, seenIds]
+  );
+
+  // Patch a freshly-reviewed decision into the list (from the ReviewPanel submit) and
+  // refresh its audit. The graph's outcome label can reveal immediately now.
+  const handleReviewed = useCallback(
+    (updated: DecisionTrace) => {
+      setDecisions((prev) => prev.map((d) => (d.decision_id === updated.decision_id ? updated : d)));
+      surfaceHitl([updated.decision_id]);
+      setRevealedOutcomes((prev) => new Set(prev).add(updated.decision_id));
+      setAuditRefresh((n) => n + 1);
+      load();
+    },
+    [load, surfaceHitl]
   );
 
   const handleSeed = async () => {
@@ -413,6 +537,43 @@ export default function DecisionsPage() {
           </motion.div>
         )}
 
+        {/* HITL — review queue: decisions the automated process paused on, awaiting a
+            human verdict. Click one to open its Review panel on the right. */}
+        {pendingReview.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-5 glass rounded-2xl border border-amber-500/40 bg-amber-900/10 px-4 py-3"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldQuestion className="w-4 h-4 text-amber-300" />
+              <span className="text-sm font-semibold text-white">
+                {pendingReview.length} decision{pendingReview.length > 1 ? "s" : ""} need human review
+              </span>
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {pendingReview.map((d) => (
+                <button
+                  key={d.decision_id}
+                  onClick={() => selectCard(d.decision_id)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition ${
+                    d.decision_id === selectedId
+                      ? "border-amber-400/70 bg-amber-500/15 text-white"
+                      : "border-amber-500/30 text-amber-200 hover:bg-amber-500/10"
+                  }`}
+                >
+                  <ShieldQuestion className="w-3.5 h-3.5" />
+                  {d.ai_proposal?.name || d.chosen_crew?.name || d.query_context?.departing_crew?.name || d.decision_id.slice(0, 8)}
+                  <span className="text-[10px] text-amber-300/80">
+                    {d.review_trigger === "exhausted" ? "all failed" : "conditional"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* L4 #4 — pattern detection builds up incrementally: it aggregates only the
             decisions whose outcome has been revealed so far (the walkthrough reveals
             them one crew member at a time), so counts/reject-rate/recurring-gap start
@@ -447,17 +608,24 @@ export default function DecisionsPage() {
                   active={d.decision_id === selectedId}
                   playing={demoPos >= 0 && d.decision_id === demoQueue[demoPos]}
                   outcomeRevealed={revealedOutcomes.has(d.decision_id)}
+                  reviewReached={seenIds.has(d.decision_id)}
                   onClick={() => selectCard(d.decision_id)}
                 />
               ))
             )}
           </div>
 
-          {/* Right: graph + trajectory */}
+          {/* Right: graph + (HITL review) + trajectory + audit */}
           <div className="col-span-12 lg:col-span-8 space-y-4">
             <DecisionGraph decision={selected} onOutcomeRevealed={handleOutcomeRevealed} />
+            {selected && selected.review_status === "pending_review" && (
+              <ReviewPanel decision={selected} onReviewed={handleReviewed} />
+            )}
             {selected && <PrecedentPanel decision={selected} />}
             {selected && <TrajectoryTrace decision={selected} />}
+            {selected && (
+              <AuditTrail decisionId={selected.decision_id} refreshKey={auditRefresh} />
+            )}
           </div>
         </div>
       </div>
@@ -465,9 +633,18 @@ export default function DecisionsPage() {
   );
 }
 
-function DecisionCard({ decision, active, playing = false, outcomeRevealed = false, onClick }: { decision: DecisionTrace; active: boolean; playing?: boolean; outcomeRevealed?: boolean; onClick: () => void }) {
+function DecisionCard({ decision, active, playing = false, outcomeRevealed = false, reviewReached = false, onClick }: { decision: DecisionTrace; active: boolean; playing?: boolean; outcomeRevealed?: boolean; reviewReached?: boolean; onClick: () => void }) {
   const badge = OUTCOME_BADGE[decision.outcome_status] || OUTCOME_BADGE.pending;
   const dep = decision.query_context?.departing_crew || {};
+  // "Needs review" only surfaces once the flow has REACHED this decision — otherwise
+  // it stays on the neutral "Awaiting outcome" placeholder like every other card.
+  const pendingReview = decision.review_status === "pending_review";
+  const showNeedsReview = pendingReview && reviewReached;
+  // Show the source chip once a human has touched the decision (human / ai_then_human);
+  // a plain auto decision needs no chip (the default is AI).
+  const src = decision.decision_source && decision.decision_source !== "ai"
+    ? SOURCE_BADGE[decision.decision_source]
+    : null;
   return (
     <motion.button
       onClick={onClick}
@@ -475,13 +652,22 @@ function DecisionCard({ decision, active, playing = false, outcomeRevealed = fal
       animate={playing ? { scale: [1, 1.015, 1] } : { scale: 1 }}
       transition={playing ? { duration: 1.6, repeat: Infinity } : { duration: 0.2 }}
       className={`w-full text-left glass rounded-2xl p-4 border transition ${
-        active ? "border-ocean-accent/60 shadow-lg shadow-ocean-accent/10" : "border-ocean-border/40 hover:border-ocean-border"
+        showNeedsReview
+          ? "border-amber-500/50 shadow-lg shadow-amber-500/5"
+          : active
+          ? "border-ocean-accent/60 shadow-lg shadow-ocean-accent/10"
+          : "border-ocean-border/40 hover:border-ocean-border"
       }`}
     >
       <div className="flex items-center justify-between mb-2">
-        {/* Outcome label appears only once the right-side graph has revealed the
-            outcome node for this decision; until then a neutral placeholder shows. */}
-        {outcomeRevealed ? (
+        {/* Once the flow reaches an awaiting-review decision, the card flags that
+            instead of an outcome. Otherwise the outcome label appears once the graph
+            has revealed the outcome node; until then a neutral placeholder shows. */}
+        {showNeedsReview ? (
+          <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider text-amber-300 border border-amber-500/50 bg-amber-500/10">
+            <ShieldQuestion className="w-3 h-3" /> Needs review
+          </span>
+        ) : outcomeRevealed ? (
           <motion.span
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -495,9 +681,22 @@ function DecisionCard({ decision, active, playing = false, outcomeRevealed = fal
             <Clock className="w-3 h-3" /> Awaiting outcome
           </span>
         )}
-        {decision.confidence_score != null && (
-          <span className="text-xs font-semibold text-ocean-accent">{decision.confidence_score}%</span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {/* AI vs human-reviewed chip — revealed WITH the outcome (once the flow has
+              reached this decision), so a seeded human decision doesn't show as
+              "Human" before the walkthrough gets to it. */}
+          {outcomeRevealed && src && (
+            <span
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold"
+              style={{ color: src.color, border: `1px solid ${src.color}55`, background: `${src.color}14` }}
+            >
+              {src.icon} {src.label}
+            </span>
+          )}
+          {decision.confidence_score != null && (
+            <span className="text-xs font-semibold text-ocean-accent">{decision.confidence_score}%</span>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2 text-sm">
         <span className="text-gray-400 truncate">{dep.name || "—"}</span>
@@ -506,7 +705,10 @@ function DecisionCard({ decision, active, playing = false, outcomeRevealed = fal
       </div>
       <div className="flex items-center justify-between mt-2 text-[11px] text-gray-500">
         <span>{decision.chosen_crew?.rank || dep.rank || "—"}</span>
-        <span>{decision.created_at ? new Date(decision.created_at).toLocaleString() : ""}</span>
+        <span>
+          {outcomeRevealed && decision.reviewed_by ? `${decision.reviewed_by} · ` : ""}
+          {decision.created_at ? new Date(decision.created_at).toLocaleString() : ""}
+        </span>
       </div>
     </motion.button>
   );

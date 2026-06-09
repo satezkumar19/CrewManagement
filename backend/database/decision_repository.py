@@ -7,10 +7,12 @@ list[dict] / None so call sites just `await` them.
 """
 from datetime import datetime
 from typing import Optional
+from uuid import uuid4
 
 from sqlalchemy import delete, select
 
 from database.db import AsyncSessionLocal
+from database.decision_audit_orm import DecisionAudit
 from database.decision_orm import DecisionTrace
 
 # Seed/demo rows are stamped with this workflow_id prefix (see seed_demo); live
@@ -114,16 +116,166 @@ async def update_progress_by_workflow(
         return row.to_dict()
 
 
-async def list_decisions(limit: int = 50) -> list[dict]:
-    """Most-recent-first list of captured decisions (lightweight — full trace via get)."""
+async def request_review_by_workflow(
+    workflow_id: str,
+    *,
+    review_trigger: str,
+    pending_reason: str,
+    ai_proposal: Optional[dict] = None,
+    attempts: Optional[list] = None,
+    compliance_status: Optional[str] = None,
+    compliance_score: Optional[float] = None,
+    outcome_reasons: Optional[list] = None,
+) -> Optional[dict]:
+    """Mark the workflow's decision as awaiting a human (HITL), leaving it pending.
+
+    Sets review_status='pending_review' and review_trigger (why), and freezes the
+    AI's proposal in ai_proposal so a later override can show what changed. The
+    outcome_status stays 'pending' — only a human verdict resolves it. Updates the
+    most recent decision for the workflow; returns it, or None.
+    """
+    async with AsyncSessionLocal() as session:
+        row = (
+            await session.execute(
+                select(DecisionTrace)
+                .where(DecisionTrace.workflow_id == workflow_id)
+                .order_by(DecisionTrace.created_at.desc())
+            )
+        ).scalars().first()
+        if row is None:
+            return None
+        row.review_status = "pending_review"
+        row.review_trigger = review_trigger
+        row.pending_reason = pending_reason
+        if ai_proposal is not None and not row.ai_proposal:
+            row.ai_proposal = ai_proposal
+        if attempts is not None:
+            row.attempts = attempts
+        if compliance_status is not None:
+            row.compliance_status = compliance_status
+        if compliance_score is not None:
+            row.compliance_score = compliance_score
+        if outcome_reasons is not None:
+            row.outcome_reasons = outcome_reasons
+        await session.commit()
+        return row.to_dict()
+
+
+async def apply_review_by_decision(
+    decision_id: str,
+    *,
+    review_status: str,
+    decision_source: str,
+    outcome_status: str,
+    chosen_crew: Optional[dict] = None,
+    chosen_crew_id: Optional[str] = None,
+    compliance_status: Optional[str] = None,
+    compliance_score: Optional[float] = None,
+    outcome_reasons: Optional[list] = None,
+    reviewed_by: Optional[str] = None,
+    review_reason: Optional[str] = None,
+    review_comments: Optional[str] = None,
+    review_evidence: Optional[list] = None,
+) -> Optional[dict]:
+    """Stamp a human verdict onto one decision (HITL), resolving it.
+
+    Before applying an override, freezes the current (AI) decision into ai_proposal
+    if not already set — so the audit shows what the AI wanted vs what the human chose.
+    Clears pending_reason and stamps reviewed_at/resolved_at. Returns the row, or None.
+    """
+    async with AsyncSessionLocal() as session:
+        row = await session.get(DecisionTrace, decision_id)
+        if row is None:
+            return None
+        if not row.ai_proposal:
+            row.ai_proposal = {
+                "chosen_crew_id": row.chosen_crew_id,
+                "chosen_crew": row.chosen_crew,
+                "outcome_status": row.outcome_status,
+                "compliance_status": row.compliance_status,
+                "compliance_score": row.compliance_score,
+                "confidence_score": row.confidence_score,
+            }
+        now = datetime.utcnow()
+        row.review_status = review_status
+        row.decision_source = decision_source
+        row.outcome_status = outcome_status
+        if chosen_crew is not None:
+            row.chosen_crew = chosen_crew
+        if chosen_crew_id is not None:
+            row.chosen_crew_id = chosen_crew_id
+        if compliance_status is not None:
+            row.compliance_status = compliance_status
+        if compliance_score is not None:
+            row.compliance_score = compliance_score
+        if outcome_reasons is not None:
+            row.outcome_reasons = outcome_reasons
+        row.reviewed_by = reviewed_by
+        row.review_reason = review_reason
+        row.review_comments = review_comments
+        if review_evidence is not None:
+            row.review_evidence = review_evidence
+        row.pending_reason = None
+        row.reviewed_at = now
+        row.resolved_at = now
+        await session.commit()
+        return row.to_dict()
+
+
+async def insert_audit(
+    decision_id: str,
+    *,
+    actor: Optional[str],
+    action: str,
+    from_state: Optional[str] = None,
+    to_state: Optional[str] = None,
+    reason: Optional[str] = None,
+    comments: Optional[str] = None,
+    evidence: Optional[list] = None,
+) -> dict:
+    """Append one immutable audit row for a decision state transition. Never updates."""
+    async with AsyncSessionLocal() as session:
+        row = DecisionAudit(
+            audit_id=str(uuid4()),
+            decision_id=decision_id,
+            ts=datetime.utcnow(),
+            actor=actor,
+            action=action,
+            from_state=from_state,
+            to_state=to_state,
+            reason=reason,
+            comments=comments,
+            evidence=evidence,
+        )
+        session.add(row)
+        await session.commit()
+        return row.to_dict()
+
+
+async def list_audit(decision_id: str) -> list[dict]:
+    """Chronological audit trail for one decision (oldest first)."""
     async with AsyncSessionLocal() as session:
         rows = (
             await session.execute(
-                select(DecisionTrace)
-                .order_by(DecisionTrace.created_at.desc())
-                .limit(limit)
+                select(DecisionAudit)
+                .where(DecisionAudit.decision_id == decision_id)
+                .order_by(DecisionAudit.ts.asc())
             )
         ).scalars().all()
+        return [r.to_dict() for r in rows]
+
+
+async def list_decisions(limit: int = 50, *, review_status: Optional[str] = None) -> list[dict]:
+    """Most-recent-first list of captured decisions (lightweight — full trace via get).
+
+    Pass review_status to filter (e.g. 'pending_review' for the HITL review queue).
+    """
+    async with AsyncSessionLocal() as session:
+        query = select(DecisionTrace)
+        if review_status is not None:
+            query = query.where(DecisionTrace.review_status == review_status)
+        query = query.order_by(DecisionTrace.created_at.desc()).limit(limit)
+        rows = (await session.execute(query)).scalars().all()
         return [r.to_dict() for r in rows]
 
 
@@ -151,6 +303,24 @@ async def count_demo_decisions() -> int:
             )
         ).all()
         return len(rows)
+
+
+async def delete_demo_audit() -> int:
+    """Delete audit rows belonging to seeded/sample decisions (HITL).
+
+    Audit rows key on decision_id (not workflow_id), so match via the demo decisions.
+    MUST run BEFORE delete_demo_decisions() — once the decisions are gone the subquery
+    finds nothing. Live audit rows are never matched. Returns the number removed.
+    """
+    async with AsyncSessionLocal() as session:
+        demo_ids = select(DecisionTrace.decision_id).where(
+            DecisionTrace.workflow_id.like(f"{DEMO_PREFIX}%")
+        )
+        result = await session.execute(
+            delete(DecisionAudit).where(DecisionAudit.decision_id.in_(demo_ids))
+        )
+        await session.commit()
+        return result.rowcount or 0
 
 
 async def delete_demo_decisions() -> int:

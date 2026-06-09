@@ -9,8 +9,10 @@ from typing import Any, Callable, Dict, Optional
 import structlog
 
 from agents.master_agent import MasterAgent
+from config import settings
 from database.models import WorkflowState, WorkflowStatus
 from database.crew_repository import get_crew_by_id, get_sign_on_crew, update_crew
+from database.decision_repository import get_decision
 from services.state_service import state_service
 from services.decision_trace_service import decision_trace_service
 from services.precedent_service import precedent_service
@@ -178,6 +180,9 @@ class WorkflowService:
         port = (sign_off_crew or {}).get("port", "Singapore")
         attempts: list = []
         winner: Optional[Dict[str, Any]] = None  # {profile, status, score, warnings, recommendation, subgraph}
+        # HITL — set when the loop hits a case the system shouldn't resolve itself (a
+        # conditional 'warning' pass with review-on-warning enabled). Routes to a human.
+        review_request: Optional[Dict[str, Any]] = None
 
         for idx, cand in enumerate(queue):
             cid = cand.get("crew_id")
@@ -251,11 +256,24 @@ class WorkflowService:
                 "warnings": warnings,
             }
 
-            # Pass rule: 'passed' or 'warning' (conditional) signs the crew on.
-            if status in ("passed", "warning"):
+            # Pass rule: a clean 'passed' always auto-signs-on. A 'warning' (conditional)
+            # also auto-signs-on UNLESS HITL review-on-warning is enabled — then the
+            # system stops short of deciding the exception itself and hands it to a human.
+            review_on_warning = settings.hitl_enabled and settings.hitl_review_on_warning
+            if status == "passed" or (status == "warning" and not review_on_warning):
                 winner = {
                     "profile": profile, "status": status, "score": score,
                     "warnings": warnings, "recommendation": recommendation, "subgraph": subgraph,
+                }
+                break
+            if status == "warning":
+                # Conditional pass → a human decides. Stop the retry loop; the caller
+                # requests review for this candidate (see below).
+                review_request = {
+                    "profile": profile, "status": status, "score": score,
+                    "warnings": warnings, "failures": failures,
+                    "recommendation": recommendation, "subgraph": subgraph,
+                    "trigger": "warning",
                 }
                 break
 
@@ -339,7 +357,27 @@ class WorkflowService:
                 log.warning("auto_compliance.signon_crew_not_found", crew_id=cid)
             return
 
-        # Every attempt failed — record a final rejection with the full journey.
+        # HITL — the system declines to resolve this itself: a conditional 'warning'
+        # candidate (set above), or (when review-on-exhausted is enabled) every
+        # candidate failed. Hand it to a human instead of auto-deciding.
+        if review_request is None and (
+            settings.hitl_enabled and settings.hitl_review_on_exhausted and attempts
+        ):
+            review_request = {
+                "profile": None,  # no single proposal; the best near-miss is offered
+                "status": (attempts[-1] or {}).get("compliance_status"),
+                "score": (attempts[-1] or {}).get("compliance_score"),
+                "warnings": [],
+                "failures": list((attempts[-1] or {}).get("failures") or []),
+                "recommendation": None,
+                "subgraph": None,
+                "trigger": "exhausted",
+            }
+        if review_request is not None:
+            await self._request_human_review(workflow, review_request, attempts)
+            return
+
+        # Every attempt failed (and HITL review-on-exhausted is off) — final rejection.
         last = attempts[-1] if attempts else {}
         log.info("auto_compliance.rejected", workflow_id=workflow.workflow_id, attempts=len(attempts))
         exhausted = len(attempts) > 1
@@ -373,6 +411,210 @@ class WorkflowService:
                 f"({last.get('compliance_status')}) — not signed on"
             ),
         })
+
+    async def _request_human_review(
+        self, workflow: WorkflowState, req: Dict[str, Any], attempts: list
+    ) -> None:
+        """Pause the workflow for a human decision (HITL) and announce it live.
+
+        Marks the decision review_status='pending_review', sets the workflow to
+        WAITING, and broadcasts `review_requested` with the candidate context so the
+        Decision Tab can surface the review queue.
+        """
+        trigger = req.get("trigger")
+        profile = req.get("profile")
+        if not profile and attempts:
+            # Exhausted: offer the best near-miss (highest compliance score) as the
+            # candidate under review; the human may override to anyone.
+            best = max(attempts, key=lambda a: (a.get("compliance_score") or 0))
+            profile = {
+                "crew_id": best.get("crew_id"), "name": best.get("name"), "rank": best.get("rank"),
+            }
+        profile = profile or {}
+        cid = profile.get("crew_id")
+        proposal = {
+            "crew_id": cid, "name": profile.get("name"), "rank": profile.get("rank"),
+            "grade": profile.get("grade"), "port": profile.get("port"),
+            "nationality": profile.get("nationality"),
+            "compliance_status": req.get("status"), "compliance_score": req.get("score"),
+            "trigger": trigger,
+        }
+        if trigger == "warning":
+            pending_reason = (
+                f"{profile.get('name')} cleared compliance only conditionally "
+                f"({req.get('status')}, {req.get('score')}%) — awaiting a human decision to "
+                f"approve the exception, reject, or pick another candidate."
+            )
+        else:  # exhausted
+            pending_reason = (
+                f"All {len(attempts)} candidate(s) failed compliance — awaiting a human "
+                f"decision to override-approve a candidate or confirm the rejection."
+            )
+        reasons = list(req.get("warnings") or req.get("failures") or [])
+
+        updated = await decision_trace_service.request_review(
+            workflow.workflow_id,
+            review_trigger=trigger or "review",
+            pending_reason=pending_reason,
+            ai_proposal=proposal,
+            attempts=attempts,
+            compliance_status=req.get("status"),
+            compliance_score=req.get("score"),
+            outcome_reasons=reasons,
+        )
+
+        workflow.status = WorkflowStatus.WAITING
+        await state_service.update_workflow(workflow)
+        log.info("auto_compliance.review_requested", workflow_id=workflow.workflow_id, trigger=trigger)
+
+        await self._event_callback("review_requested", "Compliance Agent", {
+            "workflow_id": workflow.workflow_id,
+            "decision_id": (updated or {}).get("decision_id"),
+            "trigger": trigger,
+            "candidate_id": cid,
+            "candidate_name": profile.get("name"),
+            "candidate_rank": profile.get("rank"),
+            "compliance_status": req.get("status"),
+            "compliance_score": req.get("score"),
+            "reasons": reasons,
+            "attempts": attempts,
+            "message": pending_reason,
+        })
+
+    async def apply_human_review(
+        self,
+        decision_id: str,
+        *,
+        action: str,
+        reviewer: Optional[str] = None,
+        reason: Optional[str] = None,
+        comments: Optional[str] = None,
+        evidence: Optional[list] = None,
+        override_crew_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Resolve a pending_review decision with a human verdict (HITL).
+
+        approve  → sign on the AI's proposed candidate.
+        override → sign on a human-chosen candidate (override_crew_id).
+        reject   → record a rejection; nobody is signed on.
+
+        Mirrors the automated path's crew-pool update + precedent recording, so the
+        human verdict enters the Precedent Index for future matches. Raises ValueError
+        on a bad action, missing decision, or a decision not awaiting review.
+        """
+        action = (action or "").lower()
+        if action not in ("approve", "reject", "override"):
+            raise ValueError(f"Unknown review action: {action!r}")
+
+        decision = await get_decision(decision_id)
+        if not decision:
+            raise ValueError(f"Decision {decision_id} not found")
+        if decision.get("review_status") != "pending_review":
+            raise ValueError(f"Decision {decision_id} is not awaiting review")
+
+        workflow_id = decision.get("workflow_id")
+        proposal = decision.get("ai_proposal") or {}
+        compliance_status = decision.get("compliance_status")
+        compliance_score = decision.get("compliance_score")
+        chosen_crew: Optional[Dict[str, Any]] = None
+        chosen_id: Optional[str] = None
+
+        if action == "reject":
+            outcome_status = "rejected"
+            decision_source = "human"
+            outcome_reasons = [f"Rejected by {reviewer or 'reviewer'}"] + ([reason] if reason else [])
+        else:
+            # approve → the AI's proposed candidate; override → a human-named candidate.
+            target_id = override_crew_id if action == "override" else (
+                proposal.get("crew_id") or decision.get("chosen_crew_id")
+            )
+            if not target_id:
+                raise ValueError("No candidate to sign on — provide override_crew_id")
+            profile = await get_crew_by_id(target_id, pool="signon") \
+                or await get_crew_by_id(target_id, pool="signoff")
+            if not profile:
+                raise ValueError(f"Candidate {target_id} not found")
+            chosen_id = target_id
+            chosen_crew = {
+                "crew_id": target_id, "name": profile.get("name"), "rank": profile.get("rank"),
+                "grade": profile.get("grade"), "port": profile.get("port"),
+                "nationality": profile.get("nationality"),
+            }
+            outcome_status = "signed_on"
+            decision_source = "ai_then_human" if action == "override" else "human"
+            outcome_reasons = [f"Approved by {reviewer or 'reviewer'}"] + ([reason] if reason else [])
+            # An override to a DIFFERENT crew supersedes the AI's compliance figures.
+            ai_target = proposal.get("crew_id") or decision.get("chosen_crew_id")
+            if action == "override" and target_id != ai_target:
+                compliance_status = None
+                compliance_score = None
+
+        updated = await decision_trace_service.apply_review(
+            decision_id,
+            action=action,
+            reviewer=reviewer,
+            outcome_status=outcome_status,
+            decision_source=decision_source,
+            chosen_crew=chosen_crew,
+            chosen_crew_id=chosen_id,
+            compliance_status=compliance_status,
+            compliance_score=compliance_score,
+            outcome_reasons=outcome_reasons,
+            reason=reason,
+            comments=comments,
+            evidence=evidence,
+            broadcast=self._event_callback,
+        )
+        if not updated:
+            raise ValueError(f"Failed to apply review to decision {decision_id}")
+
+        # Crew-pool + downstream events, mirroring the automated sign-on / rejection.
+        if outcome_status == "signed_on" and chosen_id:
+            row = await update_crew(chosen_id, pool="signoff", status="Onboard")
+            if row:
+                log.info("review.signed_on", crew_id=chosen_id, action=action, reviewer=reviewer)
+                await self._event_callback("crew_signed_on", "Human Reviewer", {
+                    "workflow_id": workflow_id,
+                    "crew_id": chosen_id,
+                    "crew_name": (chosen_crew or {}).get("name"),
+                    "crew_rank": (chosen_crew or {}).get("rank"),
+                    "compliance_status": compliance_status,
+                    "compliance_score": compliance_score,
+                    "decision_source": decision_source,
+                    "reviewer": reviewer,
+                    "attempts": updated.get("attempts"),
+                    "message": (
+                        f"{(chosen_crew or {}).get('name')} signed on by human "
+                        f"{'override' if action == 'override' else 'approval'} — added to onboard crew"
+                    ),
+                })
+            else:
+                log.warning("review.signon_crew_not_found", crew_id=chosen_id)
+        else:
+            log.info("review.rejected", decision_id=decision_id, reviewer=reviewer)
+            await self._event_callback("sign_on_rejected", "Human Reviewer", {
+                "workflow_id": workflow_id,
+                "crew_id": decision.get("chosen_crew_id"),
+                "crew_name": (decision.get("chosen_crew") or {}).get("name"),
+                "compliance_status": compliance_status,
+                "compliance_score": compliance_score,
+                "decision_source": decision_source,
+                "reviewer": reviewer,
+                "failures": outcome_reasons,
+                "attempts": updated.get("attempts"),
+                "message": f"Rejected by human review ({reviewer or 'reviewer'})",
+            })
+
+        # Record the human verdict as a precedent so future matches can learn from it.
+        await precedent_service.record_placement(updated)
+
+        # Close out the workflow if it's still tracked in memory.
+        wf = await state_service.get_workflow(workflow_id) if workflow_id else None
+        if wf:
+            wf.status = WorkflowStatus.COMPLETED
+            await state_service.update_workflow(wf)
+
+        return updated
 
     async def initiate_sign_on(
         self,

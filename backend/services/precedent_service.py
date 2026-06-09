@@ -111,9 +111,18 @@ class PrecedentService:
                 "outcome_status": status,
                 "compliance_status": decision.get("compliance_status"),
                 "compliance_score": decision.get("compliance_score"),
+                # L4 HITL — carry how the placement was decided so consult() can
+                # weight human-reviewed precedents above AI auto-decisions.
+                "decision_source": decision.get("decision_source") or "ai",
+                "reviewed_by": decision.get("reviewed_by"),
+                "review_reason": decision.get("review_reason"),
             }
             stored = await insert_precedent(record)
-            log.info("precedent.recorded", rank=record["rank"], port=record["port"], outcome=status)
+            log.info(
+                "precedent.recorded",
+                rank=record["rank"], port=record["port"], outcome=status,
+                source=record["decision_source"],
+            )
             return stored
         except Exception:
             log.warning("precedent.record.failed", exc_info=True)
@@ -140,22 +149,31 @@ class PrecedentService:
             "prefer_grades": {},
             "rationale": None,
             "summary": (precedent or {}).get("summary"),
+            # L4 HITL — True when at least one consulted precedent was human-reviewed.
+            "human_precedent": False,
         }
         try:
             matches = (precedent or {}).get("matches") or []
             if not matches:
                 return guidance
+            # A human-reviewed precedent is a stronger signal than an AI auto-decision,
+            # so its prefer/avoid weight is boosted (capped at 1.0).
+            HUMAN_BOOST = 1.25
             prefer_nat: Dict[str, float] = {}
             avoid_nat: Dict[str, float] = {}
             prefer_grade: Dict[str, float] = {}
             signed_examples: List[str] = []
+            human_seen = False
             for m in matches:
                 nat = m.get("chosen_crew_nationality")
                 grade = m.get("chosen_crew_grade")
                 outcome = m.get("outcome_status")
                 score = m.get("compliance_score")
+                human = bool(m.get("human_reviewed"))
+                human_seen = human_seen or human
+                boost = HUMAN_BOOST if human else 1.0
                 if outcome == "signed_on":
-                    w = round((score if score is not None else 85.0) / 100.0, 3)
+                    w = round(min(1.0, ((score if score is not None else 85.0) / 100.0) * boost), 3)
                     if nat:
                         prefer_nat[nat] = max(prefer_nat.get(nat, 0.0), w)
                     if grade:
@@ -167,28 +185,37 @@ class PrecedentService:
                         detail += f", {grade})" if grade else ")"
                     if score is not None:
                         detail += f" cleared at {score:.0f}%"
+                    if human:
+                        reviewer = m.get("reviewed_by")
+                        detail += f" — human-approved{f' by {reviewer}' if reviewer else ''}"
                     signed_examples.append(detail)
                 elif outcome == "rejected":
-                    # Penalty scaled by how badly it failed (low compliance → stronger avoid).
-                    w = round(1.0 - (score if score is not None else 40.0) / 100.0, 3)
+                    # Penalty scaled by how badly it failed (low compliance → stronger
+                    # avoid); a human rejection weighs more heavily still.
+                    base = 1.0 - (score if score is not None else 40.0) / 100.0
+                    w = round(min(1.0, max(base, 0.2) * boost), 3)
                     if nat:
-                        avoid_nat[nat] = max(avoid_nat.get(nat, 0.0), max(w, 0.2))
+                        avoid_nat[nat] = max(avoid_nat.get(nat, 0.0), w)
             # A nationality that both signed on AND was rejected before: prefer wins
             # (a confirmed success outweighs a single failure for the same profile).
             for nat in list(avoid_nat):
                 if nat in prefer_nat:
                     avoid_nat.pop(nat, None)
             has = bool(prefer_nat or avoid_nat or prefer_grade)
+            rationale = (
+                "Prior signed-on: " + "; ".join(signed_examples)
+                if signed_examples
+                else ("Prior placements for this profile were rejected" if avoid_nat else None)
+            )
+            if rationale and human_seen:
+                rationale += " · weighted up: includes human-reviewed precedent(s)"
             guidance.update({
                 "has_precedent": has,
                 "prefer_nationalities": prefer_nat,
                 "avoid_nationalities": avoid_nat,
                 "prefer_grades": prefer_grade,
-                "rationale": (
-                    "Prior signed-on: " + "; ".join(signed_examples)
-                    if signed_examples
-                    else ("Prior placements for this profile were rejected" if avoid_nat else None)
-                ),
+                "rationale": rationale,
+                "human_precedent": human_seen,
             })
         except Exception:
             log.warning("precedent.derive_guidance.failed", exc_info=True)
@@ -200,6 +227,7 @@ class PrecedentService:
         total = len(matches)
         signed = sum(1 for m in matches if m.get("outcome_status") == "signed_on")
         rejected = sum(1 for m in matches if m.get("outcome_status") == "rejected")
+        human_reviewed = sum(1 for m in matches if m.get("human_reviewed"))
         scores = [m["compliance_score"] for m in matches if m.get("compliance_score") is not None]
         avg = round(sum(scores) / len(scores), 1) if scores else None
         last = matches[0] if matches else None  # most recent (rows are desc by created_at)
@@ -207,9 +235,15 @@ class PrecedentService:
             "total": total,
             "signed_on": signed,
             "rejected": rejected,
+            # L4 HITL — how many of these prior placements were human-reviewed.
+            "human_reviewed": human_reviewed,
             "avg_compliance_score": avg,
             "last_choice": (
-                {"name": last.get("chosen_crew_name"), "outcome": last.get("outcome_status")}
+                {
+                    "name": last.get("chosen_crew_name"),
+                    "outcome": last.get("outcome_status"),
+                    "human_reviewed": bool(last.get("human_reviewed")),
+                }
                 if last else None
             ),
         }

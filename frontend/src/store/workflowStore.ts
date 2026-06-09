@@ -180,7 +180,12 @@ export const useWorkflowStore = create<WorkflowStore>()(
           // rejected candidate flips to "Rejected" and the next candidate appears the
           // moment the orchestrator moves on — instead of sitting on "Pending".
           event.event_type === "auto_compliance" ||
-          event.event_type === "sign_on_attempt_rejected"
+          event.event_type === "sign_on_attempt_rejected" ||
+          // HITL — the automated process paused for a human (review_requested) and the
+          // human's verdict landed (decision_reviewed). Both drive the review queue and
+          // the decision's live state on the Decisions tab.
+          event.event_type === "review_requested" ||
+          event.event_type === "decision_reviewed"
         ) {
           set({ lastDecisionEvent: event });
         }

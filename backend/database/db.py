@@ -26,6 +26,7 @@ async def init_db() -> None:
     # Import models so they register on Base.metadata before create_all.
     from database import crew_orm  # noqa: F401
     from database import decision_orm  # noqa: F401 — L4 decision_traces table
+    from database import decision_audit_orm  # noqa: F401 — L4 HITL audit trail
     from database import placement_precedent_orm  # noqa: F401 — L4 precedent index
 
     async with engine.begin() as conn:
@@ -62,6 +63,22 @@ async def init_db() -> None:
         "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS pending_reason VARCHAR",
         # L4 #3 — structural embedding on each crew row.
         "ALTER TABLE crew ADD COLUMN IF NOT EXISTS embedding JSON",
+        # L4 HITL — human-in-the-loop review fields on the decision trace. Added after
+        # Phase 1 created decision_traces, so older databases need them backfilled.
+        "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS decision_source VARCHAR DEFAULT 'ai'",
+        "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS review_status VARCHAR",
+        "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS review_trigger VARCHAR",
+        "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS reviewed_by VARCHAR",
+        "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP",
+        "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS review_reason VARCHAR",
+        "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS review_comments VARCHAR",
+        "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS review_evidence JSON",
+        "ALTER TABLE decision_traces ADD COLUMN IF NOT EXISTS ai_proposal JSON",
+        # L4 HITL — attribution on the precedent row, so human-reviewed placements
+        # can be weighted above AI auto-decisions in the matching feedback loop.
+        "ALTER TABLE placement_precedents ADD COLUMN IF NOT EXISTS decision_source VARCHAR DEFAULT 'ai'",
+        "ALTER TABLE placement_precedents ADD COLUMN IF NOT EXISTS reviewed_by VARCHAR",
+        "ALTER TABLE placement_precedents ADD COLUMN IF NOT EXISTS review_reason VARCHAR",
     )
     try:
         async with engine.begin() as conn:

@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CrewMember, WorkflowState, SystemMetrics, ROIMetrics, DecisionTrace, PatternReport, SimilarCrewResponse } from "@/types";
+import type { CrewMember, WorkflowState, SystemMetrics, ROIMetrics, DecisionTrace, PatternReport, SimilarCrewResponse, DecisionAudit, ReviewRequestBody } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -246,11 +246,19 @@ export const opsMapApi = {
 
 // ── Decisions (L4 Decision Graph) ──────────────────────────────────────────────
 export const decisionApi = {
-  list: (limit?: number) =>
-    api.get<DecisionTrace[]>("/decisions/", { params: { limit } }).then(r => r.data),
+  list: (limit?: number, review_status?: string) =>
+    api.get<DecisionTrace[]>("/decisions/", { params: { limit, review_status } }).then(r => r.data),
 
   get: (id: string) =>
     api.get<DecisionTrace>(`/decisions/${id}`).then(r => r.data),
+
+  // HITL — apply a human verdict (approve / reject / override) to a pending decision.
+  review: (id: string, body: ReviewRequestBody) =>
+    api.post<DecisionTrace>(`/decisions/${id}/review`, body).then(r => r.data),
+
+  // HITL — the append-only audit trail for one decision.
+  audit: (id: string) =>
+    api.get<DecisionAudit[]>(`/decisions/${id}/audit`).then(r => r.data),
 
   seedDemo: () =>
     api.post<{ seeded: number; already_present: boolean; decisions: DecisionTrace[] }>("/decisions/demo-seed").then(r => r.data),

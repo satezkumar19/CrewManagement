@@ -317,6 +317,39 @@ export interface ROIMetrics {
 
 export type DecisionOutcomeStatus = "pending" | "signed_on" | "rejected";
 
+// ── Human-in-the-loop review (L4 HITL) ─────────────────────────────────────────
+export type DecisionSource = "ai" | "human" | "ai_then_human";
+export type ReviewStatus = "pending_review" | "approved" | "rejected" | "overridden";
+export type ReviewAction = "approve" | "reject" | "override";
+
+export interface ReviewEvidence {
+  type?: string;       // e.g. "doc" | "link" | "note"
+  label: string;
+  ref?: string;        // url / document id / free text
+}
+
+export interface ReviewRequestBody {
+  action: ReviewAction;
+  reviewer?: string;
+  reason?: string;
+  comments?: string;
+  evidence?: ReviewEvidence[];
+  override_crew_id?: string;   // required for action="override"
+}
+
+export interface DecisionAudit {
+  audit_id: string;
+  decision_id: string;
+  ts?: string;
+  actor?: string;
+  action: string;       // review_requested | review_approve | review_reject | review_override
+  from_state?: string | null;
+  to_state?: string | null;
+  reason?: string | null;
+  comments?: string | null;
+  evidence?: ReviewEvidence[];
+}
+
 export interface DecisionTrajectoryStep {
   kind: "agent" | "tool";
   agent_name: string;
@@ -363,14 +396,20 @@ export interface PlacementPrecedent {
   outcome_status?: string;
   compliance_status?: string;
   compliance_score?: number;
+  // L4 HITL — attribution: was this prior placement human-reviewed (weighted higher)?
+  decision_source?: DecisionSource;
+  reviewed_by?: string | null;
+  review_reason?: string | null;
+  human_reviewed?: boolean;
 }
 
 export interface PrecedentSummary {
   total: number;
   signed_on: number;
   rejected: number;
+  human_reviewed?: number;
   avg_compliance_score?: number | null;
-  last_choice?: { name?: string; outcome?: string } | null;
+  last_choice?: { name?: string; outcome?: string; human_reviewed?: boolean } | null;
 }
 
 export interface PrecedentConsultation {
@@ -442,6 +481,20 @@ export interface DecisionTrace {
   outcome_reasons: string[];
   attempts?: ComplianceAttempt[];
   pending_reason?: string | null;
+  // ── Human-in-the-loop review (L4 HITL) ──
+  decision_source?: DecisionSource;          // ai | human | ai_then_human
+  review_status?: ReviewStatus | null;       // null | pending_review | approved | rejected | overridden
+  review_trigger?: string | null;            // warning | exhausted
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  review_reason?: string | null;
+  review_comments?: string | null;
+  review_evidence?: ReviewEvidence[];
+  ai_proposal?: Partial<CrewMember> & {       // frozen AI pick before any override
+    compliance_status?: string;
+    compliance_score?: number;
+    trigger?: string;
+  } | null;
   session_id?: string;
   total_tokens: number;
   total_cost: number;
