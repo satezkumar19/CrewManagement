@@ -242,6 +242,54 @@ class ManagedAgentsClient:
             "model": settings.claude_model,
         }
 
+    async def setup_intelligence(self, environment_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Create the L3 Intelligence topology: the 3 specialist sub-agents (Crew /
+        Contract-Wage / Vessel Ops) and the multiagent coordinator (the Supervisor),
+        reusing `environment_id` when given (e.g. the one from managed_agents.json) else
+        creating a fresh one. Returns an ids dict for managed_l3_agents.json.
+
+        Idempotency is the caller's concern — re-running creates duplicate agents.
+        """
+        # Lazy import: keeps the L3 intelligence stack out of client.py's load path
+        # (this client is also used by the unrelated sign-off workflow).
+        from agents.intelligence.managed_registry import (
+            intelligence_coordinator_config,
+            intelligence_specialist_configs,
+        )
+
+        if environment_id:
+            env_id = environment_id
+            log.info("setup_l3.environment.reused", environment_id=env_id)
+        else:
+            env = await self.client.beta.environments.create(
+                name="maritime-l3-intel-env",
+                config={"type": "cloud", "networking": {"type": "unrestricted"}},
+            )
+            env_id = env.id
+            log.info("setup_l3.environment.created", environment_id=env_id)
+
+        specialists: Dict[str, Dict[str, str]] = {}
+        roster_ids: List[str] = []
+        for cfg in intelligence_specialist_configs():
+            key = cfg.pop("key")
+            agent = await self.client.beta.agents.create(**cfg)
+            specialists[key] = {"agent_id": agent.id, "name": cfg["name"]}
+            roster_ids.append(agent.id)
+            log.info("setup_l3.specialist", key=key, agent_id=agent.id)
+
+        coordinator = await self.client.beta.agents.create(
+            **intelligence_coordinator_config(roster_ids)
+        )
+        log.info("setup_l3.coordinator", agent_id=coordinator.id)
+
+        return {
+            "environment_id": env_id,
+            "coordinator_agent_id": coordinator.id,
+            "specialists": specialists,
+            "model": settings.claude_model,
+        }
+
     async def _find_skill_id_by_title(self, display_title: str) -> Optional[str]:
         """Return the skill_id of an existing custom skill with this display_title, or
         None. Display titles are unique per org, so a match means we must version it

@@ -7,7 +7,80 @@ import type {
   AgentExecution,
   AgentStatus,
   ComplianceSubgraph,
+  IntelResult,
+  IntelRunState,
+  IntelRankedCandidate,
+  IntelNotification,
+  IntelInvestigatorState,
+  IntelFitGraph,
+  IntelSubject,
+  IntelAgentMessage,
 } from "@/types";
+
+// ─── L3 Intelligence helpers ──────────────────────────────────────────────────
+const emptyIntelResult = (): IntelResult => ({
+  workflow_id: null, status: "matched", context: {}, candidates: [],
+  notifications: [], reports: [], message: "", pool_size: 0, disqualified: 0,
+  timing: { first_event_ms: 0, total_ms: 0 },
+});
+
+// The 3 investigators, in pipeline order, all idle.
+const initialInvestigators = (): IntelInvestigatorState[] => [
+  { key: "crew", name: "Crew Intel", status: "idle" },
+  { key: "contract", name: "Contract/Wage Intel", status: "idle" },
+  { key: "vessel", name: "Vessel Ops Intel", status: "idle" },
+];
+
+const investigatorKey = (name: string): IntelInvestigatorState["key"] | null => {
+  const n = (name || "").toLowerCase();
+  if (n.includes("crew")) return "crew";
+  if (n.includes("contract") || n.includes("wage")) return "contract";
+  if (n.includes("vessel")) return "vessel";
+  return null;
+};
+
+// Apply an investigator status/eligibility update immutably.
+const patchInvestigator = (
+  list: IntelInvestigatorState[],
+  name: string,
+  patch: Partial<IntelInvestigatorState>,
+): IntelInvestigatorState[] => {
+  const key = investigatorKey(name);
+  if (!key) return list;
+  return list.map((i) => (i.key === key ? { ...i, ...patch } : i));
+};
+
+// Human-readable one-liner for a streamed intel_* event (mirrors the demo trace).
+function intelLabel(type: string, d: Record<string, unknown>): string {
+  switch (type) {
+    case "intel_supervisor_started":
+      return `Supervisor delegating → ${((d.investigators as string[]) || []).join(", ")}`;
+    case "intel_investigator_started":
+      return `${d.investigator} started (pool ${d.pool_size})`;
+    case "intel_investigator_completed":
+      return `${d.investigator}: eligible ${d.eligible}/${d.assessed}`;
+    case "intel_ranking":
+      return `Ranked top-${d.top_n} candidates`;
+    case "intel_graph":
+      return `Fit graph built — ${d.node_count} nodes, ${d.edge_count} edges`;
+    case "intel_signed_on":
+      return `Agent signed on ${d.name} (#1) → onboard`;
+    case "intel_narration_started":
+      return `Managed agents reasoning (live)…`;
+    case "intel_agent_message":
+      return `${d.agent}: ${String(d.text || "").slice(0, 60)}…`;
+    case "intel_narration_done":
+      return `Agent reasoning complete`;
+    case "intel_no_crew":
+      return `No eligible crew — ${d.message}`;
+    case "intel_notification_sent":
+      return `Notified ${d.role} via ${d.channel} [${d.status}]`;
+    case "intel_supervisor_completed":
+      return `Completed — status ${d.status}, ${d.shortlisted} shortlisted`;
+    default:
+      return type;
+  }
+}
 
 interface AgentLiveState {
   name: string;
@@ -85,12 +158,19 @@ interface WorkflowStore {
   // compliance verdict (signed on / rejected + reasons).
   signOnOutcome: SignOnOutcome | null;
 
+  // L3 Intelligence Graph run (driven by intel_* WS events)
+  intel: IntelRunState;
+  startIntelRun: (vacatedRank: string, port?: string, subject?: IntelSubject | null) => void;
+  setIntelResult: (result: IntelResult) => void;
+  setIntelSigningOn: (b: boolean) => void;
+  setIntelSignedOn: (crewId: string) => void;
+
   // WebSocket event handler
   handleWSEvent: (event: WSEvent) => void;
 
   // UI state
-  activeTab: "sign-on" | "sign-off";
-  setActiveTab: (tab: "sign-on" | "sign-off") => void;
+  activeTab: "sign-on" | "sign-off" | "shortlist";
+  setActiveTab: (tab: "sign-on" | "sign-off" | "shortlist") => void;
   showWorkflowPanel: boolean;
   setShowWorkflowPanel: (v: boolean) => void;
 }
@@ -146,6 +226,34 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
       signOnOutcome: null,
 
+      intel: {
+        running: false, startedAt: null, trace: [], result: null,
+        investigators: initialInvestigators(), fitGraph: null,
+        signedOnId: null, signingOn: false, subject: null,
+        agentNarration: [], narrating: false,
+      },
+      startIntelRun: (vacatedRank, port, subject = null) =>
+        set({
+          intel: {
+            running: true, startedAt: Date.now(), trace: [], result: null,
+            vacatedRank, port, investigators: initialInvestigators(), fitGraph: null,
+            signedOnId: null, signingOn: false, subject,
+        agentNarration: [], narrating: false,
+          },
+        }),
+      setIntelResult: (result) =>
+        set((s) => ({
+          intel: {
+            ...s.intel, result, running: false,
+            // Final result is authoritative; keep the live graph if the payload omits it.
+            fitGraph: result.fit_graph ?? s.intel.fitGraph,
+          },
+        })),
+      setIntelSigningOn: (b) =>
+        set((s) => ({ intel: { ...s.intel, signingOn: b } })),
+      setIntelSignedOn: (crewId) =>
+        set((s) => ({ intel: { ...s.intel, signedOnId: crewId, signingOn: false } })),
+
       events: [],
       // Keep a full session's worth of events (a multiagent run emits many);
       // the buffer is wiped on the next sign-off (workflow_created), so it stays
@@ -200,6 +308,105 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
         const agentName = event.agent_name || "Master Agent";
         const data = event.data || {};
+
+        // ── L3 Intelligence Graph — build the run live from intel_* events ───────
+        if (event.event_type.startsWith("intel_")) {
+          const it = get().intel;
+          const startedAt = it.startedAt ?? Date.now();
+          const trace = [
+            ...it.trace,
+            { t: Date.now() - startedAt, type: event.event_type, label: intelLabel(event.event_type, data) },
+          ];
+          let result = it.result;
+          let running = it.running;
+          let investigators = it.investigators;
+          let fitGraph = it.fitGraph;
+          let signedOnId = it.signedOnId;
+          let agentNarration = it.agentNarration;
+          let narrating = it.narrating;
+          switch (event.event_type) {
+            case "intel_supervisor_started":
+              running = true;
+              investigators = initialInvestigators();
+              break;
+            case "intel_investigator_started":
+              investigators = patchInvestigator(investigators, data.investigator as string, { status: "running" });
+              break;
+            case "intel_investigator_completed":
+              investigators = patchInvestigator(investigators, data.investigator as string, {
+                status: "done",
+                eligible: data.eligible as number,
+                assessed: data.assessed as number,
+              });
+              break;
+            case "intel_ranking":
+              result = {
+                ...(result ?? emptyIntelResult()),
+                status: "matched",
+                candidates: (data.candidates as IntelRankedCandidate[]) || [],
+              };
+              break;
+            case "intel_graph":
+              fitGraph = {
+                nodes: (data.nodes as IntelFitGraph["nodes"]) || [],
+                edges: (data.edges as IntelFitGraph["edges"]) || [],
+                backend: (data.backend as string) || "fallback",
+                node_count: (data.node_count as number) || 0,
+                edge_count: (data.edge_count as number) || 0,
+              };
+              break;
+            case "intel_no_crew":
+              result = {
+                ...(result ?? emptyIntelResult()),
+                status: "no_crew_found",
+                candidates: [],
+                message: (data.message as string) || "No eligible crew found",
+              };
+              break;
+            case "intel_notification_sent":
+              result = {
+                ...(result ?? emptyIntelResult()),
+                notifications: [
+                  ...((result ?? emptyIntelResult()).notifications),
+                  data as unknown as IntelNotification,
+                ],
+              };
+              break;
+            case "intel_supervisor_completed":
+              running = false;
+              result = {
+                ...(result ?? emptyIntelResult()),
+                status: (data.status as IntelResult["status"]) || "matched",
+                timing: (data.timing as IntelResult["timing"]) || { first_event_ms: 0, total_ms: 0 },
+              };
+              break;
+            case "intel_signed_on":
+              // The agent signed on the rank-1 candidate (also pushed via the HTTP
+              // sign-on call; handling the event keeps the badge correct if the WS
+              // broadcast lands first).
+              signedOnId = (data.crew_id as string) || signedOnId;
+              break;
+            case "intel_narration_started":
+              narrating = true;
+              agentNarration = [];
+              break;
+            case "intel_agent_message":
+              agentNarration = [
+                ...agentNarration,
+                {
+                  agent: (data.agent as string) || "Intelligence Supervisor",
+                  text: (data.text as string) || "",
+                  t: Date.now() - startedAt,
+                },
+              ];
+              break;
+            case "intel_narration_done":
+              narrating = false;
+              break;
+          }
+          set({ intel: { ...it, trace, result, running, startedAt, investigators, fitGraph, signedOnId, agentNarration, narrating } });
+          return; // intel_* events are fully handled here
+        }
 
         // Skill usage isn't a named event type — it's any event the backend tagged
         // category:"skill" (a read/bash that opened a SKILL.md). Count distinct skills

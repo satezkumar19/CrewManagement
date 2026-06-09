@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CrewMember, WorkflowState, SystemMetrics, ROIMetrics, DecisionTrace, PatternReport, SimilarCrewResponse, DecisionAudit, ReviewRequestBody } from "@/types";
+import type { CrewMember, WorkflowState, SystemMetrics, ROIMetrics, DecisionTrace, PatternReport, SimilarCrewResponse, IntelResult , DecisionAudit, ReviewRequestBody} from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -38,6 +38,40 @@ export const workflowApi = {
 
   controlWorkflow: (id: string, action: "pause" | "resume" | "cancel") =>
     api.post(`/workflow/${id}/control`, { action }).then(r => r.data),
+};
+
+// ── L3 Intelligence Graph ─────────────────────────────────────────────────────
+// The L3 match can run the deterministic backend (~ms) OR the Managed-Agents backend
+// (LLM coordinator + 3 sub-agents, which can take 1-2 minutes), so these two calls get
+// a generous timeout that overrides the 30s default.
+const INTEL_MATCH_TIMEOUT_MS = 180_000;
+
+export const intelligenceApi = {
+  // Top-N replacements for a departing crew member (by crew_id).
+  match: (crew_id: string, top_n = 3, contract_period_months = 6) =>
+    api.post<IntelResult>("/intelligence/match", {
+      crew_id, top_n, contract_period_months,
+    }, { timeout: INTEL_MATCH_TIMEOUT_MS }).then(r => r.data),
+
+  // Top-N replacements for an explicit vacancy (rank + port), no crew lookup.
+  matchContext: (vacated_rank: string, port?: string, top_n = 3, vacated_grade?: string) =>
+    api.post<IntelResult>("/intelligence/match-context", {
+      vacated_rank, port, top_n, vacated_grade,
+    }, { timeout: INTEL_MATCH_TIMEOUT_MS }).then(r => r.data),
+
+  // Sign on the selected (rank-1) replacement candidate: moves them to the onboard
+  // pool and records the L3 match score/reason. Returns the sign-on confirmation.
+  signOn: (
+    crew_id: string,
+    score?: number,
+    reason?: string,
+    vessel?: string,
+    workflow_id?: string,
+  ) =>
+    api.post<{ status: string; pool: string; crew_id: string; name?: string; rank?: string }>(
+      "/intelligence/sign-on",
+      { crew_id, score, reason, vessel, workflow_id },
+    ).then(r => r.data),
 };
 
 // ── Monitoring ────────────────────────────────────────────────────────────────

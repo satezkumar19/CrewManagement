@@ -1,0 +1,19 @@
+{
+  "environment_id": "env_019A2DbnrkJpoGat3segbVpa",
+  "coordinator_agent_id": "agent_01XQrQ69mW77hqWxWimCWHRE",
+  "specialists": {
+    "crew": {
+      "agent_id": "agent_01TGBZYiptzAzjZtwFYnm746",
+      "name": "Crew Intel Agent"
+    },
+    "contract": {
+      "agent_id": "agent_019GxHbBAu5uYybebR1RKBnA",
+      "name": "Contract/Wage Intel Agent"
+    },
+    "vessel": {
+      "agent_id": "agent_01MhxUDq1b29evbPyUGXgXS6",
+      "name": "Vessel Ops Intel Agent"
+    }
+  },
+  "model": "claude-sonnet-4-6"
+}

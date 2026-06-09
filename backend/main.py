@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from api.routes.crew import router as crew_router
 from api.routes.workflow import router as workflow_router
 from api.routes.monitoring import router as monitoring_router
+from api.routes.intelligence import router as intelligence_router
 from api.routes.decisions import router as decisions_router
 from api.routes.precedents import router as precedents_router
 from api.routes.patterns import router as patterns_router
@@ -56,6 +57,7 @@ app.add_middleware(
 app.include_router(crew_router, prefix="/api/v1")
 app.include_router(workflow_router, prefix="/api/v1")
 app.include_router(monitoring_router, prefix="/api/v1")
+app.include_router(intelligence_router, prefix="/api/v1")  # L3 Intelligence Graph
 app.include_router(graph_router, prefix="/api/v1")
 app.include_router(decisions_router, prefix="/api/v1")
 app.include_router(precedents_router, prefix="/api/v1")

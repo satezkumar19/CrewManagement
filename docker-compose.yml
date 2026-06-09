@@ -54,10 +54,14 @@ services:
   #   docker-compose exec backend python -m scripts.seed_crew
   #   docker-compose exec backend python -m scripts.seed_graph
   # NOTE: switching the image requires a fresh volume — run `docker-compose down -v` once.
+  # Apache AGE image (Postgres 16 + the AGE graph extension). The relational `crew`
+  # table works on any Postgres; AGE is only needed for GRAPH_BACKEND=age (L2 graph +
+  # graph-sourced candidates). Swap back to `postgres:16-alpine` if you only run fallback.
   postgres:
     build:
       context: ./backend/L2Knowledge_graph/deploy
       dockerfile: postgres-age.Dockerfile
+    image: apache/age:release_PG16_1.6.0
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password

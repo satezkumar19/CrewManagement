@@ -27,6 +27,23 @@ class Settings(BaseSettings):
     # Wall-clock guard for a single session turn (Phase 1 / Phase 2).
     session_turn_timeout_seconds: int = 300
 
+    # ── L3 Intelligence backend ───────────────────────────────────────────────
+    # "fallback" (default) = deterministic Python investigators. Uses ZERO LLM tokens,
+    # needs no API key, and meets the <2s/<10s SLOs + scenario tests — the safe everyday
+    # default for demos. "managed" is OPT-IN only (set INTEL_BACKEND=managed): it runs the
+    # real Claude Managed-Agents coordinator + 3 sub-agents in the background to stream
+    # reasoning, which DOES spend tokens (~50k per match). Left as "fallback" on purpose so
+    # nothing is billed unless someone explicitly opts in.
+    intel_backend: str = os.getenv("INTEL_BACKEND", "fallback")
+    # Persisted L3 coordinator + sub-agent IDs, created ONCE by scripts/setup_l3_agents.py
+    # and cached here (env vars win, mirroring the managed-agents block above).
+    managed_l3_agents_ids_file: str = os.getenv(
+        "MANAGED_L3_AGENTS_IDS_FILE",
+        os.path.join(os.path.dirname(__file__), "managed_l3_agents.json"),
+    )
+    managed_l3_environment_id: str = os.getenv("MANAGED_L3_ENVIRONMENT_ID", "")
+    managed_l3_coordinator_agent_id: str = os.getenv("MANAGED_L3_COORDINATOR_AGENT_ID", "")
+
     # Database
     database_url: str = os.getenv(
         "DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5432/maritime_crew"
@@ -124,4 +141,26 @@ def _load_managed_ids_from_file() -> None:
     )
 
 
+def _load_l3_managed_ids_from_file() -> None:
+    """Populate the L3 Managed-Agents IDs (coordinator + environment) from
+    managed_l3_agents.json, unless already supplied via env vars (env vars win)."""
+    if settings.managed_l3_environment_id and settings.managed_l3_coordinator_agent_id:
+        return
+    path = settings.managed_l3_agents_ids_file
+    if not path or not os.path.exists(path):
+        return
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except Exception:
+        return
+    settings.managed_l3_environment_id = (
+        settings.managed_l3_environment_id or data.get("environment_id", "")
+    )
+    settings.managed_l3_coordinator_agent_id = (
+        settings.managed_l3_coordinator_agent_id or data.get("coordinator_agent_id", "")
+    )
+
+
 _load_managed_ids_from_file()
+_load_l3_managed_ids_from_file()

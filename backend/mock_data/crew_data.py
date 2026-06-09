@@ -92,6 +92,40 @@ SIGN_ON_CREW = [
     ])
 ]
 
+# ── No-crew demo cluster ────────────────────────────────────────────────────────
+# Three Pumpmen (a tanker rating) added explicitly so we can control eligibility —
+# the comprehension above hardcodes status="Available". Ratings get NO adjacency
+# cover, so a "Pumpman" vacancy is fillable ONLY by an eligible Pumpman. All three
+# here are INELIGIBLE (two miss the vessel-mandated "Tanker Familiarization" cert →
+# Vessel Ops gate; one is on leave → Crew Intel gate), so a Pumpman sign-off reliably
+# yields `no_crew_found` against the live seeded pool — a real, demoable dead-end.
+SIGN_ON_CREW += [
+    {
+        "crew_id": "SNO-1020", "name": "Diego Navarro", "rank": "Pumpman", "grade": "Grade C",
+        "nationality": "Filipino", "port": "Singapore", "vessel": "Available", "availability": "Available",
+        "passport_expiry": _future_date(180, 1825), "medical_expiry": _future_date(30, 730),
+        "stcw_status": "Valid", "visa_status": "Valid", "experience_years": 6,
+        "certifications": ["STCW Basic Safety", "Crude Oil Washing"],  # missing Tanker Familiarization
+        "match_score": None, "match_reason": None, "status": "Available", "joining_date": None,
+    },
+    {
+        "crew_id": "SNO-1021", "name": "Tomasz Lewandowski", "rank": "Pumpman", "grade": "Grade B",
+        "nationality": "Polish", "port": "Rotterdam", "vessel": "Available", "availability": "Available",
+        "passport_expiry": _future_date(180, 1825), "medical_expiry": _future_date(30, 730),
+        "stcw_status": "Expiring Soon", "visa_status": "Valid", "experience_years": 8,
+        "certifications": ["STCW Basic Safety"],  # missing Tanker Familiarization
+        "match_score": None, "match_reason": None, "status": "Available", "joining_date": None,
+    },
+    {
+        "crew_id": "SNO-1022", "name": "Rafael Mendoza", "rank": "Pumpman", "grade": "Grade B",
+        "nationality": "Filipino", "port": "Singapore", "vessel": "Available", "availability": "On Leave",
+        "passport_expiry": _future_date(180, 1825), "medical_expiry": _future_date(30, 730),
+        "stcw_status": "Valid", "visa_status": "Valid", "experience_years": 10,
+        "certifications": ["STCW Basic Safety", "Tanker Familiarization"],  # qualified, but unavailable
+        "match_score": None, "match_reason": None, "status": "On Leave", "joining_date": None,
+    },
+]
+
 SIGN_OFF_CREW = [
     {
         "crew_id": f"SOF-{2000 + i}",
