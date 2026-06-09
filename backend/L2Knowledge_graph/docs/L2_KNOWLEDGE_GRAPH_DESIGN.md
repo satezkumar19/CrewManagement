@@ -3,7 +3,8 @@
 **Layer:** L2 — Knowledge Graph
 **Stack:** PostgreSQL 16 + Apache AGE 1.6.0 (openCypher)
 **Prototype:** Jun 10 · **Prod:** Jun 15 · **Doc due:** Jun 12 (async review)
-**Status of this baseline:** EntityMap **implemented & verified**; OpsMap and OrgMap **specified (planned)**.
+**Status of this baseline:** EntityMap **implemented & verified**; OpsMap **implemented**
+(process-mining DFG — see [`OPSMAP_DESIGN.md`](OPSMAP_DESIGN.md)); OrgMap **specified (planned)**.
 
 ---
 
@@ -20,14 +21,14 @@ The plan defines **three graph dimensions** over one shared set of nodes:
 | Dimension | Question it answers | Status |
 |-----------|--------------------|--------|
 | **EntityMap** | *What exists and how is it factually related?* (Crew, Vessel, Port, Contract, Certification) | **Built** |
-| **OpsMap** | *What is the operational state?* (sign-off → search → match → onboard) | Planned |
+| **OpsMap** | *What is the operational state?* (sign-off → search → match → onboard) | **Built** (process mining) |
 | **OrgMap** | *How is the org structured?* (company → fleet → vessel → rank) | Planned |
 
 **Exit criteria (from the plan) and where each is met:**
 
 | Exit criterion | Met by |
 |----------------|--------|
-| All 3 dimensions populated | EntityMap populated now; OpsMap/OrgMap overlay specced in §5 |
+| All 3 dimensions populated | EntityMap + OpsMap populated now; OrgMap overlay specced in §5 |
 | Crew search by rank + cert + port returns correctly | `GET /api/v1/graph/crew/search` (§6), verified §7 |
 | Full relationship traversal works | `GET /api/v1/graph/crew/{id}/traverse` (§6), verified §7 |
 | Test UI query < 3 s | Measured 5–37 ms (§7) |
@@ -113,12 +114,35 @@ This is what makes "three dimensions" a single coherent graph rather than three 
 
 ---
 
-## 5. OpsMap & OrgMap — planned implementation
+## 5. OpsMap (built) & OrgMap (planned)
 
-> These are **not yet built**. The specs below are the baseline plan reviewers should
-> critique on Jun 12. They reuse EntityMap nodes (§4) and add only the edges/nodes named.
+> OpsMap is **implemented**; OrgMap (§5.2) is **not yet built** and its spec below is the
+> baseline plan reviewers should critique. Both reuse EntityMap nodes (§4) and add only
+> the edges/nodes named, per the shared-node contract (§5.3).
 
-### 5.1 OpsMap — operational state overlay
+### 5.1 OpsMap — operational-state overlay *(implemented as process mining)*
+
+> **Implemented** in [`L2Knowledge_graph/ops_map.py`](../ops_map.py); full design in
+> [`OPSMAP_DESIGN.md`](OPSMAP_DESIGN.md). The shipped implementation **supersedes the
+> original `Stage`-node sketch** below: rather than hand-drawn pipeline stages, OpsMap
+> **mines a directly-follows graph (DFG)** from the workflow event log at runtime
+> (mirroring the CognixOne / PM4Py process-mining model), yielding frequency/duration on
+> each transition plus variant, bottleneck and conformance views.
+
+As built, OpsMap answers *"how does work actually flow"* over existing `Crew` nodes:
+
+- **New node type:** `Activity {name, cases}` — a discovered step of the crew-change
+  process (`Sign-Off Initiated → Crew Matching → … → Signed On`), **not** a fixed
+  hand-drawn stage list.
+- **New edge:** `(:Activity)-[:NEXT {count, avg_seconds}]->(:Activity)` — an observed
+  transition, annotated with how often and how fast real cases moved through it.
+- **Build source:** `WorkflowService._event_callback` hooks each runtime event into the
+  OpsMap event log (keyed by `workflow_id` = case id); `build_process_graph()` mines the
+  DFG. Works under **both** backends — mined in Python, optionally persisted to AGE.
+- **Endpoints:** `GET /api/v1/graph/opsmap/{summary,process,variants,bottlenecks,conformance}`,
+  `POST /opsmap/persist`.
+
+<details><summary>Original §5.1 sketch (superseded — kept for review history)</summary>
 
 Models the sign-off → onboarding lifecycle as graph state over existing `Crew` nodes.
 
@@ -136,6 +160,8 @@ Models the sign-off → onboarding lifecycle as graph state over existing `Crew`
   `ops_map.py` builder (mirrors `entity_map.py`) MERGEs the edges per workflow event.
 - **Key query:** *"for vessel V losing crew C, who can backfill?"* →
   `(c:Crew)-[:ASSIGNED_TO]->(:Vessel)<-[:MATCHED_TO]-(cand:Crew)-[:AT_STAGE]->(:Stage {name:'Search'})`.
+
+</details>
 
 ### 5.2 OrgMap — organizational hierarchy overlay
 
@@ -174,9 +200,12 @@ All under `/api/v1/graph` (`api/routes/graph.py`). Returns `503` when
 | `GET /graph/crew/{crew_id}/traverse` | Full relationship traversal of one crew | `max_hops` (1–4) |
 
 `crew/search` and `crew/{id}/traverse` return an `elapsed_ms` field for the
-< 3 s latency criterion. Planned OpsMap/OrgMap endpoints mount under the same prefix
-(e.g. `GET /graph/vessel/{name}/backfill-candidates`,
-`GET /graph/company/{name}/manning-gap`).
+< 3 s latency criterion. **OpsMap endpoints are live** under the same prefix
+(`GET /graph/opsmap/{summary,process,reference,variants,bottlenecks,conformance,cases}`,
+`POST /graph/opsmap/persist` — see [`OPSMAP_DESIGN.md`](OPSMAP_DESIGN.md) §5). Note both
+a **discovered** model (`/opsmap/process`, mined from events) and a **reference/designed**
+model (`/opsmap/reference`, always populated) are served. Planned OrgMap endpoints will
+follow (e.g. `GET /graph/company/{name}/manning-gap`).
 
 ### Python query layer (`database/entity_map.py`)
 
@@ -272,5 +301,6 @@ curl 'localhost:8000/api/v1/graph/crew/search?rank=Master'
 2. **Cypher literal inlining:** values are escaped (`_q`) and inlined since AGE has no
    bind parameters. Acceptable for internal/trusted inputs; revisit if graph search is
    ever exposed to untrusted callers.
-3. **OpsMap/OrgMap builders** (§5) to be implemented next, reusing the §5.3 shared-node
-   contract.
+3. **OrgMap builder** (§5.2) to be implemented next, reusing the §5.3 shared-node
+   contract. **OpsMap is done** — shipped as a process-mining DFG
+   ([`OPSMAP_DESIGN.md`](OPSMAP_DESIGN.md)).

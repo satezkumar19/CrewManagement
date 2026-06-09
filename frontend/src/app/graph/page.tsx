@@ -9,15 +9,19 @@ import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import {
   Anchor, Ship, Activity, BarChart3, Share2, Search, X, Loader2, Database,
-  ArrowRight, ArrowLeft,
+  ArrowRight, ArrowLeft, Route,
 } from "lucide-react";
 
 import {
   graphApi, type GraphFacets, type GraphSummary, type GraphSubgraph, type GraphNodeDetail,
 } from "@/lib/api";
 import EntityGraph, { TYPE_COLOR } from "@/components/graph/EntityGraph";
+import OpsMapView from "@/components/graph/OpsMapView";
+
+type Dimension = "entity" | "ops";
 
 export default function GraphPage() {
+  const [dimension, setDimension] = useState<Dimension>("entity");
   const [facets, setFacets] = useState<GraphFacets | null>(null);
   const [summary, setSummary] = useState<GraphSummary | null>(null);
   const [rank, setRank] = useState("");
@@ -113,7 +117,7 @@ export default function GraphPage() {
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <Database className="w-3.5 h-3.5 text-ocean-accent" />
-            <span>L2 EntityMap · AGE</span>
+            <span>L2 {dimension === "ops" ? "OpsMap · process mining" : "EntityMap · AGE"}</span>
           </div>
         </div>
       </nav>
@@ -126,10 +130,12 @@ export default function GraphPage() {
               <Share2 className="w-5 h-5 text-ocean-accent" /> L2 Knowledge Graph
             </h2>
             <p className="text-sm text-gray-500">
-              EntityMap — search crew by rank, certificate &amp; port across the maritime context graph.
+              {dimension === "entity"
+                ? "EntityMap — search crew by rank, certificate & port across the maritime context graph."
+                : "OpsMap — the crew-change process mined from the events workflows emit at runtime."}
             </p>
           </div>
-          {summary && (
+          {dimension === "entity" && summary && (
             <div className="flex flex-wrap items-center gap-2">
               {summary.labels.map((l) => (
                 <span key={l} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg glass border border-ocean-border/40 text-xs">
@@ -145,7 +151,25 @@ export default function GraphPage() {
           )}
         </div>
 
-        {unavailable ? (
+        {/* ── Dimension toggle ─────────────────────────────────────────────── */}
+        <div className="inline-flex rounded-xl glass border border-ocean-border/50 p-1 gap-1">
+          <DimensionTab
+            active={dimension === "entity"}
+            onClick={() => setDimension("entity")}
+            icon={<Share2 className="w-4 h-4" />}
+            label="EntityMap"
+          />
+          <DimensionTab
+            active={dimension === "ops"}
+            onClick={() => setDimension("ops")}
+            icon={<Route className="w-4 h-4" />}
+            label="OpsMap"
+          />
+        </div>
+
+        {dimension === "ops" ? (
+          <OpsMapView />
+        ) : unavailable ? (
           <div className="glass rounded-2xl border border-amber-500/30 p-8 text-center">
             <p className="text-amber-300 font-semibold">Graph backend disabled</p>
             <p className="text-gray-400 text-sm mt-1">
@@ -357,6 +381,26 @@ function Legend() {
       ))}
       <span className="ml-auto text-gray-600">drag nodes · scroll to zoom</span>
     </div>
+  );
+}
+
+function DimensionTab({
+  active, onClick, icon, label,
+}: {
+  active: boolean; onClick: () => void; icon: React.ReactNode; label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+        active
+          ? "bg-accent-gradient text-white shadow-lg"
+          : "text-gray-400 hover:text-white hover:bg-ocean-border/30"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 

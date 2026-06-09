@@ -120,6 +120,130 @@ export const graphApi = {
     api.get<GraphNodeDetail>(`/graph/node/${encodeURIComponent(nodeId)}`).then(r => r.data),
 };
 
+// ── L2 Knowledge Graph (OpsMap — process mining) ─────────────────────────────────
+export type OpsMapOutcome = "success" | "rejected" | "failed" | "in_progress";
+
+// Edge kind on the reference (designed) model — absent on the mined model.
+export type OpsMapEdgeKind = "happy" | "parallel" | "exception" | "error";
+export interface OpsMapProcessNode {
+  id: string;
+  type: "Activity";
+  label: string;
+  cases: number;
+  terminal: boolean;
+  actor?: string;      // reference model only — who performs the step
+}
+export interface OpsMapProcessEdge {
+  id: string;
+  source: string;
+  target: string;
+  count: number;
+  avg_seconds: number;
+  label: string;       // e.g. "3x · 1.3m" (mined) or "pass"/"fail" (reference)
+  kind?: OpsMapEdgeKind; // reference model only
+}
+export interface OpsMapProcess {
+  dimension: "OpsMap";
+  model?: "reference";   // present on the reference model, absent on the mined one
+  nodes: OpsMapProcessNode[];
+  edges: OpsMapProcessEdge[];
+  metrics: {
+    total_cases: number;
+    total_activities: number;
+    total_transitions: number;
+    avg_cycle_time_seconds: number;
+    avg_cycle_time_human: string;
+  };
+}
+export interface OpsMapSummary {
+  graph: string;
+  backend: string;
+  dimension: "OpsMap";
+  activities: string[];
+  total_cases: number;
+  total_activities: number;
+  total_transitions: number;
+  variant_count: number;
+  conformance_rate: number;
+  avg_cycle_time_human: string;
+}
+export interface OpsMapVariant {
+  id: string;
+  path: string[];
+  case_count: number;
+  percentage: number;
+  avg_cycle_time_seconds: number;
+  avg_cycle_time_human: string;
+  outcome: OpsMapOutcome;
+}
+export interface OpsMapVariants {
+  total_cases: number;
+  variant_count: number;
+  variants: OpsMapVariant[];
+}
+export interface OpsMapBottleneck {
+  from: string;
+  to: string;
+  avg_seconds: number;
+  avg_human: string;
+  occurrences: number;
+}
+export interface OpsMapBottlenecks {
+  bottlenecks: OpsMapBottleneck[];
+}
+export interface OpsMapDeviation {
+  case_id: string;
+  path: string[];
+  reason: string;
+}
+export interface OpsMapConformance {
+  total_cases: number;
+  conformant_cases: number;
+  conformance_rate: number;
+  happy_path: string[];
+  deviations: OpsMapDeviation[];
+}
+
+// A single recorded step within a case, carrying the curated record-specific data.
+export interface OpsMapCaseStep {
+  activity: string;
+  actor: string;
+  ts_iso: string;
+  details: Record<string, string | number | string[]>;
+}
+export interface OpsMapCase {
+  case_id: string;
+  sign_off_crew: string | null;
+  sign_off_rank: string | null;
+  sign_off_vessel: string | null;
+  sign_on_crew: string | null;
+  outcome: OpsMapOutcome;
+  compliance_status: string | null;
+  compliance_score: number | null;
+  reason: string | null;
+  cycle_time_seconds: number;
+  cycle_time_human: string;
+  started_iso: string | null;
+  ended_iso: string | null;
+  path: string[];
+  steps: OpsMapCaseStep[];
+}
+export interface OpsMapCases {
+  total_cases: number;
+  cases: OpsMapCase[];
+}
+
+export const opsMapApi = {
+  getSummary: () => api.get<OpsMapSummary>("/graph/opsmap/summary").then(r => r.data),
+  getProcess: () => api.get<OpsMapProcess>("/graph/opsmap/process").then(r => r.data),
+  getReference: () => api.get<OpsMapProcess>("/graph/opsmap/reference").then(r => r.data),
+  getVariants: () => api.get<OpsMapVariants>("/graph/opsmap/variants").then(r => r.data),
+  getBottlenecks: (limit = 5) =>
+    api.get<OpsMapBottlenecks>("/graph/opsmap/bottlenecks", { params: { limit } }).then(r => r.data),
+  getConformance: () => api.get<OpsMapConformance>("/graph/opsmap/conformance").then(r => r.data),
+  getCases: () => api.get<OpsMapCases>("/graph/opsmap/cases").then(r => r.data),
+};
+
 // Capabilities of each managed agent. `tools` are its functions (custom tools
 // like sendMail, or the built-in toolset); `skills` are Anthropic document-skill
 // packages (pdf/docx/xlsx) — a separate layer.

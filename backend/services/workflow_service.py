@@ -21,13 +21,27 @@ class WorkflowService:
         self.broadcast_fn = broadcast_fn
 
     async def _event_callback(self, event_type: str, agent_name: str, data: Dict[str, Any]):
-        """Relay agent events → WebSocket broadcast."""
+        """Relay agent events → WebSocket broadcast, and feed them to L2 OpsMap.
+
+        Every event that flows through here is the raw material the OpsMap dimension
+        mines into a process graph (see L2Knowledge_graph.ops_map). We record it
+        keyed by the workflow_id (the process-mining 'case id'). Wrapped in a
+        best-effort try/except so process-mining capture can never break the live
+        workflow or the WebSocket stream.
+        """
+        ts = datetime.utcnow().isoformat()
+        try:
+            from L2Knowledge_graph.ops_map import record_event
+            record_event((data or {}).get("workflow_id"), event_type, agent_name, ts, data)
+        except Exception as exc:  # pragma: no cover - capture must never be fatal
+            log.warning("opsmap.record_failed", event_type=event_type, error=str(exc))
+
         if self.broadcast_fn:
             await self.broadcast_fn({
                 "event_type": event_type,
                 "agent_name": agent_name,
                 "data": data,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": ts,
             })
 
     async def initiate_sign_off(
