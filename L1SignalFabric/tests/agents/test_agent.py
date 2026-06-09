@@ -32,7 +32,8 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from tests.agents.scenarios import (  # noqa: E402
-    COMPONENTS, INTEGRATION, UNIT, ScenarioResult, coverage, run_all, run_pytest_suite,
+    COMPONENTS, INTEGRATION, LIVE_STATUS, UNIT, ScenarioResult, coverage, run_all,
+    run_pytest_suite,
 )
 
 
@@ -84,17 +85,34 @@ class TestAgent:
         unit = [r for r in results if r.scenario.kind == UNIT]
         integ = [r for r in results if r.scenario.kind == INTEGRATION]
 
-        print("\n#### PART A — AGENT SCENARIOS (live, in-process) ####")
+        print("\n#### PART A — AGENT SCENARIOS (in-process, OFFLINE — fake clients) ####")
         if unit:
             self._section("UNIT TESTS — each component in isolation", unit)
         if integ:
             self._section("INTEGRATION TESTS — components through the real pipe (ingest → bus → L2)", integ)
 
         self._coverage_map(results)
+        self._live_verification()
 
         suite = self._pytest_section()
         self._roster(results, suite)
         return self._summary(results, unit, integ, suite)
+
+    def _live_verification(self) -> None:
+        """Honest real-tenant status. The scenarios above are OFFLINE (fake
+        clients) — passing proves the code, NOT that the source is live."""
+        print("\nLIVE VERIFICATION — real-tenant integration")
+        print("  (the unit/integration scenarios above are OFFLINE and do NOT prove this)")
+        print(_THIN)
+        verified = 0
+        for src in ("slack", "gmail", "outlook", "sharepoint", "notion", "database"):
+            status, note = LIVE_STATUS.get(src, ("PENDING", ""))
+            live = status == "LIVE"
+            verified += 1 if live else 0
+            print(f"  [{'x' if live else ' '}] {src:<11} {status:<8} {note}")
+        print(_THIN)
+        print(f"  live-verified sources: {verified}/{len(LIVE_STATUS)} "
+              "(Slack only — email/SharePoint/Notion/Database live integration NOT complete)")
 
     def _roster(self, results: list[ScenarioResult], suite: dict | None) -> None:
         """Every scenario across Part A + Part B, split into success and failed —
@@ -174,7 +192,9 @@ class TestAgent:
             print(f"  {_THIN}")
             for r in crows:
                 tag = "PASS" if r.ok else "FAIL"
-                flag = " ·LIVE-TARGET" if r.scenario.target else ""
+                # 'target' connectors are built + offline-tested, but their LIVE
+                # integration (real tenant) is still pending — flag that honestly.
+                flag = " ·offline (live pending)" if r.scenario.target else ""
                 print(f"    [{tag}] {r.id:<22} {r.scenario.title}{flag}")
                 print(f"           asserts: {_fmt(r.scenario.asserts, 86)}")
                 if not self.quiet or not r.ok:
@@ -222,8 +242,8 @@ class TestAgent:
         print(f"   unit         : {sum(1 for r in unit if r.ok)}/{len(unit)} passed")
         print(f"   integration  : {sum(1 for r in integ if r.ok)}/{len(integ)} passed")
         print(f"   subtotal     : {sum(1 for r in results if r.ok)}/{len(results)} passed")
-        print(f"   live targets : {sum(1 for r in targets if r.ok)}/{len(targets)} "
-              "(email + SharePoint integration)")
+        print(f"   connector code (offline): {sum(1 for r in targets if r.ok)}/{len(targets)} "
+              "Gmail/Outlook/SharePoint capability scenarios pass — NOT live verification")
         suite_failed = 0
         if suite is None:
             print(" Part B — pytest suite: (not run)")

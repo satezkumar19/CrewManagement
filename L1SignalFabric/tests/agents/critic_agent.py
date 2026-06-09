@@ -31,7 +31,7 @@ if str(_ROOT) not in sys.path:
 from core.signal import Operation, SignalEvent, SourceSystem  # noqa: E402
 from l2.store import L2JsonlStore  # noqa: E402
 from tests.agents.scenarios import (  # noqa: E402
-    ScenarioResult, probe_capabilities, run_all,
+    LIVE_STATUS, ScenarioResult, probe_capabilities, run_all,
 )
 
 
@@ -245,14 +245,16 @@ class CriticAgent:
         tgt = [r for r in results if r.scenario.target]
         impl_pass = sum(1 for r in impl if r.ok)
         tgt_pass = sum(1 for r in tgt if r.ok)
+        live = sum(1 for s, _ in LIVE_STATUS.values() if s == "LIVE")
+        total_src = len(LIVE_STATUS)
         print("\n[2] READINESS SCOREBOARD")
         print("-" * 96)
-        print(f"  implemented pipeline : {impl_pass}/{len(impl)} scenarios PASS")
-        print(f"  live integration     : {tgt_pass}/{len(tgt)} target scenarios PASS "
-              f"(email + SharePoint)")
-        bar_done = "#" * tgt_pass
-        bar_todo = "." * (len(tgt) - tgt_pass)
-        print(f"  live progress        : [{bar_done}{bar_todo}] {tgt_pass}/{len(tgt)}")
+        print(f"  pipeline scenarios (offline) : {impl_pass + tgt_pass}/{len(impl) + len(tgt)} PASS")
+        print(f"  connector code, offline-test : {tgt_pass}/{len(tgt)} Gmail/Outlook/SharePoint "
+              "capability scenarios PASS (code only)")
+        bar = "#" * live + "." * (total_src - live)
+        print(f"  LIVE verification (real tenant): [{bar}] {live}/{total_src} sources "
+              "— Slack only; email/SharePoint/Notion/Database NOT live")
 
     # ---- section 3: what we have ------------------------------------------
     def _section_current(self, results: list[ScenarioResult], caps: dict[str, bool]) -> None:
@@ -264,16 +266,19 @@ class CriticAgent:
              "live route captures raw payload for the dashboard drawer"),
             ("ERP ingress", caps["erp_connector"],
              "outbox poll across 3 systems + watermark + lossless resume"),
-            ("Gmail (LIVE)", caps["gmail_connector"],
-             "Pub/Sub push + OIDC/token verify + history backfill, metadata-only + sign-off intent"),
-            ("Outlook (LIVE)", caps["outlook_connector"],
-             "Graph mail webhook (validationToken + clientState) + delta poll watermark"),
-            ("SharePoint (LIVE)", caps["sharepoint_connector"],
-             "Graph drives/lists delta poll + per-target change tokens + webhook handshake"),
-            ("Notion", caps["notion_connector"],
-             "pages/databases/blocks pull + incremental last_edited_time watermark"),
-            ("Database (generic CDC)", caps["database_connector"],
-             "outbox + updated-at adapters (in-memory + real sqlite/SQLAlchemy)"),
+            ("Gmail (built · live PENDING)", caps["gmail_connector"],
+             "Pub/Sub push + OIDC/token verify + history backfill — code built + offline-tested, "
+             "NOT yet verified against a real Gmail tenant"),
+            ("Outlook (built · live PENDING)", caps["outlook_connector"],
+             "Graph mail webhook (validationToken + clientState) + delta poll — code built + "
+             "offline-tested, NOT yet verified against a real M365 tenant"),
+            ("SharePoint (built · live PENDING)", caps["sharepoint_connector"],
+             "Graph drives/lists delta + per-target change tokens + webhook handshake — code built + "
+             "offline-tested, NOT yet verified against a real SharePoint site"),
+            ("Notion (built · live PENDING)", caps["notion_connector"],
+             "pages/databases/blocks pull + watermark — code built + offline-tested, not live-verified"),
+            ("Database (built · live PENDING)", caps["database_connector"],
+             "outbox + updated-at adapters (sqlite tested) — code built + offline-tested, not live-verified"),
             ("Shared infra", caps["common_infra"],
              "rate-limited/retrying HTTP, secrets, Graph webhook verify, JSONL writer, metrics"),
             ("Event bus", caps["inmemory_bus"],
@@ -298,17 +303,21 @@ class CriticAgent:
     def _section_correct(self, results: list[ScenarioResult]) -> None:
         print("\n[4] WHAT WE NEED TO CORRECT / BUILD  (for the email + SharePoint live integration)")
         print("-" * 96)
+        # connector code gaps (from any failed capability scenario)
         items = _requirement_lines(results)
-        if not items:
-            print("  Nothing outstanding — the live integration targets all pass. ")
-            return
         for sev, sid, fix in items:
             print(f"  [{sev:<7}] {sid}")
             print(f"            {fix}")
-        print("\n  Build order (suggested): SHAREPOINT enum + connector skeleton (BLOCKER) ->")
-        print("  validationToken handshake + clientState verify (HIGH) -> notification->SignalEvent")
-        print("  normalizer + delta-token watermark (HIGH) -> subscription renewal + sign-off")
-        print("  unification (MEDIUM). Promote email to a live connector in parallel (HIGH).")
+
+        # the real outstanding work: LIVE verification against actual tenants.
+        # Offline capability scenarios passing does NOT make these live.
+        pending = [(src, note) for src, (status, note) in LIVE_STATUS.items() if status != "LIVE"]
+        print("\n  LIVE INTEGRATION — NOT COMPLETE (connector code built + offline-tested only):")
+        for src, note in pending:
+            print(f"  [PENDING] {src:<11} {note}")
+        print("\n  To make each live: configure real credentials/secrets, register the webhook /")
+        print("  Pub/Sub / subscription endpoint, run the validation handshake, then confirm a real")
+        print("  event flows end-to-end on the dashboard — as already done for Slack.")
 
     # ---- section 5: how to make it more advanced --------------------------
     def _section_advanced(self) -> None:

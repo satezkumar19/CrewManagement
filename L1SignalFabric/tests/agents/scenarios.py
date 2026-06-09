@@ -124,6 +124,24 @@ COMPONENTS: list[tuple[str, str]] = [
 
 
 # --------------------------------------------------------------------------- #
+# Live-verification status
+# --------------------------------------------------------------------------- #
+# IMPORTANT: the scenarios in this file are OFFLINE — every external client is a
+# fake. Passing scenarios prove the connector CODE is correct; they do NOT prove
+# the source is integrated live against a real tenant. This registry records what
+# is actually verified end-to-end (real credentials, real webhooks, real events).
+LIVE_VERIFIED = {"slack"}
+LIVE_STATUS: dict[str, tuple[str, str]] = {
+    "slack":      ("LIVE",    "verified end-to-end against a real Slack workspace"),
+    "gmail":      ("PENDING", "connector built + offline-tested; NOT verified vs a real Gmail tenant"),
+    "outlook":    ("PENDING", "connector built + offline-tested; NOT verified vs a real Microsoft 365 tenant"),
+    "sharepoint": ("PENDING", "connector built + offline-tested; NOT verified vs a real SharePoint site"),
+    "notion":     ("PENDING", "connector built + offline-tested; NOT verified vs a real Notion workspace"),
+    "database":   ("PENDING", "connector built + offline-tested; NOT verified vs a real DB / CDC feed"),
+}
+
+
+# --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
 _TENANT = "maritime-acme"
