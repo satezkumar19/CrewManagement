@@ -1,0 +1,41 @@
+[project]
+name = "l1-signalfabric"
+version = "0.1.0"
+description = "L1 SignalFabric — continuous event-stream ingestion (Slack / Gmail / ERP) for the Maritime Crew Orchestrator"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.0",
+    "requests>=2.31",
+    "click>=8.0",
+    "PyYAML>=6.0",
+    "SQLAlchemy>=2.0",
+    "python-dotenv>=1.0",   # load .env so credentials need not be passed on the CLI
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "httpx>=0.27",   # FastAPI TestClient
+]
+aws = ["boto3>=1.26"]                  # Secrets Manager token resolution
+postgres = ["psycopg2-binary>=2.9"]    # Database connector against Postgres
+google = ["google-auth>=2.0"]          # Gmail Pub/Sub OIDC verification
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "connectors*", "api*", "demo*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+# If pytest-dotenv is installed, load this empty file instead of the project
+# .env so real credentials never leak into the hermetic suite. (Our own
+# config.load_env() is separately disabled in tests via tests/conftest.py.)
+env_files = ["tests/test.env"]
+env_override_existing_values = 0

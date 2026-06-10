@@ -1,0 +1,53 @@
+digraph ImplStatus {
+  rankdir=TB;
+  graph [fontname="Helvetica", bgcolor="white", nodesep=0.30, ranksep=0.55, pad=0.35, labelloc=t,
+         label="L1 SignalFabric — Implementation Status by Component Group",
+         fontsize=15, fontcolor="#0F172A"];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, penwidth=1.5,
+         margin="0.18,0.10", color="#475569", fillcolor="#E2E8F0", fontcolor="#0F172A"];
+  edge  [style=invis];
+
+  subgraph cluster_p1 {
+    label="Part 1 — Ingress & connectors"; fontsize=12; fontcolor="#1E3A8A";
+    style="rounded,filled"; fillcolor="#F8FAFC"; color="#93C5FD"; penwidth=1.5;
+    p1a [label="Slack Events receiver  ✓ done", fillcolor="#DCFCE7", color="#16A34A"];
+    p1b [label="ERP connector  ✓ done", fillcolor="#DCFCE7", color="#16A34A"];
+    p1c [label="Connector framework  ✓ done", fillcolor="#DCFCE7", color="#16A34A"];
+    p1d [label="Signature / verification  ✓ done", fillcolor="#DCFCE7", color="#16A34A"];
+    p1e [label="Dedup (3 layers)  ✓ done", fillcolor="#DCFCE7", color="#16A34A"];
+    p1a -> p1b -> p1c -> p1d -> p1e;
+  }
+
+  subgraph cluster_p2 {
+    label="Part 2 — Transport, projection & ops"; fontsize=12; fontcolor="#5B21B6";
+    style="rounded,filled"; fillcolor="#FAF5FF"; color="#C4B5FD"; penwidth=1.5;
+    p2a [label="Event bus (InMemoryBus)  ✓ done", fillcolor="#DCFCE7", color="#16A34A"];
+    p2b [label="Normalizer (Slack/ERP)  ✓ done   ·   Email = stand-in", fillcolor="#FEF3C7", color="#D97706"];
+    p2c [label="L2 sink + SignOffEvent  ✓ done", fillcolor="#DCFCE7", color="#16A34A"];
+    p2d [label="Checkpoint ✓ · Retry ✓ · DLQ = seam only", fillcolor="#FEF3C7", color="#D97706"];
+    p2e [label="Dashboard / SSE  ✓ done", fillcolor="#DCFCE7", color="#16A34A"];
+    p2f [label="Test harness  ✓ done (35 tests)", fillcolor="#DCFCE7", color="#16A34A"];
+    p2a -> p2b -> p2c -> p2d -> p2e -> p2f;
+  }
+
+  subgraph cluster_p4 {
+    label="Part 4 — Six core blocks"; fontsize=12; fontcolor="#0F766E";
+    style="rounded,filled"; fillcolor="#F0FDFA"; color="#5EEAD4"; penwidth=1.5;
+    p4a [label="SignalEvent schema  ✓", fillcolor="#DCFCE7", color="#16A34A"];
+    p4b [label="InMemoryBus  ✓", fillcolor="#DCFCE7", color="#16A34A"];
+    p4c [label="L2Sink stub  ✓", fillcolor="#DCFCE7", color="#16A34A"];
+    p4d [label="SSE /stream  ✓", fillcolor="#DCFCE7", color="#16A34A"];
+    p4e [label="mock-event generator  ✓", fillcolor="#DCFCE7", color="#16A34A"];
+    p4f [label="docker-compose  ✓ (redis = Day-4 seam)", fillcolor="#FEF3C7", color="#D97706"];
+    p4a -> p4b -> p4c -> p4d -> p4e -> p4f;
+  }
+
+  subgraph cluster_def {
+    label="Deferred (later days)"; fontsize=12; fontcolor="#991B1B";
+    style="rounded,filled"; fillcolor="#FEF2F2"; color="#FCA5A5"; penwidth=1.5;
+    d1 [label="Gmail connector (Day-3)", shape=note, fillcolor="#FEE2E2", color="#DC2626"];
+    d2 [label="RedisStreamsBus + real DLQ (Day-4)", shape=note, fillcolor="#FEE2E2", color="#DC2626"];
+    d3 [label="Postgres outbox adapter (Day-4)", shape=note, fillcolor="#FEE2E2", color="#DC2626"];
+    d1 -> d2 -> d3;
+  }
+}

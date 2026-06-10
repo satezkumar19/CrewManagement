@@ -1,0 +1,45 @@
+digraph TestMap {
+  rankdir=LR;
+  graph [fontname="Helvetica", bgcolor="white", nodesep=0.30, ranksep=0.90, pad=0.35, labelloc=t,
+         label="Test Coverage — Exit Criteria → Suites → Sign-off", fontsize=15, fontcolor="#0F172A"];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, penwidth=1.5,
+         margin="0.20,0.12", color="#475569", fillcolor="#E2E8F0", fontcolor="#0F172A"];
+  edge  [fontname="Helvetica", fontsize=9, color="#64748B", penwidth=1.3, arrowsize=0.8];
+
+  subgraph cluster_crit {
+    label="Exit criteria";
+    fontname="Helvetica"; fontsize=12; fontcolor="#1E3A8A";
+    style="rounded,filled"; fillcolor="#F8FAFC"; color="#93C5FD"; penwidth=1.5;
+    c1 [label="5 sources streaming\n(not batch)", fillcolor="#DBEAFE", color="#2563EB"];
+    c2 [label="Sign-off email →\nL2 node < 5 min", fillcolor="#DBEAFE", color="#2563EB"];
+    c3 [label="50 crew records\n0 data loss", fillcolor="#DBEAFE", color="#2563EB"];
+    c4 [label="Propagate\ndownstream < 5 min", fillcolor="#DBEAFE", color="#2563EB"];
+  }
+
+  subgraph cluster_suite {
+    label="Test suites";
+    fontname="Helvetica"; fontsize=12; fontcolor="#92400E";
+    style="rounded,filled"; fillcolor="#FFFBEB"; color="#FCD34D"; penwidth=1.5;
+    s_str  [label="§4 Streaming-mode\nTC-STR-01..06", fillcolor="#FEF3C7", color="#D97706"];
+    s_sof  [label="§6 Sign-off trigger\nTC-SOF-01..04", fillcolor="#FEF3C7", color="#D97706"];
+    s_ing  [label="§5 Ingestion 50-rec\nTC-ING-01..02", fillcolor="#FEF3C7", color="#D97706"];
+    s_lat  [label="§7 Latency / source\nTC-LAT-01", fillcolor="#FEF3C7", color="#D97706"];
+    s_fail [label="§8 Failure / retry\nTC-FAIL-01..04", fillcolor="#FEF3C7", color="#D97706"];
+  }
+
+  gate [label="Exit sign-off\n(all suites green)", shape=hexagon, fillcolor="#DCFCE7", color="#16A34A",
+        fontsize=12, margin="0.25,0.14"];
+
+  c1 -> s_str;
+  c2 -> s_sof;
+  c3 -> s_ing;
+  c4 -> s_lat;
+  c3 -> s_fail [style=dashed];
+  c4 -> s_fail [style=dashed];
+
+  s_str  -> gate;
+  s_sof  -> gate;
+  s_ing  -> gate;
+  s_lat  -> gate;
+  s_fail -> gate;
+}

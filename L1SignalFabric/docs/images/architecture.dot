@@ -1,0 +1,44 @@
+digraph SignalFabric {
+  rankdir=LR;
+  graph [fontname="Helvetica", bgcolor="white", nodesep=0.40, ranksep=0.85, pad=0.35, labelloc=t,
+         label="L1 SignalFabric — Connector Architecture", fontsize=16, fontcolor="#0F172A"];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, penwidth=1.5,
+         margin="0.20,0.12", color="#475569", fillcolor="#E2E8F0", fontcolor="#0F172A"];
+  edge  [fontname="Helvetica", fontsize=9, color="#64748B", penwidth=1.3, arrowsize=0.8];
+
+  subgraph cluster_ingress {
+    label="INGRESS  ·  real-time push";
+    fontname="Helvetica"; fontsize=12; fontcolor="#1E3A8A";
+    style="rounded,filled"; fillcolor="#F8FAFC"; color="#93C5FD"; penwidth=1.5;
+    slack [label="Slack Events API\nPOST /slack/events", fillcolor="#DBEAFE", color="#2563EB"];
+    gmail [label="Gmail API · Pub/Sub\nPOST /gmail/push", fillcolor="#DBEAFE", color="#2563EB"];
+    erp   [label="ERP outbox poller\nCrew · Contract · Vessel/Port", fillcolor="#DBEAFE", color="#2563EB"];
+  }
+
+  conn [label="Connector\nverify · dedup · checkpoint", fillcolor="#E2E8F0", color="#475569"];
+  norm [label="Normalizer\nraw → SignalEvent (DELTA)", fillcolor="#E2E8F0", color="#475569"];
+  bus  [label="Event Bus\nin-memory → Redis Streams", fillcolor="#FEF3C7", color="#D97706"];
+  sink [label="L2 Sink\nidempotent upsert", fillcolor="#DCFCE7", color="#16A34A"];
+
+  subgraph cluster_l2 {
+    label="L2 Knowledge Graph";
+    fontname="Helvetica"; fontsize=12; fontcolor="#5B21B6";
+    style="rounded,filled"; fillcolor="#FAF5FF"; color="#C4B5FD"; penwidth=1.5;
+    orgmap  [label="OrgMap\n(tribal knowledge)", fillcolor="#EDE9FE", color="#7C3AED"];
+    signoff [label="SignOffEvent\nnode  (< 5 min)", fillcolor="#EDE9FE", color="#7C3AED"];
+  }
+
+  ckpt [label="CheckpointStore\nresume · 0 data loss", shape=note, fillcolor="#F1F5F9", color="#94A3B8"];
+  dlq  [label="DLQ\npoison → replay", shape=note, fillcolor="#FEE2E2", color="#DC2626"];
+  obs  [label="/healthz · /metrics · /stream (SSE)", shape=box, style="rounded,filled,dashed",
+        fillcolor="#F1F5F9", color="#94A3B8", fontsize=10];
+
+  slack -> conn;  gmail -> conn;  erp -> conn;
+  conn -> norm -> bus -> sink;
+  sink -> orgmap;
+  sink -> signoff [label="l2Intent", fontcolor="#7C3AED"];
+  conn -> ckpt [style=dashed, dir=both, color="#94A3B8"];
+  sink -> dlq  [style=dashed, color="#DC2626"];
+  bus  -> obs  [style=dotted, color="#94A3B8", arrowhead=none];
+  sink -> obs  [style=dotted, color="#94A3B8", arrowhead=none];
+}

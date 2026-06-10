@@ -25,6 +25,8 @@ out/
 # Docker volumes
 postgres-data/
 
+# Nested clone of separate repo (cognixoneai/cognix) - not tracked here
+docs/cognix/
 # Large local artifacts
 L2_implementation_June5.zip
 L2_implementation_June5/

@@ -1,0 +1,5140 @@
+{
+  "vessels": {
+    "VSL-001": "MV Cygnus Trader",
+    "VSL-002": "MV Orion Star",
+    "VSL-003": "MV Pacific Dawn",
+    "VSL-004": "MV Aegean Pearl",
+    "VSL-005": "MV Nordic Spirit",
+    "VSL-006": "MV Coral Voyager",
+    "VSL-007": "MV Atlantic Crown",
+    "VSL-008": "MV Indus Pride",
+    "VSL-009": "MV Sapphire Bay",
+    "VSL-010": "MV Meridian Sun",
+    "VSL-011": "MV Polar Quest",
+    "VSL-012": "MV Andaman Breeze",
+    "VSL-013": "MV Celtic Wave",
+    "VSL-014": "MV Bosphorus",
+    "VSL-015": "MV Kraken",
+    "VSL-016": "MV Tasman Glory",
+    "VSL-017": "MV Levant Star",
+    "VSL-018": "MV Hibernia",
+    "VSL-019": "MV Zephyr Gale",
+    "VSL-020": "MV Solent Castle"
+  },
+  "ports": [
+    "Singapore",
+    "Rotterdam",
+    "Houston",
+    "Fujairah",
+    "Busan",
+    "Santos",
+    "Antwerp",
+    "Mumbai (JNPT)",
+    "Shanghai",
+    "Algeciras",
+    "Durban",
+    "Colombo",
+    "Hamburg",
+    "Ulsan",
+    "Galveston"
+  ],
+  "channels": {
+    "C-OPS": "#fleet-ops",
+    "C-CREW": "#crew-changes",
+    "C-PORT": "#port-ops",
+    "C-COMP": "#compliance",
+    "C-TECH": "#technical"
+  },
+  "users": {
+    "U-0001": {
+      "name": "Arjun Iyer",
+      "role": "3rd Officer",
+      "email": "arjun.iyer@crew.fleet.example",
+      "crew_id": "CR-0001"
+    },
+    "U-0002": {
+      "name": "Ramon Iyer",
+      "role": "4th Engineer",
+      "email": "ramon.iyer@crew.fleet.example",
+      "crew_id": "CR-0002"
+    },
+    "U-0003": {
+      "name": "Hassan Nair",
+      "role": "2nd Officer",
+      "email": "hassan.nair@crew.fleet.example",
+      "crew_id": "CR-0003"
+    },
+    "U-0004": {
+      "name": "Nikos Petrov",
+      "role": "2nd Officer",
+      "email": "nikos.petrov@crew.fleet.example",
+      "crew_id": "CR-0004"
+    },
+    "U-0005": {
+      "name": "Joon Papadopoulos",
+      "role": "Master",
+      "email": "joon.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0005"
+    },
+    "U-0006": {
+      "name": "Ivan Silva",
+      "role": "Wiper",
+      "email": "ivan.silva@crew.fleet.example",
+      "crew_id": "CR-0006"
+    },
+    "U-0007": {
+      "name": "Emre Hlaing",
+      "role": "Master",
+      "email": "emre.hlaing@crew.fleet.example",
+      "crew_id": "CR-0007"
+    },
+    "U-0008": {
+      "name": "Wei Cruz",
+      "role": "AB Seaman",
+      "email": "wei.cruz@crew.fleet.example",
+      "crew_id": "CR-0008"
+    },
+    "U-0009": {
+      "name": "Dmytro Yilmaz",
+      "role": "3rd Officer",
+      "email": "dmytro.yilmaz@crew.fleet.example",
+      "crew_id": "CR-0009"
+    },
+    "U-0010": {
+      "name": "Diego Chen",
+      "role": "Ordinary Seaman",
+      "email": "diego.chen@crew.fleet.example",
+      "crew_id": "CR-0010"
+    },
+    "U-0011": {
+      "name": "Joon Walsh",
+      "role": "Chief Cook",
+      "email": "joon.walsh@crew.fleet.example",
+      "crew_id": "CR-0011"
+    },
+    "U-0012": {
+      "name": "Mateusz Fernandez",
+      "role": "Bosun",
+      "email": "mateusz.fernandez@crew.fleet.example",
+      "crew_id": "CR-0012"
+    },
+    "U-0013": {
+      "name": "Viktor Kovalenko",
+      "role": "3rd Engineer",
+      "email": "viktor.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0013"
+    },
+    "U-0014": {
+      "name": "Emre Bondarenko",
+      "role": "4th Engineer",
+      "email": "emre.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0014"
+    },
+    "U-0015": {
+      "name": "Cemal Chen",
+      "role": "3rd Officer",
+      "email": "cemal.chen@crew.fleet.example",
+      "crew_id": "CR-0015"
+    },
+    "U-0016": {
+      "name": "Aung Santoso",
+      "role": "Ordinary Seaman",
+      "email": "aung.santoso@crew.fleet.example",
+      "crew_id": "CR-0016"
+    },
+    "U-0017": {
+      "name": "Viktor Greco",
+      "role": "Electrician",
+      "email": "viktor.greco@crew.fleet.example",
+      "crew_id": "CR-0017"
+    },
+    "U-0018": {
+      "name": "Joon Iyer",
+      "role": "2nd Engineer",
+      "email": "joon.iyer@crew.fleet.example",
+      "crew_id": "CR-0018"
+    },
+    "U-0019": {
+      "name": "Cemal Chen",
+      "role": "Chief Cook",
+      "email": "cemal.chen@crew.fleet.example",
+      "crew_id": "CR-0019"
+    },
+    "U-0020": {
+      "name": "Carlo Nowak",
+      "role": "4th Engineer",
+      "email": "carlo.nowak@crew.fleet.example",
+      "crew_id": "CR-0020"
+    },
+    "U-0021": {
+      "name": "Marco Nowak",
+      "role": "4th Engineer",
+      "email": "marco.nowak@crew.fleet.example",
+      "crew_id": "CR-0021"
+    },
+    "U-0022": {
+      "name": "Nikos Khan",
+      "role": "2nd Officer",
+      "email": "nikos.khan@crew.fleet.example",
+      "crew_id": "CR-0022"
+    },
+    "U-0023": {
+      "name": "Mateusz Popescu",
+      "role": "3rd Engineer",
+      "email": "mateusz.popescu@crew.fleet.example",
+      "crew_id": "CR-0023"
+    },
+    "U-0024": {
+      "name": "Ramon Chen",
+      "role": "Chief Cook",
+      "email": "ramon.chen@crew.fleet.example",
+      "crew_id": "CR-0024"
+    },
+    "U-0025": {
+      "name": "Sanjay Khan",
+      "role": "Electrician",
+      "email": "sanjay.khan@crew.fleet.example",
+      "crew_id": "CR-0025"
+    },
+    "U-0026": {
+      "name": "Budi Petrov",
+      "role": "Oiler",
+      "email": "budi.petrov@crew.fleet.example",
+      "crew_id": "CR-0026"
+    },
+    "U-0027": {
+      "name": "Dmytro Rossi",
+      "role": "Messman",
+      "email": "dmytro.rossi@crew.fleet.example",
+      "crew_id": "CR-0027"
+    },
+    "U-0028": {
+      "name": "Carlo Nair",
+      "role": "2nd Engineer",
+      "email": "carlo.nair@crew.fleet.example",
+      "crew_id": "CR-0028"
+    },
+    "U-0029": {
+      "name": "Diego Silva",
+      "role": "Oiler",
+      "email": "diego.silva@crew.fleet.example",
+      "crew_id": "CR-0029"
+    },
+    "U-0030": {
+      "name": "Carlo Iyer",
+      "role": "Master",
+      "email": "carlo.iyer@crew.fleet.example",
+      "crew_id": "CR-0030"
+    },
+    "U-0031": {
+      "name": "Emre W\u00f3jcik",
+      "role": "Electrician",
+      "email": "emre.w\u00f3jcik@crew.fleet.example",
+      "crew_id": "CR-0031"
+    },
+    "U-0032": {
+      "name": "Rahul Hlaing",
+      "role": "Bosun",
+      "email": "rahul.hlaing@crew.fleet.example",
+      "crew_id": "CR-0032"
+    },
+    "U-0033": {
+      "name": "Kiran Hlaing",
+      "role": "Electrician",
+      "email": "kiran.hlaing@crew.fleet.example",
+      "crew_id": "CR-0033"
+    },
+    "U-0034": {
+      "name": "Mateusz Reddy",
+      "role": "Bosun",
+      "email": "mateusz.reddy@crew.fleet.example",
+      "crew_id": "CR-0034"
+    },
+    "U-0035": {
+      "name": "Budi Hlaing",
+      "role": "Chief Engineer",
+      "email": "budi.hlaing@crew.fleet.example",
+      "crew_id": "CR-0035"
+    },
+    "U-0036": {
+      "name": "Diego Nowak",
+      "role": "Master",
+      "email": "diego.nowak@crew.fleet.example",
+      "crew_id": "CR-0036"
+    },
+    "U-0037": {
+      "name": "Budi Bondarenko",
+      "role": "3rd Officer",
+      "email": "budi.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0037"
+    },
+    "U-0038": {
+      "name": "Hassan Kovalenko",
+      "role": "4th Engineer",
+      "email": "hassan.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0038"
+    },
+    "U-0039": {
+      "name": "Dmytro Park",
+      "role": "Messman",
+      "email": "dmytro.park@crew.fleet.example",
+      "crew_id": "CR-0039"
+    },
+    "U-0040": {
+      "name": "Carlo Popescu",
+      "role": "Chief Engineer",
+      "email": "carlo.popescu@crew.fleet.example",
+      "crew_id": "CR-0040"
+    },
+    "U-0041": {
+      "name": "Kiran Fernandez",
+      "role": "Electrician",
+      "email": "kiran.fernandez@crew.fleet.example",
+      "crew_id": "CR-0041"
+    },
+    "U-0042": {
+      "name": "Viktor Bondarenko",
+      "role": "3rd Engineer",
+      "email": "viktor.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0042"
+    },
+    "U-0043": {
+      "name": "Pedro Reddy",
+      "role": "Ordinary Seaman",
+      "email": "pedro.reddy@crew.fleet.example",
+      "crew_id": "CR-0043"
+    },
+    "U-0044": {
+      "name": "Ivan Kovalenko",
+      "role": "4th Engineer",
+      "email": "ivan.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0044"
+    },
+    "U-0045": {
+      "name": "Hassan Petrov",
+      "role": "4th Engineer",
+      "email": "hassan.petrov@crew.fleet.example",
+      "crew_id": "CR-0045"
+    },
+    "U-0046": {
+      "name": "Ivan Kovalenko",
+      "role": "Chief Officer",
+      "email": "ivan.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0046"
+    },
+    "U-0047": {
+      "name": "Kiran Petrov",
+      "role": "2nd Officer",
+      "email": "kiran.petrov@crew.fleet.example",
+      "crew_id": "CR-0047"
+    },
+    "U-0048": {
+      "name": "Nikos Park",
+      "role": "Messman",
+      "email": "nikos.park@crew.fleet.example",
+      "crew_id": "CR-0048"
+    },
+    "U-0049": {
+      "name": "Ivan Popescu",
+      "role": "Messman",
+      "email": "ivan.popescu@crew.fleet.example",
+      "crew_id": "CR-0049"
+    },
+    "U-0050": {
+      "name": "Liam Greco",
+      "role": "3rd Officer",
+      "email": "liam.greco@crew.fleet.example",
+      "crew_id": "CR-0050"
+    },
+    "U-0051": {
+      "name": "Rahul Silva",
+      "role": "Wiper",
+      "email": "rahul.silva@crew.fleet.example",
+      "crew_id": "CR-0051"
+    },
+    "U-0052": {
+      "name": "Marco Yilmaz",
+      "role": "3rd Officer",
+      "email": "marco.yilmaz@crew.fleet.example",
+      "crew_id": "CR-0052"
+    },
+    "U-0053": {
+      "name": "Ivan Papadopoulos",
+      "role": "3rd Officer",
+      "email": "ivan.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0053"
+    },
+    "U-0054": {
+      "name": "Ramon Nair",
+      "role": "Chief Cook",
+      "email": "ramon.nair@crew.fleet.example",
+      "crew_id": "CR-0054"
+    },
+    "U-0055": {
+      "name": "Ivan Kovalenko",
+      "role": "Chief Cook",
+      "email": "ivan.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0055"
+    },
+    "U-0056": {
+      "name": "Marco W\u00f3jcik",
+      "role": "3rd Officer",
+      "email": "marco.w\u00f3jcik@crew.fleet.example",
+      "crew_id": "CR-0056"
+    },
+    "U-0057": {
+      "name": "Aung Nair",
+      "role": "4th Engineer",
+      "email": "aung.nair@crew.fleet.example",
+      "crew_id": "CR-0057"
+    },
+    "U-0058": {
+      "name": "Cemal Rossi",
+      "role": "3rd Engineer",
+      "email": "cemal.rossi@crew.fleet.example",
+      "crew_id": "CR-0058"
+    },
+    "U-0059": {
+      "name": "Cemal Chen",
+      "role": "Master",
+      "email": "cemal.chen@crew.fleet.example",
+      "crew_id": "CR-0059"
+    },
+    "U-0060": {
+      "name": "Rahul Horvat",
+      "role": "Bosun",
+      "email": "rahul.horvat@crew.fleet.example",
+      "crew_id": "CR-0060"
+    },
+    "U-0061": {
+      "name": "Ramon Papadopoulos",
+      "role": "Messman",
+      "email": "ramon.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0061"
+    },
+    "U-0062": {
+      "name": "Hassan Iyer",
+      "role": "Chief Officer",
+      "email": "hassan.iyer@crew.fleet.example",
+      "crew_id": "CR-0062"
+    },
+    "U-0063": {
+      "name": "Marco Rossi",
+      "role": "AB Seaman",
+      "email": "marco.rossi@crew.fleet.example",
+      "crew_id": "CR-0063"
+    },
+    "U-0064": {
+      "name": "Marco Reddy",
+      "role": "2nd Engineer",
+      "email": "marco.reddy@crew.fleet.example",
+      "crew_id": "CR-0064"
+    },
+    "U-0065": {
+      "name": "Diego Kovalenko",
+      "role": "2nd Officer",
+      "email": "diego.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0065"
+    },
+    "U-0066": {
+      "name": "Liam Khan",
+      "role": "Oiler",
+      "email": "liam.khan@crew.fleet.example",
+      "crew_id": "CR-0066"
+    },
+    "U-0067": {
+      "name": "Diego Kovalenko",
+      "role": "Chief Officer",
+      "email": "diego.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0067"
+    },
+    "U-0068": {
+      "name": "Wei Papadopoulos",
+      "role": "AB Seaman",
+      "email": "wei.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0068"
+    },
+    "U-0069": {
+      "name": "Ivan Chen",
+      "role": "AB Seaman",
+      "email": "ivan.chen@crew.fleet.example",
+      "crew_id": "CR-0069"
+    },
+    "U-0070": {
+      "name": "Pedro Nowak",
+      "role": "Bosun",
+      "email": "pedro.nowak@crew.fleet.example",
+      "crew_id": "CR-0070"
+    },
+    "U-0071": {
+      "name": "Diego Khan",
+      "role": "Chief Cook",
+      "email": "diego.khan@crew.fleet.example",
+      "crew_id": "CR-0071"
+    },
+    "U-0072": {
+      "name": "Kiran Chen",
+      "role": "3rd Engineer",
+      "email": "kiran.chen@crew.fleet.example",
+      "crew_id": "CR-0072"
+    },
+    "U-0073": {
+      "name": "Ivan Santoso",
+      "role": "2nd Officer",
+      "email": "ivan.santoso@crew.fleet.example",
+      "crew_id": "CR-0073"
+    },
+    "U-0074": {
+      "name": "Joon Horvat",
+      "role": "Chief Cook",
+      "email": "joon.horvat@crew.fleet.example",
+      "crew_id": "CR-0074"
+    },
+    "U-0075": {
+      "name": "Carlo Park",
+      "role": "Master",
+      "email": "carlo.park@crew.fleet.example",
+      "crew_id": "CR-0075"
+    },
+    "U-0076": {
+      "name": "Ramon Chen",
+      "role": "3rd Officer",
+      "email": "ramon.chen@crew.fleet.example",
+      "crew_id": "CR-0076"
+    },
+    "U-0077": {
+      "name": "Wei Bondarenko",
+      "role": "Chief Engineer",
+      "email": "wei.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0077"
+    },
+    "U-0078": {
+      "name": "Nikos Greco",
+      "role": "AB Seaman",
+      "email": "nikos.greco@crew.fleet.example",
+      "crew_id": "CR-0078"
+    },
+    "U-0079": {
+      "name": "Wei Rossi",
+      "role": "Messman",
+      "email": "wei.rossi@crew.fleet.example",
+      "crew_id": "CR-0079"
+    },
+    "U-0080": {
+      "name": "Wei Rossi",
+      "role": "Wiper",
+      "email": "wei.rossi@crew.fleet.example",
+      "crew_id": "CR-0080"
+    },
+    "U-0081": {
+      "name": "Mateusz Chen",
+      "role": "Chief Engineer",
+      "email": "mateusz.chen@crew.fleet.example",
+      "crew_id": "CR-0081"
+    },
+    "U-0082": {
+      "name": "Joon Horvat",
+      "role": "Chief Cook",
+      "email": "joon.horvat@crew.fleet.example",
+      "crew_id": "CR-0082"
+    },
+    "U-0083": {
+      "name": "Liam Kovalenko",
+      "role": "Master",
+      "email": "liam.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0083"
+    },
+    "U-0084": {
+      "name": "Budi Khan",
+      "role": "Chief Officer",
+      "email": "budi.khan@crew.fleet.example",
+      "crew_id": "CR-0084"
+    },
+    "U-0085": {
+      "name": "Marco Bondarenko",
+      "role": "Chief Engineer",
+      "email": "marco.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0085"
+    },
+    "U-0086": {
+      "name": "Nikos Greco",
+      "role": "Ordinary Seaman",
+      "email": "nikos.greco@crew.fleet.example",
+      "crew_id": "CR-0086"
+    },
+    "U-0087": {
+      "name": "Budi Park",
+      "role": "3rd Officer",
+      "email": "budi.park@crew.fleet.example",
+      "crew_id": "CR-0087"
+    },
+    "U-0088": {
+      "name": "Ivan Hlaing",
+      "role": "Chief Engineer",
+      "email": "ivan.hlaing@crew.fleet.example",
+      "crew_id": "CR-0088"
+    },
+    "U-0089": {
+      "name": "Aung Iyer",
+      "role": "Master",
+      "email": "aung.iyer@crew.fleet.example",
+      "crew_id": "CR-0089"
+    },
+    "U-0090": {
+      "name": "Wei Hlaing",
+      "role": "4th Engineer",
+      "email": "wei.hlaing@crew.fleet.example",
+      "crew_id": "CR-0090"
+    },
+    "U-0091": {
+      "name": "Marco Popescu",
+      "role": "Oiler",
+      "email": "marco.popescu@crew.fleet.example",
+      "crew_id": "CR-0091"
+    },
+    "U-0092": {
+      "name": "Budi Bondarenko",
+      "role": "Chief Cook",
+      "email": "budi.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0092"
+    },
+    "U-0093": {
+      "name": "Carlo Papadopoulos",
+      "role": "Master",
+      "email": "carlo.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0093"
+    },
+    "U-0094": {
+      "name": "Dmytro Chen",
+      "role": "Electrician",
+      "email": "dmytro.chen@crew.fleet.example",
+      "crew_id": "CR-0094"
+    },
+    "U-0095": {
+      "name": "Carlo Park",
+      "role": "Oiler",
+      "email": "carlo.park@crew.fleet.example",
+      "crew_id": "CR-0095"
+    },
+    "U-0096": {
+      "name": "Wei Hlaing",
+      "role": "3rd Officer",
+      "email": "wei.hlaing@crew.fleet.example",
+      "crew_id": "CR-0096"
+    },
+    "U-0097": {
+      "name": "Liam Fernandez",
+      "role": "Chief Officer",
+      "email": "liam.fernandez@crew.fleet.example",
+      "crew_id": "CR-0097"
+    },
+    "U-0098": {
+      "name": "Rahul Fernandez",
+      "role": "AB Seaman",
+      "email": "rahul.fernandez@crew.fleet.example",
+      "crew_id": "CR-0098"
+    },
+    "U-0099": {
+      "name": "Wei Rossi",
+      "role": "3rd Engineer",
+      "email": "wei.rossi@crew.fleet.example",
+      "crew_id": "CR-0099"
+    },
+    "U-0100": {
+      "name": "Kiran Park",
+      "role": "Master",
+      "email": "kiran.park@crew.fleet.example",
+      "crew_id": "CR-0100"
+    },
+    "U-0101": {
+      "name": "Budi Nair",
+      "role": "3rd Engineer",
+      "email": "budi.nair@crew.fleet.example",
+      "crew_id": "CR-0101"
+    },
+    "U-0102": {
+      "name": "Diego Nowak",
+      "role": "AB Seaman",
+      "email": "diego.nowak@crew.fleet.example",
+      "crew_id": "CR-0102"
+    },
+    "U-0103": {
+      "name": "Kiran Bondarenko",
+      "role": "Bosun",
+      "email": "kiran.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0103"
+    },
+    "U-0104": {
+      "name": "Cemal Horvat",
+      "role": "AB Seaman",
+      "email": "cemal.horvat@crew.fleet.example",
+      "crew_id": "CR-0104"
+    },
+    "U-0105": {
+      "name": "Nikos Nair",
+      "role": "Chief Engineer",
+      "email": "nikos.nair@crew.fleet.example",
+      "crew_id": "CR-0105"
+    },
+    "U-0106": {
+      "name": "Diego Khan",
+      "role": "2nd Engineer",
+      "email": "diego.khan@crew.fleet.example",
+      "crew_id": "CR-0106"
+    },
+    "U-0107": {
+      "name": "Sergii Bondarenko",
+      "role": "Master",
+      "email": "sergii.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0107"
+    },
+    "U-0108": {
+      "name": "Pedro Silva",
+      "role": "AB Seaman",
+      "email": "pedro.silva@crew.fleet.example",
+      "crew_id": "CR-0108"
+    },
+    "U-0109": {
+      "name": "Kiran Popescu",
+      "role": "3rd Engineer",
+      "email": "kiran.popescu@crew.fleet.example",
+      "crew_id": "CR-0109"
+    },
+    "U-0110": {
+      "name": "Sergii Reddy",
+      "role": "2nd Officer",
+      "email": "sergii.reddy@crew.fleet.example",
+      "crew_id": "CR-0110"
+    },
+    "U-0111": {
+      "name": "Dmytro Petrov",
+      "role": "AB Seaman",
+      "email": "dmytro.petrov@crew.fleet.example",
+      "crew_id": "CR-0111"
+    },
+    "U-0112": {
+      "name": "Nikos Cruz",
+      "role": "4th Engineer",
+      "email": "nikos.cruz@crew.fleet.example",
+      "crew_id": "CR-0112"
+    },
+    "U-0113": {
+      "name": "Diego Kovalenko",
+      "role": "Messman",
+      "email": "diego.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0113"
+    },
+    "U-0114": {
+      "name": "Viktor Horvat",
+      "role": "3rd Engineer",
+      "email": "viktor.horvat@crew.fleet.example",
+      "crew_id": "CR-0114"
+    },
+    "U-0115": {
+      "name": "Ivan Cruz",
+      "role": "Oiler",
+      "email": "ivan.cruz@crew.fleet.example",
+      "crew_id": "CR-0115"
+    },
+    "U-0116": {
+      "name": "Emre Walsh",
+      "role": "Master",
+      "email": "emre.walsh@crew.fleet.example",
+      "crew_id": "CR-0116"
+    },
+    "U-0117": {
+      "name": "Aung Horvat",
+      "role": "4th Engineer",
+      "email": "aung.horvat@crew.fleet.example",
+      "crew_id": "CR-0117"
+    },
+    "U-0118": {
+      "name": "Joon Petrov",
+      "role": "Chief Officer",
+      "email": "joon.petrov@crew.fleet.example",
+      "crew_id": "CR-0118"
+    },
+    "U-0119": {
+      "name": "Pedro Greco",
+      "role": "Chief Engineer",
+      "email": "pedro.greco@crew.fleet.example",
+      "crew_id": "CR-0119"
+    },
+    "U-0120": {
+      "name": "Emre Silva",
+      "role": "AB Seaman",
+      "email": "emre.silva@crew.fleet.example",
+      "crew_id": "CR-0120"
+    },
+    "U-0121": {
+      "name": "Joon Silva",
+      "role": "Wiper",
+      "email": "joon.silva@crew.fleet.example",
+      "crew_id": "CR-0121"
+    },
+    "U-0122": {
+      "name": "Pedro Chen",
+      "role": "Messman",
+      "email": "pedro.chen@crew.fleet.example",
+      "crew_id": "CR-0122"
+    },
+    "U-0123": {
+      "name": "Emre Reddy",
+      "role": "Electrician",
+      "email": "emre.reddy@crew.fleet.example",
+      "crew_id": "CR-0123"
+    },
+    "U-0124": {
+      "name": "Wei Silva",
+      "role": "4th Engineer",
+      "email": "wei.silva@crew.fleet.example",
+      "crew_id": "CR-0124"
+    },
+    "U-0125": {
+      "name": "Ivan Chen",
+      "role": "Bosun",
+      "email": "ivan.chen@crew.fleet.example",
+      "crew_id": "CR-0125"
+    },
+    "U-0126": {
+      "name": "Ramon Cruz",
+      "role": "2nd Officer",
+      "email": "ramon.cruz@crew.fleet.example",
+      "crew_id": "CR-0126"
+    },
+    "U-0127": {
+      "name": "Viktor Papadopoulos",
+      "role": "Chief Engineer",
+      "email": "viktor.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0127"
+    },
+    "U-0128": {
+      "name": "Tomasz Park",
+      "role": "Wiper",
+      "email": "tomasz.park@crew.fleet.example",
+      "crew_id": "CR-0128"
+    },
+    "U-0129": {
+      "name": "Nikos Nair",
+      "role": "Chief Officer",
+      "email": "nikos.nair@crew.fleet.example",
+      "crew_id": "CR-0129"
+    },
+    "U-0130": {
+      "name": "Emre Khan",
+      "role": "Master",
+      "email": "emre.khan@crew.fleet.example",
+      "crew_id": "CR-0130"
+    },
+    "U-0131": {
+      "name": "Budi Bondarenko",
+      "role": "Master",
+      "email": "budi.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0131"
+    },
+    "U-0132": {
+      "name": "Joon Iyer",
+      "role": "Wiper",
+      "email": "joon.iyer@crew.fleet.example",
+      "crew_id": "CR-0132"
+    },
+    "U-0133": {
+      "name": "Andrei Petrov",
+      "role": "4th Engineer",
+      "email": "andrei.petrov@crew.fleet.example",
+      "crew_id": "CR-0133"
+    },
+    "U-0134": {
+      "name": "Arjun Yilmaz",
+      "role": "Messman",
+      "email": "arjun.yilmaz@crew.fleet.example",
+      "crew_id": "CR-0134"
+    },
+    "U-0135": {
+      "name": "Sanjay Hlaing",
+      "role": "Oiler",
+      "email": "sanjay.hlaing@crew.fleet.example",
+      "crew_id": "CR-0135"
+    },
+    "U-0136": {
+      "name": "Cemal Khan",
+      "role": "Master",
+      "email": "cemal.khan@crew.fleet.example",
+      "crew_id": "CR-0136"
+    },
+    "U-0137": {
+      "name": "Dmytro W\u00f3jcik",
+      "role": "Master",
+      "email": "dmytro.w\u00f3jcik@crew.fleet.example",
+      "crew_id": "CR-0137"
+    },
+    "U-0138": {
+      "name": "Aung Rossi",
+      "role": "Chief Cook",
+      "email": "aung.rossi@crew.fleet.example",
+      "crew_id": "CR-0138"
+    },
+    "U-0139": {
+      "name": "Nikos Silva",
+      "role": "AB Seaman",
+      "email": "nikos.silva@crew.fleet.example",
+      "crew_id": "CR-0139"
+    },
+    "U-0140": {
+      "name": "Wei Nair",
+      "role": "Oiler",
+      "email": "wei.nair@crew.fleet.example",
+      "crew_id": "CR-0140"
+    },
+    "U-0141": {
+      "name": "Sanjay Park",
+      "role": "Master",
+      "email": "sanjay.park@crew.fleet.example",
+      "crew_id": "CR-0141"
+    },
+    "U-0142": {
+      "name": "Mateusz Kovalenko",
+      "role": "4th Engineer",
+      "email": "mateusz.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0142"
+    },
+    "U-0143": {
+      "name": "Emre Sharma",
+      "role": "Chief Officer",
+      "email": "emre.sharma@crew.fleet.example",
+      "crew_id": "CR-0143"
+    },
+    "U-0144": {
+      "name": "Diego Cruz",
+      "role": "Master",
+      "email": "diego.cruz@crew.fleet.example",
+      "crew_id": "CR-0144"
+    },
+    "U-0145": {
+      "name": "Carlo Walsh",
+      "role": "Messman",
+      "email": "carlo.walsh@crew.fleet.example",
+      "crew_id": "CR-0145"
+    },
+    "U-0146": {
+      "name": "Viktor Chen",
+      "role": "Chief Cook",
+      "email": "viktor.chen@crew.fleet.example",
+      "crew_id": "CR-0146"
+    },
+    "U-0147": {
+      "name": "Diego Fernandez",
+      "role": "2nd Engineer",
+      "email": "diego.fernandez@crew.fleet.example",
+      "crew_id": "CR-0147"
+    },
+    "U-0148": {
+      "name": "Emre Hlaing",
+      "role": "3rd Officer",
+      "email": "emre.hlaing@crew.fleet.example",
+      "crew_id": "CR-0148"
+    },
+    "U-0149": {
+      "name": "Sergii Khan",
+      "role": "Master",
+      "email": "sergii.khan@crew.fleet.example",
+      "crew_id": "CR-0149"
+    },
+    "U-0150": {
+      "name": "Viktor Papadopoulos",
+      "role": "Oiler",
+      "email": "viktor.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0150"
+    },
+    "U-0151": {
+      "name": "Liam Horvat",
+      "role": "4th Engineer",
+      "email": "liam.horvat@crew.fleet.example",
+      "crew_id": "CR-0151"
+    },
+    "U-0152": {
+      "name": "Hassan Rossi",
+      "role": "3rd Officer",
+      "email": "hassan.rossi@crew.fleet.example",
+      "crew_id": "CR-0152"
+    },
+    "U-0153": {
+      "name": "Carlo Santoso",
+      "role": "Wiper",
+      "email": "carlo.santoso@crew.fleet.example",
+      "crew_id": "CR-0153"
+    },
+    "U-0154": {
+      "name": "Arjun Nair",
+      "role": "AB Seaman",
+      "email": "arjun.nair@crew.fleet.example",
+      "crew_id": "CR-0154"
+    },
+    "U-0155": {
+      "name": "Mateusz Silva",
+      "role": "Ordinary Seaman",
+      "email": "mateusz.silva@crew.fleet.example",
+      "crew_id": "CR-0155"
+    },
+    "U-0156": {
+      "name": "Aung Iyer",
+      "role": "Wiper",
+      "email": "aung.iyer@crew.fleet.example",
+      "crew_id": "CR-0156"
+    },
+    "U-0157": {
+      "name": "Diego Park",
+      "role": "Electrician",
+      "email": "diego.park@crew.fleet.example",
+      "crew_id": "CR-0157"
+    },
+    "U-0158": {
+      "name": "Rahul Iyer",
+      "role": "Chief Cook",
+      "email": "rahul.iyer@crew.fleet.example",
+      "crew_id": "CR-0158"
+    },
+    "U-0159": {
+      "name": "Ivan Kovalenko",
+      "role": "AB Seaman",
+      "email": "ivan.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0159"
+    },
+    "U-0160": {
+      "name": "Emre Silva",
+      "role": "4th Engineer",
+      "email": "emre.silva@crew.fleet.example",
+      "crew_id": "CR-0160"
+    },
+    "U-0161": {
+      "name": "Tomasz Sharma",
+      "role": "Oiler",
+      "email": "tomasz.sharma@crew.fleet.example",
+      "crew_id": "CR-0161"
+    },
+    "U-0162": {
+      "name": "Andrei Papadopoulos",
+      "role": "2nd Engineer",
+      "email": "andrei.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0162"
+    },
+    "U-0163": {
+      "name": "Wei Fernandez",
+      "role": "AB Seaman",
+      "email": "wei.fernandez@crew.fleet.example",
+      "crew_id": "CR-0163"
+    },
+    "U-0164": {
+      "name": "Kiran Papadopoulos",
+      "role": "Master",
+      "email": "kiran.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0164"
+    },
+    "U-0165": {
+      "name": "Andrei Park",
+      "role": "Wiper",
+      "email": "andrei.park@crew.fleet.example",
+      "crew_id": "CR-0165"
+    },
+    "U-0166": {
+      "name": "Mateusz Horvat",
+      "role": "Messman",
+      "email": "mateusz.horvat@crew.fleet.example",
+      "crew_id": "CR-0166"
+    },
+    "U-0167": {
+      "name": "Dmytro Bondarenko",
+      "role": "Master",
+      "email": "dmytro.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0167"
+    },
+    "U-0168": {
+      "name": "Sergii Greco",
+      "role": "4th Engineer",
+      "email": "sergii.greco@crew.fleet.example",
+      "crew_id": "CR-0168"
+    },
+    "U-0169": {
+      "name": "Rahul Iyer",
+      "role": "Ordinary Seaman",
+      "email": "rahul.iyer@crew.fleet.example",
+      "crew_id": "CR-0169"
+    },
+    "U-0170": {
+      "name": "Viktor Silva",
+      "role": "Ordinary Seaman",
+      "email": "viktor.silva@crew.fleet.example",
+      "crew_id": "CR-0170"
+    },
+    "U-0171": {
+      "name": "Ivan Walsh",
+      "role": "Electrician",
+      "email": "ivan.walsh@crew.fleet.example",
+      "crew_id": "CR-0171"
+    },
+    "U-0172": {
+      "name": "Liam Iyer",
+      "role": "AB Seaman",
+      "email": "liam.iyer@crew.fleet.example",
+      "crew_id": "CR-0172"
+    },
+    "U-0173": {
+      "name": "Nikos Papadopoulos",
+      "role": "2nd Engineer",
+      "email": "nikos.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0173"
+    },
+    "U-0174": {
+      "name": "Sanjay Khan",
+      "role": "Electrician",
+      "email": "sanjay.khan@crew.fleet.example",
+      "crew_id": "CR-0174"
+    },
+    "U-0175": {
+      "name": "Liam Papadopoulos",
+      "role": "Bosun",
+      "email": "liam.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0175"
+    },
+    "U-0176": {
+      "name": "Aung Bondarenko",
+      "role": "Ordinary Seaman",
+      "email": "aung.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0176"
+    },
+    "U-0177": {
+      "name": "Wei Rossi",
+      "role": "Chief Engineer",
+      "email": "wei.rossi@crew.fleet.example",
+      "crew_id": "CR-0177"
+    },
+    "U-0178": {
+      "name": "Viktor Cruz",
+      "role": "Bosun",
+      "email": "viktor.cruz@crew.fleet.example",
+      "crew_id": "CR-0178"
+    },
+    "U-0179": {
+      "name": "Arjun Khan",
+      "role": "3rd Officer",
+      "email": "arjun.khan@crew.fleet.example",
+      "crew_id": "CR-0179"
+    },
+    "U-0180": {
+      "name": "Pedro Nowak",
+      "role": "Messman",
+      "email": "pedro.nowak@crew.fleet.example",
+      "crew_id": "CR-0180"
+    },
+    "U-0181": {
+      "name": "Andrei Walsh",
+      "role": "Electrician",
+      "email": "andrei.walsh@crew.fleet.example",
+      "crew_id": "CR-0181"
+    },
+    "U-0182": {
+      "name": "Dmytro Khan",
+      "role": "Messman",
+      "email": "dmytro.khan@crew.fleet.example",
+      "crew_id": "CR-0182"
+    },
+    "U-0183": {
+      "name": "Ramon Khan",
+      "role": "Chief Engineer",
+      "email": "ramon.khan@crew.fleet.example",
+      "crew_id": "CR-0183"
+    },
+    "U-0184": {
+      "name": "Liam Park",
+      "role": "4th Engineer",
+      "email": "liam.park@crew.fleet.example",
+      "crew_id": "CR-0184"
+    },
+    "U-0185": {
+      "name": "Emre Reddy",
+      "role": "4th Engineer",
+      "email": "emre.reddy@crew.fleet.example",
+      "crew_id": "CR-0185"
+    },
+    "U-0186": {
+      "name": "Sergii Khan",
+      "role": "Chief Cook",
+      "email": "sergii.khan@crew.fleet.example",
+      "crew_id": "CR-0186"
+    },
+    "U-0187": {
+      "name": "Diego Iyer",
+      "role": "Chief Officer",
+      "email": "diego.iyer@crew.fleet.example",
+      "crew_id": "CR-0187"
+    },
+    "U-0188": {
+      "name": "Wei Greco",
+      "role": "3rd Engineer",
+      "email": "wei.greco@crew.fleet.example",
+      "crew_id": "CR-0188"
+    },
+    "U-0189": {
+      "name": "Aung Park",
+      "role": "4th Engineer",
+      "email": "aung.park@crew.fleet.example",
+      "crew_id": "CR-0189"
+    },
+    "U-0190": {
+      "name": "Rahul Silva",
+      "role": "Master",
+      "email": "rahul.silva@crew.fleet.example",
+      "crew_id": "CR-0190"
+    },
+    "U-0191": {
+      "name": "Sergii Rossi",
+      "role": "Messman",
+      "email": "sergii.rossi@crew.fleet.example",
+      "crew_id": "CR-0191"
+    },
+    "U-0192": {
+      "name": "Viktor Silva",
+      "role": "Bosun",
+      "email": "viktor.silva@crew.fleet.example",
+      "crew_id": "CR-0192"
+    },
+    "U-0193": {
+      "name": "Wei W\u00f3jcik",
+      "role": "4th Engineer",
+      "email": "wei.w\u00f3jcik@crew.fleet.example",
+      "crew_id": "CR-0193"
+    },
+    "U-0194": {
+      "name": "Rahul Walsh",
+      "role": "3rd Engineer",
+      "email": "rahul.walsh@crew.fleet.example",
+      "crew_id": "CR-0194"
+    },
+    "U-0195": {
+      "name": "Wei Cruz",
+      "role": "Chief Engineer",
+      "email": "wei.cruz@crew.fleet.example",
+      "crew_id": "CR-0195"
+    },
+    "U-0196": {
+      "name": "Sergii Fernandez",
+      "role": "2nd Engineer",
+      "email": "sergii.fernandez@crew.fleet.example",
+      "crew_id": "CR-0196"
+    },
+    "U-0197": {
+      "name": "Pedro Walsh",
+      "role": "Bosun",
+      "email": "pedro.walsh@crew.fleet.example",
+      "crew_id": "CR-0197"
+    },
+    "U-0198": {
+      "name": "Viktor Yilmaz",
+      "role": "Bosun",
+      "email": "viktor.yilmaz@crew.fleet.example",
+      "crew_id": "CR-0198"
+    },
+    "U-0199": {
+      "name": "Pedro Kovalenko",
+      "role": "Messman",
+      "email": "pedro.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0199"
+    },
+    "U-0200": {
+      "name": "Sanjay Nowak",
+      "role": "Wiper",
+      "email": "sanjay.nowak@crew.fleet.example",
+      "crew_id": "CR-0200"
+    },
+    "U-0201": {
+      "name": "Dmytro Petrov",
+      "role": "Master",
+      "email": "dmytro.petrov@crew.fleet.example",
+      "crew_id": "CR-0201"
+    },
+    "U-0202": {
+      "name": "Emre Greco",
+      "role": "Master",
+      "email": "emre.greco@crew.fleet.example",
+      "crew_id": "CR-0202"
+    },
+    "U-0203": {
+      "name": "Emre Hlaing",
+      "role": "Chief Officer",
+      "email": "emre.hlaing@crew.fleet.example",
+      "crew_id": "CR-0203"
+    },
+    "U-0204": {
+      "name": "Wei Hlaing",
+      "role": "Chief Cook",
+      "email": "wei.hlaing@crew.fleet.example",
+      "crew_id": "CR-0204"
+    },
+    "U-0205": {
+      "name": "Dmytro Popescu",
+      "role": "Messman",
+      "email": "dmytro.popescu@crew.fleet.example",
+      "crew_id": "CR-0205"
+    },
+    "U-0206": {
+      "name": "Tomasz Greco",
+      "role": "AB Seaman",
+      "email": "tomasz.greco@crew.fleet.example",
+      "crew_id": "CR-0206"
+    },
+    "U-0207": {
+      "name": "Rahul Horvat",
+      "role": "AB Seaman",
+      "email": "rahul.horvat@crew.fleet.example",
+      "crew_id": "CR-0207"
+    },
+    "U-0208": {
+      "name": "Emre Park",
+      "role": "Oiler",
+      "email": "emre.park@crew.fleet.example",
+      "crew_id": "CR-0208"
+    },
+    "U-0209": {
+      "name": "Tomasz Chen",
+      "role": "2nd Officer",
+      "email": "tomasz.chen@crew.fleet.example",
+      "crew_id": "CR-0209"
+    },
+    "U-0210": {
+      "name": "Kiran Sharma",
+      "role": "Oiler",
+      "email": "kiran.sharma@crew.fleet.example",
+      "crew_id": "CR-0210"
+    },
+    "U-0211": {
+      "name": "Marco Papadopoulos",
+      "role": "Wiper",
+      "email": "marco.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0211"
+    },
+    "U-0212": {
+      "name": "Mateusz Silva",
+      "role": "Messman",
+      "email": "mateusz.silva@crew.fleet.example",
+      "crew_id": "CR-0212"
+    },
+    "U-0213": {
+      "name": "Wei Park",
+      "role": "3rd Engineer",
+      "email": "wei.park@crew.fleet.example",
+      "crew_id": "CR-0213"
+    },
+    "U-0214": {
+      "name": "Viktor Popescu",
+      "role": "Chief Cook",
+      "email": "viktor.popescu@crew.fleet.example",
+      "crew_id": "CR-0214"
+    },
+    "U-0215": {
+      "name": "Viktor Hlaing",
+      "role": "4th Engineer",
+      "email": "viktor.hlaing@crew.fleet.example",
+      "crew_id": "CR-0215"
+    },
+    "U-0216": {
+      "name": "Joon Nair",
+      "role": "Master",
+      "email": "joon.nair@crew.fleet.example",
+      "crew_id": "CR-0216"
+    },
+    "U-0217": {
+      "name": "Pedro Walsh",
+      "role": "3rd Officer",
+      "email": "pedro.walsh@crew.fleet.example",
+      "crew_id": "CR-0217"
+    },
+    "U-0218": {
+      "name": "Viktor Bondarenko",
+      "role": "Messman",
+      "email": "viktor.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0218"
+    },
+    "U-0219": {
+      "name": "Rahul Popescu",
+      "role": "Electrician",
+      "email": "rahul.popescu@crew.fleet.example",
+      "crew_id": "CR-0219"
+    },
+    "U-0220": {
+      "name": "Joon Cruz",
+      "role": "Chief Cook",
+      "email": "joon.cruz@crew.fleet.example",
+      "crew_id": "CR-0220"
+    },
+    "U-0221": {
+      "name": "Dmytro Chen",
+      "role": "Chief Engineer",
+      "email": "dmytro.chen@crew.fleet.example",
+      "crew_id": "CR-0221"
+    },
+    "U-0222": {
+      "name": "Kiran Chen",
+      "role": "AB Seaman",
+      "email": "kiran.chen@crew.fleet.example",
+      "crew_id": "CR-0222"
+    },
+    "U-0223": {
+      "name": "Hassan Khan",
+      "role": "Bosun",
+      "email": "hassan.khan@crew.fleet.example",
+      "crew_id": "CR-0223"
+    },
+    "U-0224": {
+      "name": "Pedro Park",
+      "role": "Chief Engineer",
+      "email": "pedro.park@crew.fleet.example",
+      "crew_id": "CR-0224"
+    },
+    "U-0225": {
+      "name": "Pedro Nowak",
+      "role": "Oiler",
+      "email": "pedro.nowak@crew.fleet.example",
+      "crew_id": "CR-0225"
+    },
+    "U-0226": {
+      "name": "Hassan Yilmaz",
+      "role": "4th Engineer",
+      "email": "hassan.yilmaz@crew.fleet.example",
+      "crew_id": "CR-0226"
+    },
+    "U-0227": {
+      "name": "Tomasz Iyer",
+      "role": "Chief Officer",
+      "email": "tomasz.iyer@crew.fleet.example",
+      "crew_id": "CR-0227"
+    },
+    "U-0228": {
+      "name": "Cemal Greco",
+      "role": "Oiler",
+      "email": "cemal.greco@crew.fleet.example",
+      "crew_id": "CR-0228"
+    },
+    "U-0229": {
+      "name": "Marco Cruz",
+      "role": "Messman",
+      "email": "marco.cruz@crew.fleet.example",
+      "crew_id": "CR-0229"
+    },
+    "U-0230": {
+      "name": "Liam Silva",
+      "role": "AB Seaman",
+      "email": "liam.silva@crew.fleet.example",
+      "crew_id": "CR-0230"
+    },
+    "U-0231": {
+      "name": "Arjun Iyer",
+      "role": "Chief Cook",
+      "email": "arjun.iyer@crew.fleet.example",
+      "crew_id": "CR-0231"
+    },
+    "U-0232": {
+      "name": "Dmytro Popescu",
+      "role": "Chief Engineer",
+      "email": "dmytro.popescu@crew.fleet.example",
+      "crew_id": "CR-0232"
+    },
+    "U-0233": {
+      "name": "Diego Horvat",
+      "role": "AB Seaman",
+      "email": "diego.horvat@crew.fleet.example",
+      "crew_id": "CR-0233"
+    },
+    "U-0234": {
+      "name": "Tomasz Greco",
+      "role": "2nd Officer",
+      "email": "tomasz.greco@crew.fleet.example",
+      "crew_id": "CR-0234"
+    },
+    "U-0235": {
+      "name": "Mateusz Horvat",
+      "role": "AB Seaman",
+      "email": "mateusz.horvat@crew.fleet.example",
+      "crew_id": "CR-0235"
+    },
+    "U-0236": {
+      "name": "Diego Kovalenko",
+      "role": "Chief Officer",
+      "email": "diego.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0236"
+    },
+    "U-0237": {
+      "name": "Ivan Iyer",
+      "role": "Bosun",
+      "email": "ivan.iyer@crew.fleet.example",
+      "crew_id": "CR-0237"
+    },
+    "U-0238": {
+      "name": "Emre W\u00f3jcik",
+      "role": "3rd Officer",
+      "email": "emre.w\u00f3jcik@crew.fleet.example",
+      "crew_id": "CR-0238"
+    },
+    "U-0239": {
+      "name": "Viktor Bondarenko",
+      "role": "2nd Engineer",
+      "email": "viktor.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0239"
+    },
+    "U-0240": {
+      "name": "Marco Bondarenko",
+      "role": "AB Seaman",
+      "email": "marco.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0240"
+    },
+    "U-0241": {
+      "name": "Ramon Petrov",
+      "role": "Wiper",
+      "email": "ramon.petrov@crew.fleet.example",
+      "crew_id": "CR-0241"
+    },
+    "U-0242": {
+      "name": "Aung Hlaing",
+      "role": "2nd Engineer",
+      "email": "aung.hlaing@crew.fleet.example",
+      "crew_id": "CR-0242"
+    },
+    "U-0243": {
+      "name": "Diego Greco",
+      "role": "Oiler",
+      "email": "diego.greco@crew.fleet.example",
+      "crew_id": "CR-0243"
+    },
+    "U-0244": {
+      "name": "Ivan Silva",
+      "role": "Chief Engineer",
+      "email": "ivan.silva@crew.fleet.example",
+      "crew_id": "CR-0244"
+    },
+    "U-0245": {
+      "name": "Wei Greco",
+      "role": "Chief Cook",
+      "email": "wei.greco@crew.fleet.example",
+      "crew_id": "CR-0245"
+    },
+    "U-0246": {
+      "name": "Carlo Park",
+      "role": "Bosun",
+      "email": "carlo.park@crew.fleet.example",
+      "crew_id": "CR-0246"
+    },
+    "U-0247": {
+      "name": "Budi Khan",
+      "role": "Chief Cook",
+      "email": "budi.khan@crew.fleet.example",
+      "crew_id": "CR-0247"
+    },
+    "U-0248": {
+      "name": "Viktor Chen",
+      "role": "Wiper",
+      "email": "viktor.chen@crew.fleet.example",
+      "crew_id": "CR-0248"
+    },
+    "U-0249": {
+      "name": "Cemal Popescu",
+      "role": "3rd Engineer",
+      "email": "cemal.popescu@crew.fleet.example",
+      "crew_id": "CR-0249"
+    },
+    "U-0250": {
+      "name": "Hassan Santoso",
+      "role": "Oiler",
+      "email": "hassan.santoso@crew.fleet.example",
+      "crew_id": "CR-0250"
+    },
+    "U-0251": {
+      "name": "Arjun Greco",
+      "role": "Bosun",
+      "email": "arjun.greco@crew.fleet.example",
+      "crew_id": "CR-0251"
+    },
+    "U-0252": {
+      "name": "Hassan Greco",
+      "role": "Master",
+      "email": "hassan.greco@crew.fleet.example",
+      "crew_id": "CR-0252"
+    },
+    "U-0253": {
+      "name": "Sergii Petrov",
+      "role": "Messman",
+      "email": "sergii.petrov@crew.fleet.example",
+      "crew_id": "CR-0253"
+    },
+    "U-0254": {
+      "name": "Mateusz Papadopoulos",
+      "role": "4th Engineer",
+      "email": "mateusz.papadopoulos@crew.fleet.example",
+      "crew_id": "CR-0254"
+    },
+    "U-0255": {
+      "name": "Mateusz Walsh",
+      "role": "Chief Engineer",
+      "email": "mateusz.walsh@crew.fleet.example",
+      "crew_id": "CR-0255"
+    },
+    "U-0256": {
+      "name": "Sergii Silva",
+      "role": "Chief Officer",
+      "email": "sergii.silva@crew.fleet.example",
+      "crew_id": "CR-0256"
+    },
+    "U-0257": {
+      "name": "Sanjay Cruz",
+      "role": "Ordinary Seaman",
+      "email": "sanjay.cruz@crew.fleet.example",
+      "crew_id": "CR-0257"
+    },
+    "U-0258": {
+      "name": "Sanjay Nair",
+      "role": "AB Seaman",
+      "email": "sanjay.nair@crew.fleet.example",
+      "crew_id": "CR-0258"
+    },
+    "U-0259": {
+      "name": "Joon Santoso",
+      "role": "Chief Engineer",
+      "email": "joon.santoso@crew.fleet.example",
+      "crew_id": "CR-0259"
+    },
+    "U-0260": {
+      "name": "Aung Chen",
+      "role": "Electrician",
+      "email": "aung.chen@crew.fleet.example",
+      "crew_id": "CR-0260"
+    },
+    "U-0261": {
+      "name": "Liam Silva",
+      "role": "AB Seaman",
+      "email": "liam.silva@crew.fleet.example",
+      "crew_id": "CR-0261"
+    },
+    "U-0262": {
+      "name": "Carlo Iyer",
+      "role": "4th Engineer",
+      "email": "carlo.iyer@crew.fleet.example",
+      "crew_id": "CR-0262"
+    },
+    "U-0263": {
+      "name": "Dmytro Yilmaz",
+      "role": "Ordinary Seaman",
+      "email": "dmytro.yilmaz@crew.fleet.example",
+      "crew_id": "CR-0263"
+    },
+    "U-0264": {
+      "name": "Pedro Santoso",
+      "role": "3rd Officer",
+      "email": "pedro.santoso@crew.fleet.example",
+      "crew_id": "CR-0264"
+    },
+    "U-0265": {
+      "name": "Hassan Yilmaz",
+      "role": "Electrician",
+      "email": "hassan.yilmaz@crew.fleet.example",
+      "crew_id": "CR-0265"
+    },
+    "U-0266": {
+      "name": "Carlo Petrov",
+      "role": "3rd Officer",
+      "email": "carlo.petrov@crew.fleet.example",
+      "crew_id": "CR-0266"
+    },
+    "U-0267": {
+      "name": "Diego Petrov",
+      "role": "AB Seaman",
+      "email": "diego.petrov@crew.fleet.example",
+      "crew_id": "CR-0267"
+    },
+    "U-0268": {
+      "name": "Viktor Bondarenko",
+      "role": "Chief Cook",
+      "email": "viktor.bondarenko@crew.fleet.example",
+      "crew_id": "CR-0268"
+    },
+    "U-0269": {
+      "name": "Ramon Rossi",
+      "role": "3rd Officer",
+      "email": "ramon.rossi@crew.fleet.example",
+      "crew_id": "CR-0269"
+    },
+    "U-0270": {
+      "name": "Liam Walsh",
+      "role": "Messman",
+      "email": "liam.walsh@crew.fleet.example",
+      "crew_id": "CR-0270"
+    },
+    "U-0271": {
+      "name": "Cemal Silva",
+      "role": "Chief Engineer",
+      "email": "cemal.silva@crew.fleet.example",
+      "crew_id": "CR-0271"
+    },
+    "U-0272": {
+      "name": "Hassan Iyer",
+      "role": "Wiper",
+      "email": "hassan.iyer@crew.fleet.example",
+      "crew_id": "CR-0272"
+    },
+    "U-0273": {
+      "name": "Mateusz Walsh",
+      "role": "Wiper",
+      "email": "mateusz.walsh@crew.fleet.example",
+      "crew_id": "CR-0273"
+    },
+    "U-0274": {
+      "name": "Wei Rossi",
+      "role": "Wiper",
+      "email": "wei.rossi@crew.fleet.example",
+      "crew_id": "CR-0274"
+    },
+    "U-0275": {
+      "name": "Pedro Silva",
+      "role": "3rd Engineer",
+      "email": "pedro.silva@crew.fleet.example",
+      "crew_id": "CR-0275"
+    },
+    "U-0276": {
+      "name": "Carlo Santoso",
+      "role": "3rd Officer",
+      "email": "carlo.santoso@crew.fleet.example",
+      "crew_id": "CR-0276"
+    },
+    "U-0277": {
+      "name": "Marco Yilmaz",
+      "role": "Ordinary Seaman",
+      "email": "marco.yilmaz@crew.fleet.example",
+      "crew_id": "CR-0277"
+    },
+    "U-0278": {
+      "name": "Pedro Kovalenko",
+      "role": "3rd Officer",
+      "email": "pedro.kovalenko@crew.fleet.example",
+      "crew_id": "CR-0278"
+    },
+    "U-0279": {
+      "name": "Marco Nowak",
+      "role": "Master",
+      "email": "marco.nowak@crew.fleet.example",
+      "crew_id": "CR-0279"
+    },
+    "U-0280": {
+      "name": "Dmytro Park",
+      "role": "3rd Engineer",
+      "email": "dmytro.park@crew.fleet.example",
+      "crew_id": "CR-0280"
+    },
+    "US-001": {
+      "name": "Priya Menon",
+      "role": "crewing-manager",
+      "email": "priya.menon@fleet.example",
+      "crew_id": ""
+    },
+    "US-002": {
+      "name": "Tom Becker",
+      "role": "crewing-manager",
+      "email": "tom.becker@fleet.example",
+      "crew_id": ""
+    },
+    "US-003": {
+      "name": "Elena Marsh",
+      "role": "fleet-ops",
+      "email": "elena.marsh@fleet.example",
+      "crew_id": ""
+    },
+    "US-004": {
+      "name": "Sok Lim",
+      "role": "fleet-ops",
+      "email": "sok.lim@fleet.example",
+      "crew_id": ""
+    },
+    "US-005": {
+      "name": "Daniel Reyes",
+      "role": "compliance",
+      "email": "daniel.reyes@fleet.example",
+      "crew_id": ""
+    },
+    "US-006": {
+      "name": "Aisha Karim",
+      "role": "compliance",
+      "email": "aisha.karim@fleet.example",
+      "crew_id": ""
+    },
+    "US-007": {
+      "name": "Greg Holt",
+      "role": "port-agent",
+      "email": "greg.holt@fleet.example",
+      "crew_id": ""
+    },
+    "US-008": {
+      "name": "Mira Sato",
+      "role": "manning-agency",
+      "email": "mira.sato@fleet.example",
+      "crew_id": ""
+    }
+  },
+  "crew": {
+    "CR-0001": {
+      "crew_id": "CR-0001",
+      "name": "Arjun Iyer",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-02-28"
+    },
+    "CR-0002": {
+      "crew_id": "CR-0002",
+      "name": "Ramon Iyer",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-04-13"
+    },
+    "CR-0003": {
+      "crew_id": "CR-0003",
+      "name": "Hassan Nair",
+      "rank": "2nd Officer",
+      "department": "deck",
+      "nationality": "IN",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-05-01"
+    },
+    "CR-0004": {
+      "crew_id": "CR-0004",
+      "name": "Nikos Petrov",
+      "rank": "2nd Officer",
+      "department": "deck",
+      "nationality": "GB",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2025-12-31"
+    },
+    "CR-0005": {
+      "crew_id": "CR-0005",
+      "name": "Joon Papadopoulos",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2025-11-07"
+    },
+    "CR-0006": {
+      "crew_id": "CR-0006",
+      "name": "Ivan Silva",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2025-12-10"
+    },
+    "CR-0007": {
+      "crew_id": "CR-0007",
+      "name": "Emre Hlaing",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2025-11-12"
+    },
+    "CR-0008": {
+      "crew_id": "CR-0008",
+      "name": "Wei Cruz",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-03-15"
+    },
+    "CR-0009": {
+      "crew_id": "CR-0009",
+      "name": "Dmytro Yilmaz",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-04-15"
+    },
+    "CR-0010": {
+      "crew_id": "CR-0010",
+      "name": "Diego Chen",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "CN",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-04-28"
+    },
+    "CR-0011": {
+      "crew_id": "CR-0011",
+      "name": "Joon Walsh",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "PH",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-02-02"
+    },
+    "CR-0012": {
+      "crew_id": "CR-0012",
+      "name": "Mateusz Fernandez",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "GB",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-02-06"
+    },
+    "CR-0013": {
+      "crew_id": "CR-0013",
+      "name": "Viktor Kovalenko",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-04-28"
+    },
+    "CR-0014": {
+      "crew_id": "CR-0014",
+      "name": "Emre Bondarenko",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "PL",
+      "vessel_id": "VSL-001",
+      "vessel": "MV Cygnus Trader",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-04-19"
+    },
+    "CR-0015": {
+      "crew_id": "CR-0015",
+      "name": "Cemal Chen",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2026-01-13"
+    },
+    "CR-0016": {
+      "crew_id": "CR-0016",
+      "name": "Aung Santoso",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2026-02-08"
+    },
+    "CR-0017": {
+      "crew_id": "CR-0017",
+      "name": "Viktor Greco",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "PH",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2025-11-25"
+    },
+    "CR-0018": {
+      "crew_id": "CR-0018",
+      "name": "Joon Iyer",
+      "rank": "2nd Engineer",
+      "department": "engine",
+      "nationality": "UA",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2026-03-08"
+    },
+    "CR-0019": {
+      "crew_id": "CR-0019",
+      "name": "Cemal Chen",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "CN",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2025-11-27"
+    },
+    "CR-0020": {
+      "crew_id": "CR-0020",
+      "name": "Carlo Nowak",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "IN",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2025-10-25"
+    },
+    "CR-0021": {
+      "crew_id": "CR-0021",
+      "name": "Marco Nowak",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2026-01-27"
+    },
+    "CR-0022": {
+      "crew_id": "CR-0022",
+      "name": "Nikos Khan",
+      "rank": "2nd Officer",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2025-11-07"
+    },
+    "CR-0023": {
+      "crew_id": "CR-0023",
+      "name": "Mateusz Popescu",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2026-01-28"
+    },
+    "CR-0024": {
+      "crew_id": "CR-0024",
+      "name": "Ramon Chen",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "PL",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2026-04-04"
+    },
+    "CR-0025": {
+      "crew_id": "CR-0025",
+      "name": "Sanjay Khan",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "GB",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2026-01-20"
+    },
+    "CR-0026": {
+      "crew_id": "CR-0026",
+      "name": "Budi Petrov",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "RO",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2026-04-04"
+    },
+    "CR-0027": {
+      "crew_id": "CR-0027",
+      "name": "Dmytro Rossi",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "UA",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2026-04-11"
+    },
+    "CR-0028": {
+      "crew_id": "CR-0028",
+      "name": "Carlo Nair",
+      "rank": "2nd Engineer",
+      "department": "engine",
+      "nationality": "PH",
+      "vessel_id": "VSL-002",
+      "vessel": "MV Orion Star",
+      "port": "Ulsan",
+      "status": "onboard",
+      "sign_on_date": "2025-12-08"
+    },
+    "CR-0029": {
+      "crew_id": "CR-0029",
+      "name": "Diego Silva",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-25"
+    },
+    "CR-0030": {
+      "crew_id": "CR-0030",
+      "name": "Carlo Iyer",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-04-10"
+    },
+    "CR-0031": {
+      "crew_id": "CR-0031",
+      "name": "Emre W\u00f3jcik",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "PH",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-02-11"
+    },
+    "CR-0032": {
+      "crew_id": "CR-0032",
+      "name": "Rahul Hlaing",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "IN",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-01-13"
+    },
+    "CR-0033": {
+      "crew_id": "CR-0033",
+      "name": "Kiran Hlaing",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "PH",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-31"
+    },
+    "CR-0034": {
+      "crew_id": "CR-0034",
+      "name": "Mateusz Reddy",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-05"
+    },
+    "CR-0035": {
+      "crew_id": "CR-0035",
+      "name": "Budi Hlaing",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "RO",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-22"
+    },
+    "CR-0036": {
+      "crew_id": "CR-0036",
+      "name": "Diego Nowak",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "IN",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-01-04"
+    },
+    "CR-0037": {
+      "crew_id": "CR-0037",
+      "name": "Budi Bondarenko",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "IN",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-03-09"
+    },
+    "CR-0038": {
+      "crew_id": "CR-0038",
+      "name": "Hassan Kovalenko",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "CN",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-04-18"
+    },
+    "CR-0039": {
+      "crew_id": "CR-0039",
+      "name": "Dmytro Park",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "UA",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-10-25"
+    },
+    "CR-0040": {
+      "crew_id": "CR-0040",
+      "name": "Carlo Popescu",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "UA",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-20"
+    },
+    "CR-0041": {
+      "crew_id": "CR-0041",
+      "name": "Kiran Fernandez",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "PL",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-01-21"
+    },
+    "CR-0042": {
+      "crew_id": "CR-0042",
+      "name": "Viktor Bondarenko",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-003",
+      "vessel": "MV Pacific Dawn",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-01-27"
+    },
+    "CR-0043": {
+      "crew_id": "CR-0043",
+      "name": "Pedro Reddy",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-01-14"
+    },
+    "CR-0044": {
+      "crew_id": "CR-0044",
+      "name": "Ivan Kovalenko",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "IN",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-02-12"
+    },
+    "CR-0045": {
+      "crew_id": "CR-0045",
+      "name": "Hassan Petrov",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "PH",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-05-08"
+    },
+    "CR-0046": {
+      "crew_id": "CR-0046",
+      "name": "Ivan Kovalenko",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-05-01"
+    },
+    "CR-0047": {
+      "crew_id": "CR-0047",
+      "name": "Kiran Petrov",
+      "rank": "2nd Officer",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-02-27"
+    },
+    "CR-0048": {
+      "crew_id": "CR-0048",
+      "name": "Nikos Park",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "CN",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-04-06"
+    },
+    "CR-0049": {
+      "crew_id": "CR-0049",
+      "name": "Ivan Popescu",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "PL",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-01-25"
+    },
+    "CR-0050": {
+      "crew_id": "CR-0050",
+      "name": "Liam Greco",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-01-19"
+    },
+    "CR-0051": {
+      "crew_id": "CR-0051",
+      "name": "Rahul Silva",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "IN",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2025-11-04"
+    },
+    "CR-0052": {
+      "crew_id": "CR-0052",
+      "name": "Marco Yilmaz",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2025-11-04"
+    },
+    "CR-0053": {
+      "crew_id": "CR-0053",
+      "name": "Ivan Papadopoulos",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "RO",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-03-22"
+    },
+    "CR-0054": {
+      "crew_id": "CR-0054",
+      "name": "Ramon Nair",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "ID",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-03-24"
+    },
+    "CR-0055": {
+      "crew_id": "CR-0055",
+      "name": "Ivan Kovalenko",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "RO",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2026-01-16"
+    },
+    "CR-0056": {
+      "crew_id": "CR-0056",
+      "name": "Marco W\u00f3jcik",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "IN",
+      "vessel_id": "VSL-004",
+      "vessel": "MV Aegean Pearl",
+      "port": "Durban",
+      "status": "onboard",
+      "sign_on_date": "2025-12-22"
+    },
+    "CR-0057": {
+      "crew_id": "CR-0057",
+      "name": "Aung Nair",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "HR",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2026-01-05"
+    },
+    "CR-0058": {
+      "crew_id": "CR-0058",
+      "name": "Cemal Rossi",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2026-03-28"
+    },
+    "CR-0059": {
+      "crew_id": "CR-0059",
+      "name": "Cemal Chen",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "HR",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2025-10-21"
+    },
+    "CR-0060": {
+      "crew_id": "CR-0060",
+      "name": "Rahul Horvat",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "RO",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2025-11-03"
+    },
+    "CR-0061": {
+      "crew_id": "CR-0061",
+      "name": "Ramon Papadopoulos",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "PL",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2026-02-23"
+    },
+    "CR-0062": {
+      "crew_id": "CR-0062",
+      "name": "Hassan Iyer",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "IN",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2025-12-22"
+    },
+    "CR-0063": {
+      "crew_id": "CR-0063",
+      "name": "Marco Rossi",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "HR",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2025-12-11"
+    },
+    "CR-0064": {
+      "crew_id": "CR-0064",
+      "name": "Marco Reddy",
+      "rank": "2nd Engineer",
+      "department": "engine",
+      "nationality": "UA",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2026-04-19"
+    },
+    "CR-0065": {
+      "crew_id": "CR-0065",
+      "name": "Diego Kovalenko",
+      "rank": "2nd Officer",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2025-11-18"
+    },
+    "CR-0066": {
+      "crew_id": "CR-0066",
+      "name": "Liam Khan",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "GB",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2026-03-07"
+    },
+    "CR-0067": {
+      "crew_id": "CR-0067",
+      "name": "Diego Kovalenko",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2026-01-22"
+    },
+    "CR-0068": {
+      "crew_id": "CR-0068",
+      "name": "Wei Papadopoulos",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "CN",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2025-11-19"
+    },
+    "CR-0069": {
+      "crew_id": "CR-0069",
+      "name": "Ivan Chen",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2026-01-28"
+    },
+    "CR-0070": {
+      "crew_id": "CR-0070",
+      "name": "Pedro Nowak",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-005",
+      "vessel": "MV Nordic Spirit",
+      "port": "Rotterdam",
+      "status": "onboard",
+      "sign_on_date": "2025-10-29"
+    },
+    "CR-0071": {
+      "crew_id": "CR-0071",
+      "name": "Diego Khan",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "PH",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-14"
+    },
+    "CR-0072": {
+      "crew_id": "CR-0072",
+      "name": "Kiran Chen",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "MM",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-06"
+    },
+    "CR-0073": {
+      "crew_id": "CR-0073",
+      "name": "Ivan Santoso",
+      "rank": "2nd Officer",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-02-26"
+    },
+    "CR-0074": {
+      "crew_id": "CR-0074",
+      "name": "Joon Horvat",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "GB",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-02-21"
+    },
+    "CR-0075": {
+      "crew_id": "CR-0075",
+      "name": "Carlo Park",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-02-22"
+    },
+    "CR-0076": {
+      "crew_id": "CR-0076",
+      "name": "Ramon Chen",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-10"
+    },
+    "CR-0077": {
+      "crew_id": "CR-0077",
+      "name": "Wei Bondarenko",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "PL",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-12-06"
+    },
+    "CR-0078": {
+      "crew_id": "CR-0078",
+      "name": "Nikos Greco",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-11-28"
+    },
+    "CR-0079": {
+      "crew_id": "CR-0079",
+      "name": "Wei Rossi",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "TR",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-16"
+    },
+    "CR-0080": {
+      "crew_id": "CR-0080",
+      "name": "Wei Rossi",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "MM",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-05-09"
+    },
+    "CR-0081": {
+      "crew_id": "CR-0081",
+      "name": "Mateusz Chen",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "CN",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-03-29"
+    },
+    "CR-0082": {
+      "crew_id": "CR-0082",
+      "name": "Joon Horvat",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "RO",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-01-20"
+    },
+    "CR-0083": {
+      "crew_id": "CR-0083",
+      "name": "Liam Kovalenko",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-11-14"
+    },
+    "CR-0084": {
+      "crew_id": "CR-0084",
+      "name": "Budi Khan",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-006",
+      "vessel": "MV Coral Voyager",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-12-19"
+    },
+    "CR-0085": {
+      "crew_id": "CR-0085",
+      "name": "Marco Bondarenko",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "IN",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-02-05"
+    },
+    "CR-0086": {
+      "crew_id": "CR-0086",
+      "name": "Nikos Greco",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-03-07"
+    },
+    "CR-0087": {
+      "crew_id": "CR-0087",
+      "name": "Budi Park",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "GB",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-01-25"
+    },
+    "CR-0088": {
+      "crew_id": "CR-0088",
+      "name": "Ivan Hlaing",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-03-25"
+    },
+    "CR-0089": {
+      "crew_id": "CR-0089",
+      "name": "Aung Iyer",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-02-13"
+    },
+    "CR-0090": {
+      "crew_id": "CR-0090",
+      "name": "Wei Hlaing",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "PH",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-11"
+    },
+    "CR-0091": {
+      "crew_id": "CR-0091",
+      "name": "Marco Popescu",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "PL",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-03-14"
+    },
+    "CR-0092": {
+      "crew_id": "CR-0092",
+      "name": "Budi Bondarenko",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "PL",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-03-12"
+    },
+    "CR-0093": {
+      "crew_id": "CR-0093",
+      "name": "Carlo Papadopoulos",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-01-27"
+    },
+    "CR-0094": {
+      "crew_id": "CR-0094",
+      "name": "Dmytro Chen",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-02-09"
+    },
+    "CR-0095": {
+      "crew_id": "CR-0095",
+      "name": "Carlo Park",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "IN",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-02-14"
+    },
+    "CR-0096": {
+      "crew_id": "CR-0096",
+      "name": "Wei Hlaing",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-12"
+    },
+    "CR-0097": {
+      "crew_id": "CR-0097",
+      "name": "Liam Fernandez",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-01-18"
+    },
+    "CR-0098": {
+      "crew_id": "CR-0098",
+      "name": "Rahul Fernandez",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-007",
+      "vessel": "MV Atlantic Crown",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-30"
+    },
+    "CR-0099": {
+      "crew_id": "CR-0099",
+      "name": "Wei Rossi",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-09"
+    },
+    "CR-0100": {
+      "crew_id": "CR-0100",
+      "name": "Kiran Park",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "CN",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-15"
+    },
+    "CR-0101": {
+      "crew_id": "CR-0101",
+      "name": "Budi Nair",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-04-22"
+    },
+    "CR-0102": {
+      "crew_id": "CR-0102",
+      "name": "Diego Nowak",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-21"
+    },
+    "CR-0103": {
+      "crew_id": "CR-0103",
+      "name": "Kiran Bondarenko",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-20"
+    },
+    "CR-0104": {
+      "crew_id": "CR-0104",
+      "name": "Cemal Horvat",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "RO",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-02-23"
+    },
+    "CR-0105": {
+      "crew_id": "CR-0105",
+      "name": "Nikos Nair",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-20"
+    },
+    "CR-0106": {
+      "crew_id": "CR-0106",
+      "name": "Diego Khan",
+      "rank": "2nd Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-02-21"
+    },
+    "CR-0107": {
+      "crew_id": "CR-0107",
+      "name": "Sergii Bondarenko",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-03-17"
+    },
+    "CR-0108": {
+      "crew_id": "CR-0108",
+      "name": "Pedro Silva",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-01-16"
+    },
+    "CR-0109": {
+      "crew_id": "CR-0109",
+      "name": "Kiran Popescu",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "UA",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-02"
+    },
+    "CR-0110": {
+      "crew_id": "CR-0110",
+      "name": "Sergii Reddy",
+      "rank": "2nd Officer",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-21"
+    },
+    "CR-0111": {
+      "crew_id": "CR-0111",
+      "name": "Dmytro Petrov",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-18"
+    },
+    "CR-0112": {
+      "crew_id": "CR-0112",
+      "name": "Nikos Cruz",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "IN",
+      "vessel_id": "VSL-008",
+      "vessel": "MV Indus Pride",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-05-03"
+    },
+    "CR-0113": {
+      "crew_id": "CR-0113",
+      "name": "Diego Kovalenko",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "GR",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2026-01-13"
+    },
+    "CR-0114": {
+      "crew_id": "CR-0114",
+      "name": "Viktor Horvat",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "HR",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2026-01-31"
+    },
+    "CR-0115": {
+      "crew_id": "CR-0115",
+      "name": "Ivan Cruz",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "CN",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2025-11-23"
+    },
+    "CR-0116": {
+      "crew_id": "CR-0116",
+      "name": "Emre Walsh",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2025-10-22"
+    },
+    "CR-0117": {
+      "crew_id": "CR-0117",
+      "name": "Aung Horvat",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "HR",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2025-12-28"
+    },
+    "CR-0118": {
+      "crew_id": "CR-0118",
+      "name": "Joon Petrov",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "HR",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2026-04-08"
+    },
+    "CR-0119": {
+      "crew_id": "CR-0119",
+      "name": "Pedro Greco",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "RO",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2025-12-25"
+    },
+    "CR-0120": {
+      "crew_id": "CR-0120",
+      "name": "Emre Silva",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "CN",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2025-12-04"
+    },
+    "CR-0121": {
+      "crew_id": "CR-0121",
+      "name": "Joon Silva",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "CN",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2026-03-30"
+    },
+    "CR-0122": {
+      "crew_id": "CR-0122",
+      "name": "Pedro Chen",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "PL",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2025-10-29"
+    },
+    "CR-0123": {
+      "crew_id": "CR-0123",
+      "name": "Emre Reddy",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2026-01-05"
+    },
+    "CR-0124": {
+      "crew_id": "CR-0124",
+      "name": "Wei Silva",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "CN",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2026-04-20"
+    },
+    "CR-0125": {
+      "crew_id": "CR-0125",
+      "name": "Ivan Chen",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2026-02-13"
+    },
+    "CR-0126": {
+      "crew_id": "CR-0126",
+      "name": "Ramon Cruz",
+      "rank": "2nd Officer",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-009",
+      "vessel": "MV Sapphire Bay",
+      "port": "Fujairah",
+      "status": "onboard",
+      "sign_on_date": "2026-03-11"
+    },
+    "CR-0127": {
+      "crew_id": "CR-0127",
+      "name": "Viktor Papadopoulos",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-04-23"
+    },
+    "CR-0128": {
+      "crew_id": "CR-0128",
+      "name": "Tomasz Park",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-01-10"
+    },
+    "CR-0129": {
+      "crew_id": "CR-0129",
+      "name": "Nikos Nair",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "GB",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-01-30"
+    },
+    "CR-0130": {
+      "crew_id": "CR-0130",
+      "name": "Emre Khan",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "HR",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-02-01"
+    },
+    "CR-0131": {
+      "crew_id": "CR-0131",
+      "name": "Budi Bondarenko",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2025-10-29"
+    },
+    "CR-0132": {
+      "crew_id": "CR-0132",
+      "name": "Joon Iyer",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "RO",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2025-11-02"
+    },
+    "CR-0133": {
+      "crew_id": "CR-0133",
+      "name": "Andrei Petrov",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-03-01"
+    },
+    "CR-0134": {
+      "crew_id": "CR-0134",
+      "name": "Arjun Yilmaz",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "TR",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-02-12"
+    },
+    "CR-0135": {
+      "crew_id": "CR-0135",
+      "name": "Sanjay Hlaing",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "UA",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-01-10"
+    },
+    "CR-0136": {
+      "crew_id": "CR-0136",
+      "name": "Cemal Khan",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2025-12-16"
+    },
+    "CR-0137": {
+      "crew_id": "CR-0137",
+      "name": "Dmytro W\u00f3jcik",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-01-20"
+    },
+    "CR-0138": {
+      "crew_id": "CR-0138",
+      "name": "Aung Rossi",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "GR",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-03-04"
+    },
+    "CR-0139": {
+      "crew_id": "CR-0139",
+      "name": "Nikos Silva",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-02-15"
+    },
+    "CR-0140": {
+      "crew_id": "CR-0140",
+      "name": "Wei Nair",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "PH",
+      "vessel_id": "VSL-010",
+      "vessel": "MV Meridian Sun",
+      "port": "Colombo",
+      "status": "onboard",
+      "sign_on_date": "2026-03-06"
+    },
+    "CR-0141": {
+      "crew_id": "CR-0141",
+      "name": "Sanjay Park",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-04-26"
+    },
+    "CR-0142": {
+      "crew_id": "CR-0142",
+      "name": "Mateusz Kovalenko",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-10-22"
+    },
+    "CR-0143": {
+      "crew_id": "CR-0143",
+      "name": "Emre Sharma",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-03-07"
+    },
+    "CR-0144": {
+      "crew_id": "CR-0144",
+      "name": "Diego Cruz",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-03-09"
+    },
+    "CR-0145": {
+      "crew_id": "CR-0145",
+      "name": "Carlo Walsh",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "PL",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-12-16"
+    },
+    "CR-0146": {
+      "crew_id": "CR-0146",
+      "name": "Viktor Chen",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "MM",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-10-25"
+    },
+    "CR-0147": {
+      "crew_id": "CR-0147",
+      "name": "Diego Fernandez",
+      "rank": "2nd Engineer",
+      "department": "engine",
+      "nationality": "CN",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-10-30"
+    },
+    "CR-0148": {
+      "crew_id": "CR-0148",
+      "name": "Emre Hlaing",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-02-19"
+    },
+    "CR-0149": {
+      "crew_id": "CR-0149",
+      "name": "Sergii Khan",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-11-17"
+    },
+    "CR-0150": {
+      "crew_id": "CR-0150",
+      "name": "Viktor Papadopoulos",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "GB",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-04-20"
+    },
+    "CR-0151": {
+      "crew_id": "CR-0151",
+      "name": "Liam Horvat",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-10-24"
+    },
+    "CR-0152": {
+      "crew_id": "CR-0152",
+      "name": "Hassan Rossi",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "RO",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-02-10"
+    },
+    "CR-0153": {
+      "crew_id": "CR-0153",
+      "name": "Carlo Santoso",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "RO",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-04-22"
+    },
+    "CR-0154": {
+      "crew_id": "CR-0154",
+      "name": "Arjun Nair",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-011",
+      "vessel": "MV Polar Quest",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-01-04"
+    },
+    "CR-0155": {
+      "crew_id": "CR-0155",
+      "name": "Mateusz Silva",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-09"
+    },
+    "CR-0156": {
+      "crew_id": "CR-0156",
+      "name": "Aung Iyer",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-27"
+    },
+    "CR-0157": {
+      "crew_id": "CR-0157",
+      "name": "Diego Park",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "HR",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-10-23"
+    },
+    "CR-0158": {
+      "crew_id": "CR-0158",
+      "name": "Rahul Iyer",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "ID",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-09"
+    },
+    "CR-0159": {
+      "crew_id": "CR-0159",
+      "name": "Ivan Kovalenko",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "HR",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-02-27"
+    },
+    "CR-0160": {
+      "crew_id": "CR-0160",
+      "name": "Emre Silva",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "GB",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-15"
+    },
+    "CR-0161": {
+      "crew_id": "CR-0161",
+      "name": "Tomasz Sharma",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "MM",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-01-03"
+    },
+    "CR-0162": {
+      "crew_id": "CR-0162",
+      "name": "Andrei Papadopoulos",
+      "rank": "2nd Engineer",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-02-08"
+    },
+    "CR-0163": {
+      "crew_id": "CR-0163",
+      "name": "Wei Fernandez",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-11-11"
+    },
+    "CR-0164": {
+      "crew_id": "CR-0164",
+      "name": "Kiran Papadopoulos",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-04-18"
+    },
+    "CR-0165": {
+      "crew_id": "CR-0165",
+      "name": "Andrei Park",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "PL",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-10-27"
+    },
+    "CR-0166": {
+      "crew_id": "CR-0166",
+      "name": "Mateusz Horvat",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "HR",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-01-04"
+    },
+    "CR-0167": {
+      "crew_id": "CR-0167",
+      "name": "Dmytro Bondarenko",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2026-03-14"
+    },
+    "CR-0168": {
+      "crew_id": "CR-0168",
+      "name": "Sergii Greco",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "MM",
+      "vessel_id": "VSL-012",
+      "vessel": "MV Andaman Breeze",
+      "port": "Antwerp",
+      "status": "onboard",
+      "sign_on_date": "2025-12-12"
+    },
+    "CR-0169": {
+      "crew_id": "CR-0169",
+      "name": "Rahul Iyer",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-12-20"
+    },
+    "CR-0170": {
+      "crew_id": "CR-0170",
+      "name": "Viktor Silva",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-03-01"
+    },
+    "CR-0171": {
+      "crew_id": "CR-0171",
+      "name": "Ivan Walsh",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "PL",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-11-06"
+    },
+    "CR-0172": {
+      "crew_id": "CR-0172",
+      "name": "Liam Iyer",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "CN",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-12-23"
+    },
+    "CR-0173": {
+      "crew_id": "CR-0173",
+      "name": "Nikos Papadopoulos",
+      "rank": "2nd Engineer",
+      "department": "engine",
+      "nationality": "HR",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-11-01"
+    },
+    "CR-0174": {
+      "crew_id": "CR-0174",
+      "name": "Sanjay Khan",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "RO",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-10-27"
+    },
+    "CR-0175": {
+      "crew_id": "CR-0175",
+      "name": "Liam Papadopoulos",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-02-23"
+    },
+    "CR-0176": {
+      "crew_id": "CR-0176",
+      "name": "Aung Bondarenko",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "CN",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-05-06"
+    },
+    "CR-0177": {
+      "crew_id": "CR-0177",
+      "name": "Wei Rossi",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "RO",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-04-26"
+    },
+    "CR-0178": {
+      "crew_id": "CR-0178",
+      "name": "Viktor Cruz",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "HR",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-11-27"
+    },
+    "CR-0179": {
+      "crew_id": "CR-0179",
+      "name": "Arjun Khan",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "HR",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-02-26"
+    },
+    "CR-0180": {
+      "crew_id": "CR-0180",
+      "name": "Pedro Nowak",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "IN",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-03-23"
+    },
+    "CR-0181": {
+      "crew_id": "CR-0181",
+      "name": "Andrei Walsh",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-04-23"
+    },
+    "CR-0182": {
+      "crew_id": "CR-0182",
+      "name": "Dmytro Khan",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "TR",
+      "vessel_id": "VSL-013",
+      "vessel": "MV Celtic Wave",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-11-29"
+    },
+    "CR-0183": {
+      "crew_id": "CR-0183",
+      "name": "Ramon Khan",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "PH",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-02-21"
+    },
+    "CR-0184": {
+      "crew_id": "CR-0184",
+      "name": "Liam Park",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-10-26"
+    },
+    "CR-0185": {
+      "crew_id": "CR-0185",
+      "name": "Emre Reddy",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "HR",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-02-01"
+    },
+    "CR-0186": {
+      "crew_id": "CR-0186",
+      "name": "Sergii Khan",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "ID",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-01-20"
+    },
+    "CR-0187": {
+      "crew_id": "CR-0187",
+      "name": "Diego Iyer",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-14"
+    },
+    "CR-0188": {
+      "crew_id": "CR-0188",
+      "name": "Wei Greco",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "UA",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-19"
+    },
+    "CR-0189": {
+      "crew_id": "CR-0189",
+      "name": "Aung Park",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "UA",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-20"
+    },
+    "CR-0190": {
+      "crew_id": "CR-0190",
+      "name": "Rahul Silva",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "GB",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-11-14"
+    },
+    "CR-0191": {
+      "crew_id": "CR-0191",
+      "name": "Sergii Rossi",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "ID",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-03-11"
+    },
+    "CR-0192": {
+      "crew_id": "CR-0192",
+      "name": "Viktor Silva",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-21"
+    },
+    "CR-0193": {
+      "crew_id": "CR-0193",
+      "name": "Wei W\u00f3jcik",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-12-10"
+    },
+    "CR-0194": {
+      "crew_id": "CR-0194",
+      "name": "Rahul Walsh",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "PL",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-12-21"
+    },
+    "CR-0195": {
+      "crew_id": "CR-0195",
+      "name": "Wei Cruz",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "IN",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-21"
+    },
+    "CR-0196": {
+      "crew_id": "CR-0196",
+      "name": "Sergii Fernandez",
+      "rank": "2nd Engineer",
+      "department": "engine",
+      "nationality": "GB",
+      "vessel_id": "VSL-014",
+      "vessel": "MV Bosphorus",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-10-30"
+    },
+    "CR-0197": {
+      "crew_id": "CR-0197",
+      "name": "Pedro Walsh",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "CN",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2026-01-10"
+    },
+    "CR-0198": {
+      "crew_id": "CR-0198",
+      "name": "Viktor Yilmaz",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "RO",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2026-03-01"
+    },
+    "CR-0199": {
+      "crew_id": "CR-0199",
+      "name": "Pedro Kovalenko",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "IN",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2025-12-07"
+    },
+    "CR-0200": {
+      "crew_id": "CR-0200",
+      "name": "Sanjay Nowak",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2025-12-06"
+    },
+    "CR-0201": {
+      "crew_id": "CR-0201",
+      "name": "Dmytro Petrov",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "GB",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2025-11-18"
+    },
+    "CR-0202": {
+      "crew_id": "CR-0202",
+      "name": "Emre Greco",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "GB",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2026-03-02"
+    },
+    "CR-0203": {
+      "crew_id": "CR-0203",
+      "name": "Emre Hlaing",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "RO",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2026-01-09"
+    },
+    "CR-0204": {
+      "crew_id": "CR-0204",
+      "name": "Wei Hlaing",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "GR",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2025-12-11"
+    },
+    "CR-0205": {
+      "crew_id": "CR-0205",
+      "name": "Dmytro Popescu",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "GR",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2026-02-09"
+    },
+    "CR-0206": {
+      "crew_id": "CR-0206",
+      "name": "Tomasz Greco",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2026-04-13"
+    },
+    "CR-0207": {
+      "crew_id": "CR-0207",
+      "name": "Rahul Horvat",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2026-01-03"
+    },
+    "CR-0208": {
+      "crew_id": "CR-0208",
+      "name": "Emre Park",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "HR",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2026-04-30"
+    },
+    "CR-0209": {
+      "crew_id": "CR-0209",
+      "name": "Tomasz Chen",
+      "rank": "2nd Officer",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2026-02-16"
+    },
+    "CR-0210": {
+      "crew_id": "CR-0210",
+      "name": "Kiran Sharma",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "RO",
+      "vessel_id": "VSL-015",
+      "vessel": "MV Kraken",
+      "port": "Galveston",
+      "status": "onboard",
+      "sign_on_date": "2025-11-22"
+    },
+    "CR-0211": {
+      "crew_id": "CR-0211",
+      "name": "Marco Papadopoulos",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "MM",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-12-28"
+    },
+    "CR-0212": {
+      "crew_id": "CR-0212",
+      "name": "Mateusz Silva",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "IN",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-10-27"
+    },
+    "CR-0213": {
+      "crew_id": "CR-0213",
+      "name": "Wei Park",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-04-06"
+    },
+    "CR-0214": {
+      "crew_id": "CR-0214",
+      "name": "Viktor Popescu",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "IN",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-04-08"
+    },
+    "CR-0215": {
+      "crew_id": "CR-0215",
+      "name": "Viktor Hlaing",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "RO",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-02-19"
+    },
+    "CR-0216": {
+      "crew_id": "CR-0216",
+      "name": "Joon Nair",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-04-16"
+    },
+    "CR-0217": {
+      "crew_id": "CR-0217",
+      "name": "Pedro Walsh",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-11-25"
+    },
+    "CR-0218": {
+      "crew_id": "CR-0218",
+      "name": "Viktor Bondarenko",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "CN",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-12-30"
+    },
+    "CR-0219": {
+      "crew_id": "CR-0219",
+      "name": "Rahul Popescu",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "PL",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-01-09"
+    },
+    "CR-0220": {
+      "crew_id": "CR-0220",
+      "name": "Joon Cruz",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "PL",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-01-31"
+    },
+    "CR-0221": {
+      "crew_id": "CR-0221",
+      "name": "Dmytro Chen",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-10-24"
+    },
+    "CR-0222": {
+      "crew_id": "CR-0222",
+      "name": "Kiran Chen",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-05-09"
+    },
+    "CR-0223": {
+      "crew_id": "CR-0223",
+      "name": "Hassan Khan",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "HR",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-11-22"
+    },
+    "CR-0224": {
+      "crew_id": "CR-0224",
+      "name": "Pedro Park",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "MM",
+      "vessel_id": "VSL-016",
+      "vessel": "MV Tasman Glory",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-01-06"
+    },
+    "CR-0225": {
+      "crew_id": "CR-0225",
+      "name": "Pedro Nowak",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "CN",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2026-03-22"
+    },
+    "CR-0226": {
+      "crew_id": "CR-0226",
+      "name": "Hassan Yilmaz",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2026-03-11"
+    },
+    "CR-0227": {
+      "crew_id": "CR-0227",
+      "name": "Tomasz Iyer",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "CN",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2026-01-08"
+    },
+    "CR-0228": {
+      "crew_id": "CR-0228",
+      "name": "Cemal Greco",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "UA",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2025-11-24"
+    },
+    "CR-0229": {
+      "crew_id": "CR-0229",
+      "name": "Marco Cruz",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "GB",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2026-01-01"
+    },
+    "CR-0230": {
+      "crew_id": "CR-0230",
+      "name": "Liam Silva",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "RO",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2026-04-14"
+    },
+    "CR-0231": {
+      "crew_id": "CR-0231",
+      "name": "Arjun Iyer",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "GR",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2026-04-03"
+    },
+    "CR-0232": {
+      "crew_id": "CR-0232",
+      "name": "Dmytro Popescu",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2025-10-21"
+    },
+    "CR-0233": {
+      "crew_id": "CR-0233",
+      "name": "Diego Horvat",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2026-01-28"
+    },
+    "CR-0234": {
+      "crew_id": "CR-0234",
+      "name": "Tomasz Greco",
+      "rank": "2nd Officer",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2025-12-24"
+    },
+    "CR-0235": {
+      "crew_id": "CR-0235",
+      "name": "Mateusz Horvat",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "HR",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2025-10-27"
+    },
+    "CR-0236": {
+      "crew_id": "CR-0236",
+      "name": "Diego Kovalenko",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2026-03-10"
+    },
+    "CR-0237": {
+      "crew_id": "CR-0237",
+      "name": "Ivan Iyer",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "GR",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2026-04-16"
+    },
+    "CR-0238": {
+      "crew_id": "CR-0238",
+      "name": "Emre W\u00f3jcik",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-017",
+      "vessel": "MV Levant Star",
+      "port": "Santos",
+      "status": "onboard",
+      "sign_on_date": "2025-11-10"
+    },
+    "CR-0239": {
+      "crew_id": "CR-0239",
+      "name": "Viktor Bondarenko",
+      "rank": "2nd Engineer",
+      "department": "engine",
+      "nationality": "IN",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-05-02"
+    },
+    "CR-0240": {
+      "crew_id": "CR-0240",
+      "name": "Marco Bondarenko",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "MM",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-02-07"
+    },
+    "CR-0241": {
+      "crew_id": "CR-0241",
+      "name": "Ramon Petrov",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-12-25"
+    },
+    "CR-0242": {
+      "crew_id": "CR-0242",
+      "name": "Aung Hlaing",
+      "rank": "2nd Engineer",
+      "department": "engine",
+      "nationality": "GB",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-04-19"
+    },
+    "CR-0243": {
+      "crew_id": "CR-0243",
+      "name": "Diego Greco",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "HR",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-03-09"
+    },
+    "CR-0244": {
+      "crew_id": "CR-0244",
+      "name": "Ivan Silva",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-11-27"
+    },
+    "CR-0245": {
+      "crew_id": "CR-0245",
+      "name": "Wei Greco",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "HR",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-05-07"
+    },
+    "CR-0246": {
+      "crew_id": "CR-0246",
+      "name": "Carlo Park",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-03-30"
+    },
+    "CR-0247": {
+      "crew_id": "CR-0247",
+      "name": "Budi Khan",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "TR",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-02-22"
+    },
+    "CR-0248": {
+      "crew_id": "CR-0248",
+      "name": "Viktor Chen",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-01-13"
+    },
+    "CR-0249": {
+      "crew_id": "CR-0249",
+      "name": "Cemal Popescu",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "PL",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-04-12"
+    },
+    "CR-0250": {
+      "crew_id": "CR-0250",
+      "name": "Hassan Santoso",
+      "rank": "Oiler",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-12-13"
+    },
+    "CR-0251": {
+      "crew_id": "CR-0251",
+      "name": "Arjun Greco",
+      "rank": "Bosun",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2026-01-28"
+    },
+    "CR-0252": {
+      "crew_id": "CR-0252",
+      "name": "Hassan Greco",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "CN",
+      "vessel_id": "VSL-018",
+      "vessel": "MV Hibernia",
+      "port": "Mumbai (JNPT)",
+      "status": "onboard",
+      "sign_on_date": "2025-10-22"
+    },
+    "CR-0253": {
+      "crew_id": "CR-0253",
+      "name": "Sergii Petrov",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "MM",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-12-05"
+    },
+    "CR-0254": {
+      "crew_id": "CR-0254",
+      "name": "Mateusz Papadopoulos",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-12-02"
+    },
+    "CR-0255": {
+      "crew_id": "CR-0255",
+      "name": "Mateusz Walsh",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-11-30"
+    },
+    "CR-0256": {
+      "crew_id": "CR-0256",
+      "name": "Sergii Silva",
+      "rank": "Chief Officer",
+      "department": "deck",
+      "nationality": "GB",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-05-01"
+    },
+    "CR-0257": {
+      "crew_id": "CR-0257",
+      "name": "Sanjay Cruz",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-16"
+    },
+    "CR-0258": {
+      "crew_id": "CR-0258",
+      "name": "Sanjay Nair",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-03-26"
+    },
+    "CR-0259": {
+      "crew_id": "CR-0259",
+      "name": "Joon Santoso",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "RO",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-12-25"
+    },
+    "CR-0260": {
+      "crew_id": "CR-0260",
+      "name": "Aung Chen",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "ID",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-01-06"
+    },
+    "CR-0261": {
+      "crew_id": "CR-0261",
+      "name": "Liam Silva",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-04-20"
+    },
+    "CR-0262": {
+      "crew_id": "CR-0262",
+      "name": "Carlo Iyer",
+      "rank": "4th Engineer",
+      "department": "engine",
+      "nationality": "GR",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-11-18"
+    },
+    "CR-0263": {
+      "crew_id": "CR-0263",
+      "name": "Dmytro Yilmaz",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-05-06"
+    },
+    "CR-0264": {
+      "crew_id": "CR-0264",
+      "name": "Pedro Santoso",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "CN",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-11-18"
+    },
+    "CR-0265": {
+      "crew_id": "CR-0265",
+      "name": "Hassan Yilmaz",
+      "rank": "Electrician",
+      "department": "engine",
+      "nationality": "MM",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2025-11-27"
+    },
+    "CR-0266": {
+      "crew_id": "CR-0266",
+      "name": "Carlo Petrov",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "IN",
+      "vessel_id": "VSL-019",
+      "vessel": "MV Zephyr Gale",
+      "port": "Singapore",
+      "status": "onboard",
+      "sign_on_date": "2026-01-09"
+    },
+    "CR-0267": {
+      "crew_id": "CR-0267",
+      "name": "Diego Petrov",
+      "rank": "AB Seaman",
+      "department": "deck",
+      "nationality": "PH",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2025-11-25"
+    },
+    "CR-0268": {
+      "crew_id": "CR-0268",
+      "name": "Viktor Bondarenko",
+      "rank": "Chief Cook",
+      "department": "catering",
+      "nationality": "GR",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2025-11-24"
+    },
+    "CR-0269": {
+      "crew_id": "CR-0269",
+      "name": "Ramon Rossi",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "ID",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2026-04-30"
+    },
+    "CR-0270": {
+      "crew_id": "CR-0270",
+      "name": "Liam Walsh",
+      "rank": "Messman",
+      "department": "catering",
+      "nationality": "RO",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2026-03-10"
+    },
+    "CR-0271": {
+      "crew_id": "CR-0271",
+      "name": "Cemal Silva",
+      "rank": "Chief Engineer",
+      "department": "engine",
+      "nationality": "TR",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2026-02-04"
+    },
+    "CR-0272": {
+      "crew_id": "CR-0272",
+      "name": "Hassan Iyer",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "UA",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2025-11-04"
+    },
+    "CR-0273": {
+      "crew_id": "CR-0273",
+      "name": "Mateusz Walsh",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "GB",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2026-01-04"
+    },
+    "CR-0274": {
+      "crew_id": "CR-0274",
+      "name": "Wei Rossi",
+      "rank": "Wiper",
+      "department": "engine",
+      "nationality": "MM",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2025-11-14"
+    },
+    "CR-0275": {
+      "crew_id": "CR-0275",
+      "name": "Pedro Silva",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "MM",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2026-03-10"
+    },
+    "CR-0276": {
+      "crew_id": "CR-0276",
+      "name": "Carlo Santoso",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "TR",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2025-12-21"
+    },
+    "CR-0277": {
+      "crew_id": "CR-0277",
+      "name": "Marco Yilmaz",
+      "rank": "Ordinary Seaman",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2026-02-28"
+    },
+    "CR-0278": {
+      "crew_id": "CR-0278",
+      "name": "Pedro Kovalenko",
+      "rank": "3rd Officer",
+      "department": "deck",
+      "nationality": "PL",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2025-11-21"
+    },
+    "CR-0279": {
+      "crew_id": "CR-0279",
+      "name": "Marco Nowak",
+      "rank": "Master",
+      "department": "deck",
+      "nationality": "UA",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2026-03-08"
+    },
+    "CR-0280": {
+      "crew_id": "CR-0280",
+      "name": "Dmytro Park",
+      "rank": "3rd Engineer",
+      "department": "engine",
+      "nationality": "GB",
+      "vessel_id": "VSL-020",
+      "vessel": "MV Solent Castle",
+      "port": "Algeciras",
+      "status": "onboard",
+      "sign_on_date": "2026-03-17"
+    }
+  }
+}

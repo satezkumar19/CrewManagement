@@ -1,0 +1,33 @@
+digraph SignalFabricComponents {
+  rankdir=LR;
+  graph [fontname="Helvetica", bgcolor="white", nodesep=0.40, ranksep=0.85, pad=0.35, labelloc=t,
+         label="L1 SignalFabric — The Six Components (green = existed, amber = added)",
+         fontsize=15, fontcolor="#0F172A"];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, penwidth=1.5,
+         margin="0.20,0.12", color="#475569", fillcolor="#E2E8F0", fontcolor="#0F172A"];
+  edge  [fontname="Helvetica", fontsize=9, color="#64748B", penwidth=1.3, arrowsize=0.8];
+
+  subgraph cluster_ingress {
+    label="INGRESS";
+    fontname="Helvetica"; fontsize=12; fontcolor="#1E3A8A";
+    style="rounded,filled"; fillcolor="#F8FAFC"; color="#93C5FD"; penwidth=1.5;
+    slack [label="Slack /slack/events", fillcolor="#DBEAFE", color="#2563EB"];
+    erp   [label="ERP outbox poll", fillcolor="#DBEAFE", color="#2563EB"];
+    email [label="Email normalize", fillcolor="#DBEAFE", color="#2563EB"];
+  }
+
+  gen  [label="mock-event generator\ndemo/generator.py", fillcolor="#DCFCE7", color="#16A34A"];
+  sig  [label="SignalEvent schema\ncore/signal.py", fillcolor="#DCFCE7", color="#16A34A"];
+  bus  [label="InMemoryBus  (ADDED)\ncore/bus.py\ndedup · fan-out · replay", fillcolor="#FEF3C7", color="#D97706"];
+  sink [label="L2 Sink\nl2/store.py", fillcolor="#DCFCE7", color="#16A34A"];
+  sse  [label="SSE /stream\napi/live.py", fillcolor="#DCFCE7", color="#16A34A"];
+  dash [label="dashboard.html", fillcolor="#DCFCE7", color="#16A34A"];
+  dc   [label="docker-compose  (ADDED)\nsignalfabric + redis", shape=note, fillcolor="#FEF3C7", color="#D97706"];
+
+  gen -> slack; gen -> erp; gen -> email;
+  slack -> sig; erp -> sig; email -> sig;
+  sig -> bus -> sink;
+  bus -> sse [style=dotted, label="viewer bus"];
+  sse -> dash;
+  dc -> bus [style=dashed, dir=none, label="hosts", fontcolor="#D97706"];
+}

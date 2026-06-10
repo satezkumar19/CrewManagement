@@ -1,0 +1,23 @@
+# Slack connector config (used by `python -m connectors.slack.cli ... --config`).
+# Resolution order for the token: --token > SLACK_TOKEN env > this file > --token-secret-arn.
+
+token: "xoxb-your-bot-token"
+# token_secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:slack-token"
+
+# "all" (member public channels) or an explicit list of channel ids.
+channels: "all"
+# channels: ["C0123456789", "C0987654321"]
+
+# Backfill window (ISO 8601 or Unix epoch). `since` is required for `scrape`.
+since_timestamp: "2024-01-01T00:00:00Z"
+# until_timestamp: "2024-06-01T00:00:00Z"
+
+exclude_thread_replies: false
+exclude_bots: false
+max_replies_per_thread: 20
+
+# Politeness pacing — 1200 ms ≈ 50 calls/min; stop after 2 consecutive 429s.
+rate_limit_delay_ms: 1200
+max_rate_limit_errors: 2
+
+output_dir: "./output"

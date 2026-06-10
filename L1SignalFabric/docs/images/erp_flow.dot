@@ -1,0 +1,30 @@
+digraph ERPFlow {
+  rankdir=LR;
+  graph [fontname="Helvetica", bgcolor="white", nodesep=0.40, ranksep=0.70, pad=0.35, labelloc=t,
+         label="Data Flow — ERP Integration (Pull / CDC via Outbox)", fontsize=15, fontcolor="#0F172A"];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, penwidth=1.5,
+         margin="0.20,0.11", color="#475569", fillcolor="#E2E8F0", fontcolor="#0F172A"];
+  edge  [fontname="Helvetica", fontsize=9, color="#64748B", penwidth=1.3, arrowsize=0.8];
+
+  subgraph cluster_db {
+    label="ERP databases (Postgres)";
+    fontname="Helvetica"; fontsize=11; fontcolor="#1E3A8A";
+    style="rounded,filled"; fillcolor="#F8FAFC"; color="#93C5FD"; penwidth=1.5;
+    write   [label="DB write\nCrew · Contract · Vessel/Port", fillcolor="#DBEAFE", color="#2563EB"];
+    trigger [label="trigger", shape=cds, fillcolor="#DBEAFE", color="#2563EB"];
+    outbox  [label="signal_outbox\n(monotonic id)", shape=cylinder, fillcolor="#DBEAFE", color="#2563EB"];
+  }
+
+  poll  [label="poll loop\nwatermark = last outbox.id"];
+  ingn  [label="ingest() → RawEvent[]"];
+  norm  [label="Normalizer → SignalEvent (DELTA)"];
+  bus   [label="Event Bus (Redis Streams)", fillcolor="#FEF3C7", color="#D97706"];
+  sink  [label="L2 Sink — idempotent upsert", fillcolor="#DCFCE7", color="#16A34A"];
+  l2    [label="L2 entities", fillcolor="#EDE9FE", color="#7C3AED"];
+  commit[label="commit(outbox.id)", shape=note, fillcolor="#F1F5F9", color="#94A3B8"];
+
+  write -> trigger -> outbox;
+  outbox -> poll -> ingn -> norm -> bus -> sink -> l2;
+  sink -> commit [style=dashed, color="#94A3B8"];
+  commit -> poll [style=dashed, color="#94A3B8", label="advance", constraint=false];
+}

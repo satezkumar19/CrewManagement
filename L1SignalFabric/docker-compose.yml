@@ -1,0 +1,42 @@
+# L1 SignalFabric — local stack.
+#
+#   docker compose up --build        # → dashboard at http://localhost:8001/
+#
+# `signalfabric` is the FastAPI service (Slack/ERP ingress → bus → L2 sink → SSE
+# dashboard). `redis` is included as the Day-4 seam for the RedisStreamsBus that
+# implements the same EventBus Protocol as the InMemoryBus — it is not required
+# for the Day-1 in-memory pipeline, so the service does not depend on it yet.
+services:
+  signalfabric:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - L1_TENANT_ID=maritime-acme
+      - SLACK_DEV_ALLOW_UNVERIFIED=1
+      - SLACK_REPLAY_WINDOW_SEC=300
+      - L2_STORE_PATH=/app/data/l2_store.jsonl
+      # Day-4 RedisStreamsBus target (unused by the default in-memory bus):
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      # persist the generated dataset + the append-only L2 store across runs
+      - ./data:/app/data
+    command: uvicorn api.app:app --host 0.0.0.0 --port 8001
+    networks: [signalfabric-net]
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks: [signalfabric-net]
+
+networks:
+  signalfabric-net:
+    driver: bridge

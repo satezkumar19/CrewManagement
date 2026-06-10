@@ -1,0 +1,27 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.erp_watermark.json
+# runtime artifacts
+data/l2_store.jsonl
+# connector watermarks/cursors (gmail.wm.json, db.wm.json) — per-tenant runtime state
+data/*.wm.json
+server.log
+.server.pid
+*.log
+output/                 # connector backfill/scrape bundles (--output-dir default)
+# test / coverage
+.coverage
+coverage.xml
+htmlcov/
+pytest-of-*/            # pytest tmp_path scratch dirs (regenerated each run)
+.pytest_tmp/
+# editor lock files (e.g. LibreOffice on the .docx)
+.~lock.*#
+.DS_Store
+# local reference bundle (separate demo, not part of this repo)
+docs/f2c/

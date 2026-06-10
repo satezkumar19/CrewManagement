@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+.git/
+server.log
+.server.pid
+.erp_watermark.json
+data/l2_store.jsonl
+docs/*.docx

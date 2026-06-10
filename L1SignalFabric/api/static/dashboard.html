@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>L1 SignalFabric — Demo 1</title>
+<style>
+  :root {
+    --bg:#0b1020; --panel:#141b33; --panel2:#1b2440; --ink:#e6ecff; --muted:#8da2c8;
+    --line:#26314f; --slack:#7c5cff; --email:#f59e0b; --crew:#22c55e;
+    --contract:#06b6d4; --vessel:#ec4899; --signoff:#f43f5e; --ok:#22c55e;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+         background:var(--bg); color:var(--ink); }
+  header { padding:14px 22px; border-bottom:1px solid var(--line);
+           display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  h1 { font-size:16px; margin:0; font-weight:650; }
+  .pill { font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px;
+          border:1px solid var(--line); color:var(--muted); }
+  .pill.green { color:#062; background:var(--ok); border-color:var(--ok); }
+  .pill.red { color:#fff; background:#b91c1c; border-color:#b91c1c; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#475569; display:inline-block; margin-right:6px; }
+  .dot.on { background:var(--ok); box-shadow:0 0 8px var(--ok); }
+  .controls { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  button { background:var(--panel2); color:var(--ink); border:1px solid var(--line);
+           padding:8px 13px; border-radius:8px; cursor:pointer; font-weight:600; }
+  button:hover { border-color:#3b496f; }
+  button.primary { background:#2547d0; border-color:#2547d0; }
+  button.stop { background:#7f1d2e; border-color:#7f1d2e; }
+  input { width:62px; background:var(--panel2); color:var(--ink); border:1px solid var(--line);
+          border-radius:8px; padding:6px 8px; }
+
+  /* pipeline */
+  .pipe { display:flex; align-items:stretch; gap:0; padding:18px 22px 6px; overflow-x:auto; }
+  .stage { background:var(--panel); border:1px solid var(--line); border-radius:12px;
+           padding:12px 16px; min-width:150px; transition:.25s; position:relative; }
+  .stage.active { border-color:#6ea8ff; box-shadow:0 0 0 2px rgba(110,168,255,.35), 0 0 22px rgba(110,168,255,.25); transform:translateY(-2px); }
+  .stage .s-name { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
+  .stage .s-count { font-size:28px; font-weight:780; line-height:1.1; }
+  .stage .s-sub { font-size:11px; color:var(--muted); }
+  .arrow { align-self:center; color:#3b496f; font-size:22px; padding:0 8px; }
+  .stage.l2 .s-count { color:var(--crew); }
+  .stage.tail .s-count { color:var(--slack); }
+  .stage.tail { min-width:220px; }
+  .tailrow { display:flex; align-items:flex-end; gap:12px; }
+  .spark { flex:1; height:40px; min-width:90px; display:block; }
+
+  /* tabs */
+  .tabs { display:flex; gap:6px; padding:6px 22px 0; border-bottom:1px solid var(--line); }
+  .tab { background:transparent; border:1px solid transparent; border-bottom:none; color:var(--muted);
+         padding:9px 15px; border-radius:10px 10px 0 0; font-weight:650; cursor:pointer;
+         display:flex; align-items:center; gap:8px; }
+  .tab:hover { color:var(--ink); }
+  .tab.active { color:var(--ink); background:var(--panel); border-color:var(--line); }
+  .tabbadge { font-size:10px; font-weight:800; color:#0b1020; background:var(--slack);
+              padding:1px 7px; border-radius:999px; }
+
+  .wrap { padding:0 22px 22px; }
+  .panel[hidden] { display:none; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:0 12px 12px 12px; }
+  .card h2 { margin:0; padding:11px 14px; font-size:12px; color:var(--muted);
+             text-transform:uppercase; letter-spacing:.6px; border-bottom:1px solid var(--line);
+             display:flex; align-items:center; gap:8px; }
+  .hint { color:var(--muted); font-size:12px; padding:10px 14px; }
+  .toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+             padding:11px 14px; border-bottom:1px solid var(--line); }
+  .toolbar label { color:var(--muted); font-size:12px; }
+
+  /* trace */
+  .flow { padding:12px 14px; display:flex; flex-direction:column; gap:14px; }
+  .lane { border:1px dashed var(--line); border-radius:10px; padding:10px; }
+  .lane .lane-h { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .steps { display:grid; grid-template-columns: 1fr 18px 1fr 18px 1fr; align-items:stretch; gap:6px; }
+  .step { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:8px; min-width:0; }
+  .step .t { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+  .step pre { margin:0; font:11px/1.4 ui-monospace,Menlo,Consolas,monospace; color:#cdd8f5;
+              white-space:pre-wrap; word-break:break-word; max-height:150px; overflow:auto; }
+  .chev { align-self:center; color:#3b496f; text-align:center; }
+
+  /* feed */
+  .feed-rows { max-height:62vh; overflow-y:auto; padding:6px; }
+  .row { display:flex; gap:9px; align-items:baseline; padding:6px 8px; border-radius:8px; }
+  .row:nth-child(odd){ background:#0f1730; }
+  .row.so { background:rgba(244,63,94,.12); border:1px solid rgba(244,63,94,.4); }
+  .badge { font-size:10px; font-weight:800; padding:2px 7px; border-radius:999px; white-space:nowrap; color:#0b1020; }
+  .b-SLACK{background:var(--slack);color:#fff;} .b-EMAIL{background:var(--email);}
+  .b-CREW_DB{background:var(--crew);} .b-CONTRACT_CLM{background:var(--contract);}
+  .b-VESSEL_PORT_DB{background:var(--vessel);color:#fff;}
+  .ent { color:var(--muted); font-size:12px; min-width:84px; }
+  .sum { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .time { color:#5f719b; font-size:11px; }
+  .tag { font-size:10px; font-weight:800; color:#fff; background:var(--signoff); padding:1px 6px; border-radius:6px; margin-left:6px; }
+
+  /* bus log console */
+  .console { max-height:62vh; overflow-y:auto; padding:8px 10px; background:#070b18;
+             font:12px/1.55 ui-monospace,Menlo,Consolas,monospace; }
+  .logline { white-space:pre-wrap; word-break:break-word; padding:1px 2px; border-left:3px solid transparent; }
+  .logline .logt { color:#5f719b; }
+  .logline .lvl { font-weight:800; margin:0 8px; }
+  .logline.lvl-info    { color:#cdd8f5; } .logline.lvl-info .lvl    { color:#22c55e; }
+  .logline.lvl-warning { color:#fcd9a6; border-left-color:rgba(245,158,11,.6); } .logline.lvl-warning .lvl { color:#f59e0b; }
+  .logline.lvl-error   { color:#fecaca; border-left-color:rgba(244,63,94,.7); }   .logline.lvl-error .lvl   { color:#f43f5e; }
+  .logkey { font:11px ui-monospace,Menlo,Consolas,monospace; font-weight:800; padding:0 5px; border-radius:5px; background:#0f1730; }
+  .logkey.lvl-info{color:#22c55e;} .logkey.lvl-warning{color:#f59e0b;} .logkey.lvl-error{color:#f43f5e;}
+
+  /* clickable rows + detail drawer */
+  .row { cursor:pointer; }
+  .row.sel { background:rgba(110,168,255,.16) !important; box-shadow:inset 3px 0 0 #6ea8ff; }
+  .drawer { position:fixed; top:0; right:0; height:100vh; width:min(480px,92vw); z-index:50;
+            background:var(--panel); border-left:1px solid var(--line); box-shadow:-18px 0 40px rgba(0,0,0,.45);
+            transform:translateX(100%); transition:transform .22s ease; display:flex; flex-direction:column; }
+  .drawer.open { transform:translateX(0); }
+  .drawer-h { padding:13px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:9px; }
+  .drawer-h .x { margin-left:auto; background:var(--panel2); border:1px solid var(--line); color:var(--ink);
+                 width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:15px; line-height:1; }
+  .drawer-sub { padding:6px 16px 0; color:var(--muted); font-size:12px; word-break:break-word; }
+  .drawer-body { padding:12px 16px 22px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
+  .sect .t { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:5px;
+             display:flex; align-items:center; gap:6px; }
+  .sect .num { background:#0f1730; border:1px solid var(--line); border-radius:50%; width:16px; height:16px;
+               display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:#9fb4e0; }
+  .sect pre { margin:0; background:#070b18; border:1px solid var(--line); border-radius:8px; padding:9px 11px;
+              font:11.5px/1.5 ui-monospace,Menlo,Consolas,monospace; color:#cdd8f5;
+              white-space:pre-wrap; word-break:break-word; max-height:34vh; overflow:auto; }
+  .sect.l2 pre { border-color:rgba(34,197,94,.4); }
+  .sect .none { color:#7c89aa; font-size:12px; padding:8px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛰️ L1 SignalFabric</h1>
+  <span class="pill" id="health">health: …</span>
+  <span><span class="dot" id="dot"></span><span id="connlbl" style="color:var(--muted)">connecting…</span></span>
+</header>
+
+<!-- pipeline -->
+<div class="pipe">
+  <div class="stage" id="st-ingress"><div class="s-name">① Ingress</div><div class="s-count" id="n-ingress">0</div><div class="s-sub">raw events in</div></div>
+  <div class="arrow">→</div>
+  <div class="stage" id="st-normalizer"><div class="s-name">② Normalizer</div><div class="s-count" id="n-normalized">0</div><div class="s-sub">→ SignalEvent</div></div>
+  <div class="arrow">→</div>
+  <div class="stage" id="st-bus"><div class="s-name">③ Bus</div><div class="s-count" id="n-bus">0</div><div class="s-sub">fan-out</div></div>
+  <div class="arrow">→</div>
+  <div class="stage l2" id="st-l2"><div class="s-name">④ L2 store</div><div class="s-count" id="n-l2">0</div><div class="s-sub" id="n-signoff">0 SignOffEvent</div></div>
+  <div class="arrow">→</div>
+  <div class="stage tail" id="st-tail">
+    <div class="s-name">⑤ Live tail</div>
+    <div class="tailrow">
+      <div><div class="s-count" id="n-rate">0</div><div class="s-sub">signals / sec</div></div>
+      <canvas id="spark" class="spark" title="signals per second (last 60s)"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- tabs -->
+<div class="tabs" role="tablist">
+  <button type="button" class="tab active" id="tab-demo" role="tab" aria-selected="true"
+          aria-controls="panel-demo" onclick="showTab('demo')">Demo&nbsp;1 — whole pipe (raw → normalized → L2)</button>
+  <button type="button" class="tab" id="tab-tail" role="tab" aria-selected="false"
+          aria-controls="panel-tail" onclick="showTab('tail')">⑤ Live tail (SSE)
+    <span class="tabbadge" id="tailbadge" hidden>0</span></button>
+  <button type="button" class="tab" id="tab-buslog" role="tab" aria-selected="false"
+          aria-controls="panel-buslog" onclick="showTab('buslog')">🧾 Bus log (InMemoryBus)
+    <span class="tabbadge" id="busbadge" hidden>0</span></button>
+  <button type="button" class="tab" id="tab-agents" role="tab" aria-selected="false"
+          aria-controls="panel-agents" onclick="showTab('agents')">🤖 Agents (test · critic)</button>
+</div>
+
+<div class="wrap">
+  <!-- trace -->
+  <section class="card panel" id="panel-demo" role="tabpanel" aria-labelledby="tab-demo">
+    <h2>Demo&nbsp;1 — one event through the whole pipe (raw → normalized → L2)</h2>
+    <div class="toolbar">
+      <button type="button" class="primary" onclick="demo1()">▶ Run Demo 1 (inject Slack + email + ERP)</button>
+    </div>
+    <div id="trace" class="hint">Click <b>Run Demo 1</b> to inject a mock Slack message, a mock
+      sign-off email, and a mock ERP crew-DB change (all for the same crew change, built from the
+      generated mock data) and watch each flow ingress → normalizer → bus → L2 store, then scroll
+      in the <b>Live tail</b> tab.</div>
+  </section>
+
+  <!-- feed -->
+  <section class="card panel" id="panel-tail" role="tabpanel" aria-labelledby="tab-tail" hidden>
+    <h2>⑤ Live tail (SSE) <span style="margin-left:auto;color:var(--muted)">click a row → raw · normalized · L2 · newest first</span></h2>
+    <div class="toolbar">
+      <label for="speed">speed</label>
+      <input id="speed" type="number" value="6000" title="live replay speed multiplier" aria-label="live replay speed multiplier" />×
+      <button type="button" onclick="start()">Start live</button>
+      <button type="button" onclick="backlog()">Load history</button>
+      <button type="button" class="stop" onclick="stop()">■ Stop</button>
+      <button type="button" id="btn-orgmap" onclick="toggleOrgMap()" style="margin-left:auto">🕸️ OrgMap</button>
+    </div>
+    <div id="rows" class="feed-rows"></div>
+    <!-- OrgMap graph: toggled in-place over the live tail by the OrgMap button -->
+    <div id="orgview" hidden>
+      <div class="toolbar" style="border-top:1px solid var(--line)">
+        <button type="button" onclick="loadOrgMap()">↻ Refresh</button>
+        <span id="orgstats" style="color:var(--muted)">0 nodes · 0 edges</span>
+        <span id="orglegend" style="display:flex;gap:10px;flex-wrap:wrap;margin-left:8px"></span>
+        <span class="hint" style="padding:0;margin-left:auto">deduped &amp; upserted from the L2 stream · ×N = mentions · auto-refresh</span>
+      </div>
+      <div style="overflow:auto;max-height:58vh;background:#070b18">
+        <canvas id="orggraph" style="display:block"></canvas>
+        <div id="orgempty" class="hint">No graph yet — <b>Load history</b> or post a Slack message, then ↻ Refresh.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- bus log -->
+  <section class="card panel" id="panel-buslog" role="tabpanel" aria-labelledby="tab-buslog" hidden>
+    <h2>🧾 InMemoryBus console — one line per ingress
+      <span id="busstats" style="margin-left:auto;color:var(--muted)">published 0 · dup-drop 0</span></h2>
+    <div class="toolbar">
+      <button type="button" onclick="clearBusLog()">Clear</button>
+      <span class="hint" style="padding:0">Tailing <code>core/bus.py</code> · <span class="logkey lvl-info">PUBLISH</span>
+        <span class="logkey lvl-warning">DUP-DROP</span> <span class="logkey lvl-error">SUBSCRIBER-FAIL</span></span>
+    </div>
+    <div id="buslog" class="console"></div>
+  </section>
+
+  <!-- test / critic agents -->
+  <section class="card panel" id="panel-agents" role="tabpanel" aria-labelledby="tab-agents" hidden>
+    <h2>🤖 Test &amp; Critic agents
+      <span id="agentstatus" style="margin-left:auto;color:var(--muted)">idle</span></h2>
+    <div class="toolbar">
+      <button type="button" class="primary" id="btn-test" onclick="runAgent('test')">▶ Run Test Agent</button>
+      <button type="button" id="btn-critic" onclick="runAgent('critic')">▶ Run Critic Agent</button>
+      <button type="button" onclick="clearAgentOut()">Clear</button>
+      <span class="hint" style="padding:0"><b>Test</b> = every scenario PASS/FAIL ·
+        <b>Critic</b> = contract validation + what to correct / make advanced (email + SharePoint).</span>
+    </div>
+    <div id="agentout" class="console" style="white-space:pre-wrap">Click <b>Run Test Agent</b> or <b>Run Critic Agent</b> to run the harness on the server and see its output here.</div>
+  </section>
+
+</div>
+
+<!-- detail drawer: raw → normalized → L2 for a clicked live-tail row -->
+<aside id="drawer" class="drawer" aria-hidden="true" aria-label="event detail">
+  <div class="drawer-h">
+    <span id="d-badge" class="badge">—</span>
+    <b id="d-entity">event</b>
+    <button type="button" class="x" onclick="closeDrawer()" aria-label="close detail">✕</button>
+  </div>
+  <div id="d-sub" class="drawer-sub"></div>
+  <div class="drawer-body">
+    <div class="sect"><div class="t"><span class="num">1</span> raw input (ingress)</div><div id="d-raw"></div></div>
+    <div class="sect"><div class="t"><span class="num">2</span> normalized (SignalEvent)</div><pre id="d-norm">—</pre></div>
+    <div class="sect l2"><div class="t"><span class="num">4</span> L2 record</div><div id="d-l2"></div></div>
+  </div>
+</aside>
+
+<script>
+const $ = id => document.getElementById(id);
+const SRC = ["SLACK","EMAIL","CREW_DB","CONTRACT_CLM","VESSEL_PORT_DB"];
+let windowCount = 0;
+let unread = 0, busUnread = 0;
+const rowData = new Map();   // rid → full SSE payload (raw/normalized/l2_record)
+let rid = 0, selRow = null;
+const srcShort = s => (s||"").replace("_DB","").replace("_PORT","");
+
+// ---- tab switching (Demo 1 ⇄ Live tail ⇄ Bus log) ----
+const TABS = ["demo","tail","buslog","agents"];
+function showTab(name){
+  TABS.forEach(t => {
+    const on = t === name;
+    $("panel-"+t).hidden = !on;
+    $("tab-"+t).classList.toggle("active", on);
+    $("tab-"+t).setAttribute("aria-selected", on);
+  });
+  if(name === "tail"){ unread = 0; const b=$("tailbadge"); b.hidden=true; b.textContent="0"; }
+  if(name === "buslog"){ busUnread = 0; const b=$("busbadge"); b.hidden=true; b.textContent="0"; }
+}
+
+// OrgMap is toggled in-place inside the Live tail panel by the OrgMap button.
+function toggleOrgMap(){
+  const show = $("orgview").hidden;            // currently hidden → turn it on
+  $("orgview").hidden = !show;
+  $("rows").hidden = show;
+  $("btn-orgmap").classList.toggle("primary", show);
+  $("btn-orgmap").textContent = show ? "← Live rows" : "🕸️ OrgMap";
+  if(show) loadOrgMap();
+}
+
+function setTotals(t){
+  if(!t) return;
+  $("n-ingress").textContent   = t.ingress ?? 0;
+  $("n-normalized").textContent= t.normalized ?? t.total ?? 0;
+  $("n-bus").textContent       = t.bus ?? t.total ?? 0;
+  $("n-l2").textContent        = t.l2 ?? 0;
+  $("n-signoff").textContent   = (t.signoff ?? 0) + " SignOffEvent";
+}
+function pulse(id, delay=0){ setTimeout(()=>{ const e=$(id); e.classList.add("active"); setTimeout(()=>e.classList.remove("active"), 750); }, delay); }
+function pulsePipe(){ ["st-ingress","st-normalizer","st-bus","st-l2","st-tail"].forEach((id,i)=>pulse(id, i*180)); }
+
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function pretty(o){ return escapeHtml(JSON.stringify(o, null, 2)); }
+
+function addRow(d){
+  const rows = $("rows");
+  const el = document.createElement("div");
+  el.className = "row" + (d.signoff ? " so" : "");
+  const t = (d.ts||"").slice(11,19);
+  const lbl = d.l2 && d.l2.label ? ` <span style="color:#5f719b">→ ${d.l2.label}</span>` : "";
+  el.innerHTML =
+    `<span class="badge b-${d.source}">${srcShort(d.source)}</span>`+
+    `<span class="ent">${d.entity}</span>`+
+    `<span class="sum">${escapeHtml(d.summary||"")}${lbl}${d.signoff?'<span class="tag">SignOffEvent</span>':''}</span>`+
+    `<span class="time">${t}</span>`;
+  const id = ++rid;
+  rowData.set(id, d);
+  el.dataset.rid = id;
+  el.addEventListener("click", () => openDetail(id));
+  rows.insertBefore(el, rows.firstChild);
+  while(rows.childElementCount > 250){
+    const gone = rows.lastChild;
+    if(gone.dataset && gone.dataset.rid) rowData.delete(+gone.dataset.rid);
+    rows.removeChild(gone);
+  }
+  windowCount++;
+  // badge unread events while the Live tail tab isn't showing
+  if($("panel-tail").hidden){
+    unread++;
+    const b=$("tailbadge"); b.hidden=false; b.textContent = unread>99 ? "99+" : String(unread);
+  }
+}
+
+// ---- InMemoryBus console log ----
+function addBusLine(d){
+  const box = $("buslog");
+  const el = document.createElement("div");
+  const lvl = d.level || "info";
+  el.className = "logline lvl-" + lvl;
+  const t = (d.ts||"").slice(11,19);
+  el.innerHTML = `<span class="logt">${t}</span><span class="lvl">${lvl.toUpperCase()}</span>${escapeHtml(d.line||"")}`;
+  box.insertBefore(el, box.firstChild);
+  while(box.childElementCount > 400) box.removeChild(box.lastChild);
+  if($("panel-buslog").hidden){
+    busUnread++;
+    const b=$("busbadge"); b.hidden=false; b.textContent = busUnread>99 ? "99+" : String(busUnread);
+  }
+}
+function setBusStats(s){
+  if(!s) return;
+  const dlq = s.dead_letters ?? 0;
+  $("busstats").textContent = `published ${s.published ?? 0} · dup-drop ${s.duplicates_dropped ?? 0} · `+
+    `subs ${s.subscribers ?? 0} · DLQ ${dlq}`;
+}
+
+// ---- OrgMap graph viewer ----
+const ORG_COLORS = {Person:"#7c5cff",Channel:"#22c55e",Crew:"#f59e0b",Vessel:"#ec4899",
+  Port:"#06b6d4",SignOffEvent:"#f43f5e",Contract:"#06b6d4",Vessel_Port:"#ec4899"};
+const ORG_ORDER = ["Person","Channel","Crew","Vessel","Port","SignOffEvent"];
+function orgColor(l){ return ORG_COLORS[l] || "#64748b"; }
+
+async function loadOrgMap(){
+  let d;
+  try { d = await (await fetch("/orgmap?nodes=200&edges=400")).json(); }
+  catch(e){ $("orgstats").textContent = "error: "+e; return; }
+  const s = d.stats || {};
+  $("orgstats").textContent = `${s.nodes||0} nodes · ${s.edges||0} edges · ${s.upserts||0} upserts`;
+  $("orgempty").style.display = (d.nodes && d.nodes.length) ? "none" : "block";
+  drawOrgMap(d);
+}
+function drawOrgMap(d){
+  const cv = $("orggraph"); const ctx = cv.getContext("2d");
+  const nodes = d.nodes||[], edges = d.edges||[];
+  const labels = [...new Set(nodes.map(n=>n.label))].sort((a,b)=>{
+    const ia=ORG_ORDER.indexOf(a), ib=ORG_ORDER.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib) || a.localeCompare(b);
+  });
+  // legend
+  $("orglegend").innerHTML = labels.map(l=>
+    `<span style="font-size:11px;color:var(--muted)"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${orgColor(l)};margin-right:4px"></span>${l}</span>`).join("");
+  const PER=20, COLW=210, ROWH=30, PADX=20, PADTOP=46;
+  const colNodes={}; labels.forEach(l=>colNodes[l]=[]);
+  nodes.forEach(n=>colNodes[n.label].push(n));
+  let maxRows=1; labels.forEach(l=>maxRows=Math.max(maxRows, Math.min(colNodes[l].length,PER)));
+  const W=Math.max(1, PADX*2+labels.length*COLW), H=PADTOP+maxRows*ROWH+20;
+  const dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+"px"; cv.style.height=H+"px";
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  ctx.font="11px ui-monospace,Menlo,Consolas,monospace";
+  const pos={};
+  labels.forEach((l,ci)=>{
+    const left = PADX+ci*COLW;
+    ctx.fillStyle="#8da2c8"; ctx.textAlign="left";
+    ctx.fillText(`${l} (${colNodes[l].length})`, left, PADTOP-22);
+    colNodes[l].slice(0,PER).forEach((n,r)=>{ pos[n.id]={x:left+8, y:PADTOP+r*ROWH}; });
+  });
+  // edges under nodes
+  edges.forEach(e=>{
+    const a=pos[e.src], b=pos[e.dst]; if(!a||!b) return;
+    ctx.strokeStyle="rgba(140,162,200,.22)"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y);
+    const mx=(a.x+b.x)/2; ctx.bezierCurveTo(mx,a.y,mx,b.y,b.x,b.y); ctx.stroke();
+  });
+  // nodes
+  labels.forEach(l=>{
+    colNodes[l].slice(0,PER).forEach(n=>{
+      const p=pos[n.id]; if(!p) return;
+      ctx.fillStyle=orgColor(l);
+      ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#e6ecff"; ctx.textAlign="left";
+      const nm=(n.props&&(n.props.name||n.props.subject))||n.id;
+      ctx.fillText(String(nm).slice(0,22)+(n.count>1?"  ×"+n.count:""), p.x+10, p.y+4);
+    });
+    if(colNodes[l].length>PER){
+      const left=PADX+labels.indexOf(l)*COLW;
+      ctx.fillStyle="#5f719b"; ctx.fillText(`+${colNodes[l].length-PER} more…`, left+8, PADTOP+PER*ROWH);
+    }
+  });
+}
+// auto-refresh the graph while it's toggled on inside the Live tail tab
+setInterval(()=>{ if(!$("panel-tail").hidden && !$("orgview").hidden) loadOrgMap(); }, 5000);
+function clearBusLog(){ $("buslog").innerHTML=""; }
+
+// ---- detail drawer: raw → normalized → L2 for a clicked row ----
+function openDetail(id){
+  const d = rowData.get(id);
+  if(!d) return;
+  if(selRow) selRow.classList.remove("sel");
+  selRow = document.querySelector(`#rows .row[data-rid="${id}"]`);
+  if(selRow) selRow.classList.add("sel");
+
+  const badge = $("d-badge");
+  badge.className = "badge b-" + d.source;
+  badge.textContent = srcShort(d.source);
+  $("d-entity").textContent = d.entity + (d.signoff ? "  ·  SignOffEvent" : "");
+  $("d-sub").innerHTML = `${escapeHtml(d.summary||"")}<br>`+
+    `<span style="color:#5f719b">${escapeHtml((d.ts||"").replace("T"," ").slice(0,19))} · key ${escapeHtml(JSON.stringify(d.key||{}))}</span>`;
+
+  $("d-raw").innerHTML = d.raw
+    ? `<pre>${pretty(d.raw)}</pre>`
+    : `<div class="none">raw not captured for this row (e.g. ERP backlog batch poll)</div>`;
+  $("d-norm").innerHTML = d.normalized ? pretty(d.normalized) : "—";
+  $("d-l2").innerHTML = d.l2_record
+    ? `<pre>${pretty(d.l2_record)}</pre>`
+    : `<div class="none">no L2 record (event not projected)</div>`;
+
+  const dr = $("drawer");
+  dr.classList.add("open");
+  dr.setAttribute("aria-hidden", "false");
+}
+function closeDrawer(){
+  const dr = $("drawer");
+  dr.classList.remove("open");
+  dr.setAttribute("aria-hidden", "true");
+  if(selRow){ selRow.classList.remove("sel"); selRow = null; }
+}
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeDrawer(); });
+
+// ---- signals/sec sparkline (last 60s) ----
+const HIST = 60;
+const hist = [];
+function drawSpark(){
+  const c = $("spark"); if(!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.width = Math.max(1, c.clientWidth * dpr);
+  const h = c.height = Math.max(1, c.clientHeight * dpr);
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0,0,w,h);
+  if(hist.length < 2) return;
+  const max = Math.max(1, ...hist);
+  const x = i => (i/(HIST-1)) * w;
+  const y = v => h - (v/max)*(h-6) - 3;
+  ctx.beginPath();
+  hist.forEach((v,i)=> i ? ctx.lineTo(x(i+HIST-hist.length), y(v)) : ctx.moveTo(x(HIST-hist.length), y(v)));
+  ctx.strokeStyle = "#7c5cff"; ctx.lineWidth = 2*dpr; ctx.lineJoin = "round"; ctx.stroke();
+  ctx.lineTo(w, h); ctx.lineTo(x(HIST-hist.length), h); ctx.closePath();
+  ctx.fillStyle = "rgba(124,92,255,.16)"; ctx.fill();
+}
+setInterval(()=>{
+  $("n-rate").textContent = windowCount;
+  hist.push(windowCount);
+  if(hist.length > HIST) hist.shift();
+  windowCount = 0;
+  drawSpark();
+}, 1000);
+window.addEventListener("resize", drawSpark);
+
+// ---- Demo 1: render the per-stage trace ----
+function laneHtml(item){
+  const so = (item.l2 && item.l2.kind === "signoff_event");
+  // badge by the normalized source_system (SLACK / EMAIL / CREW_DB / …)
+  const ss = (item.normalized && item.normalized.source_system) || String(item.source||"").toUpperCase();
+  return `<div class="lane">
+    <div class="lane-h"><span class="badge b-${ss}">${srcShort(ss)}</span>
+      <b>${escapeHtml(item.source)} ingress</b>${so?'<span class="tag">→ SignOffEvent</span>':''}</div>
+    <div class="steps">
+      <div class="step"><div class="t">① raw input (ingress)</div><pre>${pretty(item.raw)}</pre></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">② normalized (SignalEvent)</div><pre>${pretty(item.normalized)}</pre></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">④ L2 record</div><pre>${pretty(item.l2)}</pre></div>
+    </div></div>`;
+}
+
+async function demo1(){
+  pulsePipe();
+  const r = await post("/demo/inject");
+  if(r.error){ $("trace").innerHTML = `<div class="hint" style="color:#f87171">${r.error}</div>`; return; }
+  const ctx = r.context || {};
+  const head = `<div class="hint">Injected <b>${r.injected}</b> events for
+     <b>${escapeHtml(ctx.crew||'')}</b> (${escapeHtml(ctx.rank||'')}) — ${escapeHtml(ctx.vessel||'')} at ${escapeHtml(ctx.port||'')}.
+     L2 store now holds <b>${r.l2_store?.total ?? '?'}</b> records (${r.l2_store?.signoff ?? 0} SignOffEvent).</div>`;
+  $("trace").innerHTML = head + `<div class="flow">${r.trace.map(laneHtml).join("")}</div>`;
+}
+
+function connect(){
+  const es = new EventSource("/stream");
+  es.addEventListener("snapshot", e => {
+    const d=JSON.parse(e.data);
+    setTotals(d.totals);
+    (d.recent||[]).forEach(addRow);
+    (d.buslog||[]).forEach(addBusLine);
+    setBusStats(d.bus_stats);
+  });
+  es.onmessage = e => {
+    const d=JSON.parse(e.data);
+    if(d.type==="signal"){ setTotals(d.totals); addRow(d); }
+    else if(d.type==="buslog"){ addBusLine(d); }
+  };
+  es.onopen = () => { $("dot").className="dot on"; $("connlbl").textContent="connected"; };
+  es.onerror = () => { $("dot").className="dot"; $("connlbl").textContent="reconnecting…"; };
+}
+
+async function post(url){ try{ const r=await fetch(url,{method:"POST"}); return await r.json(); }catch(e){ return {error:String(e)}; } }
+
+// ---- test / critic agents ----
+function clearAgentOut(){ $("agentout").textContent = "Cleared. Click Run Test Agent or Run Critic Agent."; }
+function colorizeAgent(text){
+  return String(text).split("\n").map(line => {
+    let cls = "lvl-info";
+    if(/\[FAIL\]|INVALID|ERROR:|RESULT: \d+ implemented|regression/i.test(line)) cls = "lvl-error";
+    else if(/\bBLOCKER\b|\bHIGH\b|\bMEDIUM\b|LIVE TARGET|LIVE GAP|^\s*warn |\[ \]|to build|to-do/i.test(line)) cls = "lvl-warning";
+    else if(/\[PASS\]|VALID(?!\W*kind)| PASS\b|all implemented scenarios PASS|\[x\]/i.test(line)) cls = "lvl-info";
+    else cls = "";
+    return `<span class="logline ${cls}" style="display:block">${escapeHtml(line) || "&nbsp;"}</span>`;
+  }).join("");
+}
+async function runAgent(which){
+  const label = which === "test" ? "Test Agent" : "Critic Agent";
+  const mod = which === "test" ? "test_agent" : "critic_agent";
+  $("btn-test").disabled = $("btn-critic").disabled = true;
+  $("agentstatus").textContent = `running ${label}…`;
+  $("agentout").innerHTML = `<span class="logline lvl-warning" style="display:block">$ python -m tests.agents.${mod}   (running on the server…)</span>`;
+  const r = await post(`/agents/${which}`);
+  if(r.error){
+    $("agentout").innerHTML = `<span class="logline lvl-error" style="display:block">${escapeHtml(r.error)}</span>`;
+    $("agentstatus").textContent = "error";
+  } else {
+    $("agentout").innerHTML = colorizeAgent(r.output || "(no output)");
+    const ok = r.exit_code === 0;
+    $("agentstatus").innerHTML = `${label} done · exit <b style="color:${ok?'var(--ok)':'#f43f5e'}">${r.exit_code}</b>`;
+  }
+  $("btn-test").disabled = $("btn-critic").disabled = false;
+}
+async function start(){ pulsePipe(); await post(`/demo/start?speed=${$("speed").value||6000}`); }
+async function stop(){ await post("/demo/stop"); }
+async function backlog(){ pulsePipe(); await post("/demo/backlog"); }
+
+async function health(){
+  try{
+    const h = await (await fetch("/healthz")).json();
+    $("health").textContent = `health: ${h.status} · ${h.connectors.length} connectors · L2 ${h.l2_records ?? 0}`;
+    $("health").className = "pill " + (h.status==="ok" ? "green" : "red");
+    try{ const b = await (await fetch("/bus/log?n=1")).json(); setBusStats(b.stats); }catch(e){}
+  }catch(e){ $("health").textContent="health: down"; $("health").className="pill red"; }
+}
+
+connect(); health(); setInterval(health, 5000);
+</script>
+</body>
+</html>

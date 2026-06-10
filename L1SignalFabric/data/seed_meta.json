@@ -1,0 +1,65 @@
+{
+  "anchor": "2026-06-08T00:00:00+00:00",
+  "window": {
+    "start": "2026-04-27T00:00:00+00:00",
+    "end": "2026-06-15T00:00:00+00:00"
+  },
+  "config": {
+    "num_vessels": 20,
+    "crew_per_vessel": 14,
+    "crew_changes": 160,
+    "ambient_slack": 1500,
+    "routine_emails": 420,
+    "weeks_back": 6,
+    "weeks_forward": 1,
+    "seed": 42
+  },
+  "total_events": 4595,
+  "backlog_events": 3910,
+  "future_events": 685,
+  "entities": {
+    "vessels": 20,
+    "ports": 15,
+    "crew": 280,
+    "channels": 5,
+    "users": 288
+  },
+  "backlog_breakdown": {
+    "by_source": {
+      "erp": 1467,
+      "email": 486,
+      "slack": 1957
+    },
+    "by_kind": {
+      "contract.insert": 391,
+      "contract.update": 112,
+      "crew.insert": 391,
+      "crew.update": 246,
+      "member_joined_channel": 6,
+      "message": 1433,
+      "reaction_added": 518,
+      "routine": 354,
+      "sign_off": 132,
+      "vessel_port.insert": 20,
+      "vessel_port.update": 307
+    }
+  },
+  "future_breakdown": {
+    "by_source": {
+      "slack": 317,
+      "erp": 274,
+      "email": 94
+    },
+    "by_kind": {
+      "contract.insert": 49,
+      "contract.update": 48,
+      "crew.insert": 49,
+      "crew.update": 74,
+      "message": 227,
+      "reaction_added": 90,
+      "routine": 66,
+      "sign_off": 28,
+      "vessel_port.update": 54
+    }
+  }
+}

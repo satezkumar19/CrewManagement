@@ -1,0 +1,46 @@
+digraph ImplPipeline {
+  rankdir=LR;
+  graph [fontname="Helvetica", bgcolor="white", nodesep=0.40, ranksep=0.85, pad=0.35, labelloc=t,
+         label="L1 SignalFabric — Implemented Pipeline (file → station, with status)",
+         fontsize=15, fontcolor="#0F172A"];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, penwidth=1.5,
+         margin="0.20,0.12", color="#475569", fillcolor="#E2E8F0", fontcolor="#0F172A"];
+  edge  [fontname="Helvetica", fontsize=9, color="#64748B", penwidth=1.3, arrowsize=0.8];
+
+  subgraph cluster_ingress {
+    label="INGRESS  ·  real connectors";
+    fontname="Helvetica"; fontsize=12; fontcolor="#1E3A8A";
+    style="rounded,filled"; fillcolor="#F8FAFC"; color="#93C5FD"; penwidth=1.5;
+    slack [label="Slack receiver\napi/routes/slack.py\nconnectors/slack/", fillcolor="#DCFCE7", color="#16A34A"];
+    erp   [label="ERP connector\nconnectors/erp/", fillcolor="#DCFCE7", color="#16A34A"];
+    email [label="Email normalize\ndemo/email_normalize.py\n(Gmail Day-3 stand-in)", fillcolor="#FEF3C7", color="#D97706"];
+  }
+
+  verify [label="verify()\nHMAC + handshake\nconnectors/slack/verify.py", fillcolor="#DCFCE7", color="#16A34A"];
+  norm   [label="Normalizer\nraw → SignalEvent (DELTA)\n*/mappers.py", fillcolor="#DCFCE7", color="#16A34A"];
+  dedup  [label="dedup\ndedup_id\ncore/signal.py", fillcolor="#DCFCE7", color="#16A34A"];
+  bus    [label="Event Bus\nInMemoryBus\ncore/bus.py", fillcolor="#DCFCE7", color="#16A34A"];
+  sink   [label="L2 Sink + SignOffEvent\nl2/store.py", fillcolor="#DCFCE7", color="#16A34A"];
+  dash   [label="Dashboard / SSE\napi/live.py\napi/static/dashboard.html", fillcolor="#DCFCE7", color="#16A34A"];
+
+  ckpt [label="Checkpoint / watermark\ncore/watermark.py", shape=note, fillcolor="#F1F5F9", color="#94A3B8"];
+  dlq  [label="DLQ\nsubscriber-isolation seam\n(Day-4 Redis)", shape=note, fillcolor="#FEE2E2", color="#DC2626"];
+  redis[label="RedisStreamsBus\ndocker-compose seam\n(Day-4)", shape=note, fillcolor="#FEE2E2", color="#DC2626"];
+
+  slack -> verify; email -> verify; erp -> verify [style=invis];
+  verify -> norm; erp -> norm;
+  norm -> dedup -> bus -> sink -> dash;
+  erp -> ckpt [style=dashed, dir=both, color="#94A3B8"];
+  bus -> dlq  [style=dashed, color="#DC2626"];
+  bus -> redis [style=dashed, dir=none, color="#DC2626", label="swap-in"];
+
+  // legend
+  subgraph cluster_legend {
+    label="status"; fontsize=10; fontcolor="#475569";
+    style="rounded,filled"; fillcolor="#FFFFFF"; color="#CBD5E1";
+    L1 [label="Implemented", fillcolor="#DCFCE7", color="#16A34A", fontsize=9];
+    L2 [label="Partial / stand-in", fillcolor="#FEF3C7", color="#D97706", fontsize=9];
+    L3 [label="Deferred / seam", fillcolor="#FEE2E2", color="#DC2626", fontsize=9];
+    L1 -> L2 -> L3 [style=invis];
+  }
+}

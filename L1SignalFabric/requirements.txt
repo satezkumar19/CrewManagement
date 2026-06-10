@@ -1,0 +1,16 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.0
+# real connectors (HTTP clients, CLIs, config, DB)
+requests>=2.31
+msal>=1.28             # Microsoft Graph app-only (client-credentials) auth — Outlook + SharePoint
+click>=8.0
+PyYAML>=6.0
+SQLAlchemy>=2.0
+# optional integrations (uncomment as needed)
+# boto3>=1.26          # AWS Secrets Manager token resolution
+# psycopg2-binary>=2.9 # Postgres outbox/CDC for the Database connector
+# google-auth>=2.0     # Gmail Pub/Sub OIDC JWT verification
+# dev / test
+pytest>=7.0
+httpx>=0.27
