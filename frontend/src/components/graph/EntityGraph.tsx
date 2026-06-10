@@ -47,21 +47,26 @@ interface EntityNodeData {
   ntype: string;
   sub?: string;
   selected?: boolean;
+  active?: boolean;   // on the highlighted OpsMap process path
 }
+
+const ACTIVE_ACCENT = "#f59e0b";   // amber — the live process path
 
 function EntityNode({ data }: NodeProps<EntityNodeData>) {
   const accent = TYPE_COLOR[data.ntype] || "#94a3b8";
+  const border = data.active ? ACTIVE_ACCENT : accent;
   return (
     <div
+      className={data.active ? "process-active" : undefined}
       style={{
-        background: data.selected ? "rgba(20,48,92,0.98)" : "rgba(13,31,60,0.95)",
-        border: `${data.selected ? 2.5 : 1.5}px solid ${accent}${data.selected ? "" : "66"}`,
-        borderLeft: `5px solid ${accent}`,
+        background: data.selected ? "rgba(20,48,92,0.98)" : data.active ? "rgba(50,38,12,0.96)" : "rgba(13,31,60,0.95)",
+        border: `${data.active || data.selected ? 2.5 : 1.5}px solid ${data.active ? ACTIVE_ACCENT : `${accent}${data.selected ? "" : "66"}`}`,
+        borderLeft: `5px solid ${border}`,
         borderRadius: 10,
         padding: "6px 11px",
         minWidth: 130,
         maxWidth: 180,
-        boxShadow: data.selected ? `0 0 0 3px ${accent}44, 0 0 14px ${accent}55` : "none",
+        boxShadow: !data.active && data.selected ? `0 0 0 3px ${accent}44, 0 0 14px ${accent}55` : "none",
         cursor: "pointer",
       }}
     >
@@ -98,12 +103,14 @@ export default function EntityGraph({
   edges: rawEdges,
   height = 520,
   selectedId,
+  activeIds,
   onNodeClick,
 }: {
   nodes: GraphNodeDTO[];
   edges: GraphEdgeDTO[];
   height?: number;
   selectedId?: string | null;
+  activeIds?: string[];           // nodes on the highlighted OpsMap process path
   onNodeClick?: (id: string) => void;
 }) {
   const nodes: Node[] = useMemo(() => {
@@ -111,6 +118,7 @@ export default function EntityGraph({
     // Match by digits so a jump id (bare AGE id, e.g. "106…") highlights the
     // rendered node whose id is prefixed (e.g. "n106…").
     const sel = selectedId ? selectedId.replace(/\D/g, "") : null;
+    const activeSet = new Set(activeIds ?? []);
     return rawNodes.map((n) => ({
       id: n.id,
       type: "entityNode",
@@ -118,10 +126,11 @@ export default function EntityGraph({
       data: {
         label: n.label, ntype: n.type, sub: n.sub,
         selected: !!sel && n.id.replace(/\D/g, "") === sel,
+        active: activeSet.has(n.id),
       },
       draggable: true,
     }));
-  }, [rawNodes, selectedId]);
+  }, [rawNodes, selectedId, activeIds]);
 
   const edges: Edge[] = useMemo(
     () =>

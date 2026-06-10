@@ -19,6 +19,7 @@ from fastapi import APIRouter, HTTPException, Query
 from L2Knowledge_graph.entity_map import (
     ENTITY_EDGES,
     ENTITY_LABELS,
+    case_subgraph,
     entity_map_summary,
     facets,
     node_detail,
@@ -28,6 +29,7 @@ from L2Knowledge_graph.entity_map import (
 )
 from L2Knowledge_graph import ops_map
 from L2Knowledge_graph import org_map
+from L2Knowledge_graph import traversal
 from L2Knowledge_graph.graph_db import GRAPH_NAME, age_enabled
 
 router = APIRouter(prefix="/graph", tags=["graph"])
@@ -78,6 +80,37 @@ async def graph_subgraph(
     started = time.perf_counter()
     result = await search_subgraph(rank=rank, certificate=certificate, port=port, limit=limit)
     result["elapsed_ms"] = round((time.perf_counter() - started) * 1000, 1)
+    return result
+
+
+@router.get("/case-subgraph")
+async def graph_case_subgraph(
+    crew: str | None = Query(None, description="Sign-off crew name (the case's departing crew)"),
+    vessel: str | None = Query(None, description="The case's vessel"),
+    candidate: str | None = Query(None, description="Replacement / sign-on crew name (once found)"),
+):
+    """A focused EntityMap subgraph for one OpsMap process case — the sign-off crew,
+    the replacement candidate and their vessel plus direct neighbours. ``active_ids``
+    marks the focal nodes so the UI highlights the live process path."""
+    _require_age()
+    t0 = time.perf_counter()
+    result = await case_subgraph(crew=crew, vessel=vessel, candidate=candidate)
+    result["elapsed_ms"] = round((time.perf_counter() - t0) * 1000, 1)
+    return result
+
+
+@router.get("/case-traversal")
+async def graph_case_traversal(case_id: str = Query(..., description="OpsMap case id to traverse")):
+    """One connected graph for a single process case across all three L2 dimensions —
+    the OpsMap activity path (the active line), the EntityMap crew/vessel/replacement,
+    and the OrgMap fleet/company — joined by the shared Vessel node. Zone- + column-
+    tagged for a three-band (Process · Entities · Org) layout."""
+    _require_age()
+    t0 = time.perf_counter()
+    result = await traversal.case_traversal(case_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"No mined OpsMap case with id '{case_id}'.")
+    result["elapsed_ms"] = round((time.perf_counter() - t0) * 1000, 1)
     return result
 
 

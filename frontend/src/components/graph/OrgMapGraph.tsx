@@ -33,6 +33,7 @@ export interface OrgGraphNode {
   short?: boolean;     // role under-manned (gap > 0) — tints the sublabel red
   col?: number;        // explicit column override — Rank nodes use it to lay the
                        // chain of command out by reporting depth (Master, then reports…)
+  active?: boolean;    // on the highlighted OpsMap process path
 }
 
 interface OrgNodeData {
@@ -41,21 +42,25 @@ interface OrgNodeData {
   sublabel?: string;
   short?: boolean;
   selected?: boolean;
+  active?: boolean;   // on the highlighted OpsMap process path (sign-off hierarchy)
 }
+
+const ACTIVE_ACCENT = "#f59e0b";   // amber — the live process path
 
 function OrgNode({ data }: NodeProps<OrgNodeData>) {
   const accent = ORG_TYPE_COLOR[data.ntype] || "#94a3b8";
   return (
     <div
+      className={data.active ? "process-active" : undefined}
       style={{
-        background: data.selected ? "rgba(20,48,92,0.98)" : "rgba(13,31,60,0.95)",
-        border: `${data.selected ? 2.5 : 1.5}px solid ${accent}${data.selected ? "" : "66"}`,
-        borderLeft: `5px solid ${accent}`,
+        background: data.selected ? "rgba(20,48,92,0.98)" : data.active ? "rgba(50,38,12,0.96)" : "rgba(13,31,60,0.95)",
+        border: `${data.active || data.selected ? 2.5 : 1.5}px solid ${data.active ? ACTIVE_ACCENT : `${accent}${data.selected ? "" : "66"}`}`,
+        borderLeft: `5px solid ${data.active ? ACTIVE_ACCENT : accent}`,
         borderRadius: 10,
         padding: "7px 12px",
         minWidth: 140,
         maxWidth: 190,
-        boxShadow: data.selected ? `0 0 0 3px ${accent}44, 0 0 14px ${accent}55` : "none",
+        boxShadow: !data.active && data.selected ? `0 0 0 3px ${accent}44, 0 0 14px ${accent}55` : "none",
         cursor: "pointer",
       }}
     >
@@ -95,16 +100,19 @@ export default function OrgMapGraph({
   edges: rawEdges,
   height = 560,
   selectedId,
+  activeIds,
   onNodeClick,
 }: {
   nodes: OrgGraphNode[];
   edges: OrgMapStructureEdge[];
   height?: number;
   selectedId?: string | null;
+  activeIds?: string[];           // nodes on the highlighted OpsMap process path
   onNodeClick?: (id: string) => void;
 }) {
   const nodes: Node[] = useMemo(() => {
     const pos = layout(rawNodes);
+    const activeSet = new Set(activeIds ?? []);
     return rawNodes.map((n) => ({
       id: n.id,
       type: "orgNode",
@@ -112,10 +120,11 @@ export default function OrgMapGraph({
       data: {
         label: n.label, ntype: n.type, sublabel: n.sublabel, short: n.short,
         selected: n.id === selectedId,
+        active: activeSet.has(n.id),
       },
       draggable: true,
     }));
-  }, [rawNodes, selectedId]);
+  }, [rawNodes, selectedId, activeIds]);
 
   const edges: Edge[] = useMemo(
     () =>

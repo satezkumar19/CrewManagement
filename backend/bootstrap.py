@@ -74,4 +74,14 @@ async def run_startup_seed() -> None:
     except Exception as exc:  # noqa: BLE001
         log.error("seed_on_startup.orgmap_failed", error=str(exc))
 
+    # Rich demo OpsMap cases — the in-memory event log is reset on every restart, so
+    # without this the case-highlight / Traversal views have no cases to show until a
+    # live crew-change workflow runs. Pure in-memory replay, no AGE/LLM needed.
+    try:
+        from L2Knowledge_graph.ops_map import seed_demo_cases
+        seed_demo_cases()
+        log.info("seed_on_startup.opsmap_cases")
+    except Exception as exc:  # noqa: BLE001
+        log.error("seed_on_startup.opsmap_cases_failed", error=str(exc))
+
     log.info("seed_on_startup.done")
