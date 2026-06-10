@@ -417,11 +417,11 @@ def _u_gmail_metadata_no_body() -> Probe:
                                    {"name": "Subject", "value": "Sign-off notification"}]}}
     rec = message_metadata_to_record(msg)
     sig = record_to_signal(rec, "t")
-    ok = (rec["from"] == "a@x" and rec["to"] == ["b@y", "c@z"] and "body" not in rec
+    ok = (rec["from"] == "a@x" and rec["to"] == ["b@y", "c@z"] and rec["body"] == ""
           and rec["snippet_present"] is False and sig.source_system == SourceSystem.GMAIL
           and sig.metadata.get("l2Intent") == "CREATE_SIGNOFF_EVENT")
     return Probe(ok, "Gmail metadata record (no body) + sign-off intent",
-                 {"from": rec["from"], "to": rec["to"], "body_absent": "body" not in rec,
+                 {"from": rec["from"], "to": rec["to"], "body_absent": rec["body"] == "",
                   "intent": sig.metadata.get("l2Intent")}, "")
 
 
@@ -449,7 +449,7 @@ def _u_gmail_history_watermark() -> Probe:
         def history_list(self, start):
             yield {"id": "100", "messagesAdded": [{"message": {"id": "m1"}}]}
 
-        def get_message_metadata(self, mid):
+        def get_message(self, mid):
             return {"id": mid, "internalDate": "1717236000000", "labelIds": [],
                     "payload": {"headers": [{"name": "From", "value": "a@x"},
                                             {"name": "Subject", "value": "s"}]}}
