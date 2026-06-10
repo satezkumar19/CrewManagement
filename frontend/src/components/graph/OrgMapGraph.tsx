@@ -31,6 +31,8 @@ export interface OrgGraphNode {
   label: string;
   sublabel?: string;   // e.g. "1/1" (have/required) on Rank nodes
   short?: boolean;     // role under-manned (gap > 0) — tints the sublabel red
+  col?: number;        // explicit column override — Rank nodes use it to lay the
+                       // chain of command out by reporting depth (Master, then reports…)
 }
 
 interface OrgNodeData {
@@ -80,7 +82,7 @@ function layout(nodes: OrgGraphNode[]): Record<string, { x: number; y: number }>
   const perCol: Record<number, number> = {};
   const pos: Record<string, { x: number; y: number }> = {};
   for (const n of nodes) {
-    const col = COLUMN[n.type] ?? 3;
+    const col = n.col ?? COLUMN[n.type] ?? 3;
     const row = perCol[col] ?? 0;
     perCol[col] = row + 1;
     pos[n.id] = { x: col * COL_W, y: row * ROW_H };

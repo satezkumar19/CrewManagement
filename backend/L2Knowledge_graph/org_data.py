@@ -14,7 +14,7 @@ Three things are defined:
 Vessel names MUST match mock_data.crew_data.VESSELS so the OPERATES edges attach to
 real EntityMap vessel nodes.
 """
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 # ── 1. Ownership hierarchy: Company → Fleet → Vessels ───────────────────────────
 # The 5 EntityMap vessels distributed across 2 companies / 4 fleets.
@@ -44,6 +44,47 @@ MANNING: Dict[str, int] = {
     "AB Seaman": 2,
     "Electrician": 1,
     "Cook": 1,
+}
+
+
+# ── 2b. Chain of command: which rank reports to which ───────────────────────────
+# The shipboard reporting hierarchy (standard merchant-navy structure). The Master
+# sits at the top; the Deck department reports up through the Chief Officer and the
+# Engine department through the Chief Engineer. `None` marks the top of the tree.
+# Covers the MANNING ranks plus the trainee/junior ranks that appear in the crew data
+# (Cadets, Fourth Engineer) so every onboard role slots into the tree rather than
+# dangling at the top. Every key must exist as a Rank node (MANNING ranks + crewed ranks).
+RANK_REPORTS_TO: Dict[str, str | None] = {
+    "Master": None,                          # top of the shipboard hierarchy
+    # Deck department
+    "Chief Officer": "Master",
+    "Second Officer": "Chief Officer",
+    "Third Officer": "Second Officer",
+    "Deck Cadet": "Third Officer",
+    "Bosun": "Chief Officer",
+    "AB Seaman": "Bosun",
+    # Engine department
+    "Chief Engineer": "Master",
+    "Second Engineer": "Chief Engineer",
+    "Third Engineer": "Second Engineer",
+    "Fourth Engineer": "Third Engineer",
+    "Engine Cadet": "Fourth Engineer",
+    "Electrician": "Chief Engineer",
+    # Catering
+    "Cook": "Master",
+}
+
+
+# ── 2c. Deliberate manning shortfalls ───────────────────────────────────────────
+# The OrgMap builder fills each vessel toward its MANNING template with a standing
+# complement so the fleet reads as properly crewed. These (vessel, rank) positions are
+# left UNFILLED on purpose, so the manning-gap query still surfaces a few realistic
+# shortages (and the role view still shows some red) instead of an all-zero board.
+MANNING_GAPS: Dict[Tuple[str, str], int] = {
+    ("MV Indian Ocean Pride", "AB Seaman"): 1,
+    ("MV Indian Ocean Pride", "Bosun"): 1,
+    ("MT Crude Titan", "Electrician"): 1,
+    ("MV Atlantic Voyager", "Cook"): 1,
 }
 
 
@@ -77,3 +118,13 @@ def vessels() -> List[str]:
 
 def manning_ranks() -> List[str]:
     return list(MANNING.keys())
+
+
+def rank_reports_to() -> Dict[str, str | None]:
+    """rank name -> the rank it reports to (None for the Master, the top of the tree)."""
+    return dict(RANK_REPORTS_TO)
+
+
+def manning_gaps() -> Dict[Tuple[str, str], int]:
+    """(vessel, rank) -> positions deliberately left unfilled by the standing complement."""
+    return dict(MANNING_GAPS)

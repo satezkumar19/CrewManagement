@@ -315,6 +315,7 @@ export interface OrgMapManningRow {
   required: number;
   have: number;
   gap: number;
+  reports_to: string | null;   // the rank this one reports to (null = Master, top of tree)
 }
 export interface OrgMapManningGap {
   scope: { company: string | null; fleet: string | null; vessel: string | null; vessels: string[] };

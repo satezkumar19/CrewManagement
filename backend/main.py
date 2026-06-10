@@ -33,6 +33,13 @@ async def lifespan(app: FastAPI):
         await init_db()
     except Exception as exc:  # noqa: BLE001 - log and continue so the app still boots
         log.error("db_init_failed", error=str(exc))
+    # Optional self-seed for fresh deploys / demos (SEED_ON_STARTUP=true). No-op by
+    # default; safe to run on every boot (crew only when empty, graph rebuilds idempotent).
+    try:
+        from bootstrap import run_startup_seed
+        await run_startup_seed()
+    except Exception as exc:  # noqa: BLE001 - seeding is best-effort; never block boot
+        log.error("seed_on_startup_failed", error=str(exc))
     yield
     await cache_service.close()
     log.info("shutdown", app=settings.app_name)

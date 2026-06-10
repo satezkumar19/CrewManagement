@@ -115,14 +115,31 @@ export default function OrgMapView() {
     if (!vessel || !manning || manning.scope.vessel !== vessel) return base;
 
     const vId = `v:${vessel}`;
-    const rankNodes: OrgGraphNode[] = manning.rows.map((r) => ({
+    const bossOf: Record<string, string | null> = {};
+    manning.rows.forEach((r) => { bossOf[r.rank] = r.reports_to ?? null; });
+
+    // Reporting depth (Master = 0) → graph column, so the chain of command lays out
+    // left→right beside the vessel. The path string clusters each branch together.
+    const chain = (rank: string): string[] => {
+      const path: string[] = [];
+      let cur: string | null = rank;
+      const seen = new Set<string>();
+      while (cur && !seen.has(cur)) { seen.add(cur); path.unshift(cur); cur = bossOf[cur] ?? null; }
+      return path;
+    };
+    const VESSEL_COL = 2;
+    const ordered = [...manning.rows].sort((a, b) => chain(a.rank).join("/").localeCompare(chain(b.rank).join("/")));
+
+    const rankNodes: OrgGraphNode[] = ordered.map((r) => ({
       id: `r:${r.rank}`, type: "Rank", label: r.rank,
       sublabel: `${r.have}/${r.required}`, short: r.gap > 0,
+      col: VESSEL_COL + chain(r.rank).length,   // Master → col 3, its reports → 4, …
     }));
-    const rankEdges = manning.rows.map((r) => ({
-      id: `${vId}->r:${r.rank}`, source: vId, target: `r:${r.rank}`,
-      label: `×${r.required}`,
-    }));
+    // Each role links to its superior; the Master (no superior) hangs off the vessel.
+    const rankEdges = ordered.map((r) => {
+      const parent = r.reports_to ? `r:${r.reports_to}` : vId;
+      return { id: `${parent}->r:${r.rank}`, source: parent, target: `r:${r.rank}`, label: "" };
+    });
     return { nodes: [...base.nodes, ...rankNodes], edges: [...base.edges, ...rankEdges] };
   }, [structure, scopeKey, manning]);
 

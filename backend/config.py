@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     # Wall-clock guard for a single session turn (Phase 1 / Phase 2).
     session_turn_timeout_seconds: int = 300
 
+    # Auto-seed on startup (Option 1). When true, the app self-seeds on boot so a FRESH
+    # deploy shows data without a manual seed step: the crew table is populated ONLY when
+    # empty (seed_crew is destructive), then — under GRAPH_BACKEND=age — EntityMap and
+    # OrgMap are (idempotently) rebuilt. Default OFF: intended for demos / fresh deploys,
+    # not steady-state prod. See bootstrap.run_startup_seed().
+    seed_on_startup: bool = os.getenv("SEED_ON_STARTUP", "false").lower() == "true"
+
     # ── L3 Intelligence backend ───────────────────────────────────────────────
     # "fallback" (default) = deterministic Python investigators. Uses ZERO LLM tokens,
     # needs no API key, and meets the <2s/<10s SLOs + scenario tests — the safe everyday

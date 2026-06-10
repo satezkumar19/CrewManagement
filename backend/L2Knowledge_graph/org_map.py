@@ -28,8 +28,11 @@ from database.crew_repository import get_sign_off_crew, get_sign_on_crew
 log = structlog.get_logger()
 
 # New node labels / edge types OrgMap introduces (Vessel + Crew are reused from EntityMap).
-ORG_LABELS = ["Company", "Fleet", "Rank"]
-ORG_EDGES = ["OWNS", "OPERATES", "REQUIRES_RANK", "HAS_RANK"]
+# CrewComplement is OrgMap's OWN node type for the standing onboard crew that fill each
+# vessel's manning template — it is deliberately NOT :Crew, so it never touches EntityMap's
+# crew population or the L3 sign-on/sign-off pools. It links to its vessel via :MANS.
+ORG_LABELS = ["Company", "Fleet", "Rank", "CrewComplement"]
+ORG_EDGES = ["OWNS", "OPERATES", "REQUIRES_RANK", "HAS_RANK", "REPORTS_TO", "MANS"]
 
 
 def _q(value: Any) -> str:
@@ -96,6 +99,42 @@ async def build_org_map() -> Dict[str, Any]:
             f"WITH r MATCH (c:Crew {{crew_id:'{_q(cid)}'}}) "
             f"MERGE (c)-[:HAS_RANK]->(r)"
         )
+
+    # 4. Chain of command among ranks: (:Rank)-[:REPORTS_TO]->(:Rank). The Rank nodes
+    # already exist from the manning loop (step 2); this just links them into a tree.
+    for rank, boss in org_data.RANK_REPORTS_TO.items():
+        if not boss:
+            continue  # Master — top of the tree, reports to no one
+        await run_cypher(
+            f"MATCH (r:Rank {{name:'{_q(rank)}'}}), (b:Rank {{name:'{_q(boss)}'}}) "
+            f"MERGE (r)-[:REPORTS_TO]->(b)"
+        )
+
+    # 5. Standing complement — fill each vessel toward its MANNING template so the fleet
+    # reads as properly crewed. For each (vessel, rank) we add only the SHORTFALL beyond
+    # the real onboard crew, minus any position intentionally left short (MANNING_GAPS).
+    # These are (:CrewComplement)-[:MANS]->(:Vessel) — NOT :Crew, so EntityMap / L3 are
+    # untouched. Rebuilt from scratch each run for clean idempotency.
+    await run_cypher("MATCH (cc:CrewComplement) DETACH DELETE cc")
+    gaps = org_data.manning_gaps()
+    for vessel in org_data.vessels():
+        have_rows = await run_cypher(
+            f"MATCH (c:Crew)-[:ASSIGNED_TO]->(v:Vessel {{name:'{_q(vessel)}'}}) "
+            f"RETURN {{rank: c.rank}} AS v"
+        )
+        current = Counter(
+            r.get("rank") for r in have_rows if isinstance(r, dict) and r.get("rank")
+        )
+        for rank, required in org_data.MANNING.items():
+            short = max(0, int(required) - current.get(rank, 0) - gaps.get((vessel, rank), 0))
+            for n in range(short):
+                cid = f"OBC-{vessel}-{rank}-{n}".replace(" ", "_").replace("'", "")
+                await run_cypher(
+                    f"MERGE (cc:CrewComplement {{crew_id:'{_q(cid)}'}}) "
+                    f"SET cc.rank='{_q(rank)}', cc.vessel='{_q(vessel)}', "
+                    f"cc.name='{_q(rank)} (complement)' "
+                    f"WITH cc MATCH (v:Vessel {{name:'{_q(vessel)}'}}) MERGE (cc)-[:MANS]->(v)"
+                )
 
     summary = await org_map_summary()
     log.info("org_map.built", **summary["nodes"], **{f"edge_{k}": v for k, v in summary["edges"].items()})
@@ -213,9 +252,15 @@ async def manning_gap(
         f"MATCH (v:Vessel)-[req:REQUIRES_RANK]->(r:Rank) WHERE v.name IN {vlist} "
         f"RETURN {{rank: r.name, required: req.required}} AS v"
     )
+    # 'have' = real onboard crew (:Crew ASSIGNED_TO) + the standing complement
+    # (:CrewComplement MANS) that fills each vessel toward its template.
     have_rows = await run_cypher(
         f"MATCH (c:Crew)-[:ASSIGNED_TO]->(v:Vessel) WHERE v.name IN {vlist} "
         f"RETURN {{rank: c.rank}} AS v"
+    )
+    comp_rows = await run_cypher(
+        f"MATCH (cc:CrewComplement)-[:MANS]->(v:Vessel) WHERE v.name IN {vlist} "
+        f"RETURN {{rank: cc.rank}} AS v"
     )
 
     required: Dict[str, int] = defaultdict(int)
@@ -223,13 +268,16 @@ async def manning_gap(
         if isinstance(r, dict) and r.get("rank") is not None:
             required[r["rank"]] += int(r.get("required") or 0)
     have: Counter = Counter(
-        r.get("rank") for r in have_rows if isinstance(r, dict) and r.get("rank")
+        r.get("rank") for r in (have_rows + comp_rows)
+        if isinstance(r, dict) and r.get("rank")
     )
 
+    reports_to = org_data.rank_reports_to()
     ranks = sorted(set(required) | set(have))
     rows = [
         {"rank": rk, "required": required.get(rk, 0), "have": have.get(rk, 0),
-         "gap": required.get(rk, 0) - have.get(rk, 0)}
+         "gap": required.get(rk, 0) - have.get(rk, 0),
+         "reports_to": reports_to.get(rk)}
         for rk in ranks
     ]
     # Most short-staffed first, then by rank for stability.
