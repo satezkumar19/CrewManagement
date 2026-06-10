@@ -20,7 +20,10 @@ def _ev(source, entity, *, signoff=False, **data):
 
 def test_l2_projection(tmp_path):
     store = L2JsonlStore(str(tmp_path / "l2.jsonl"))
-    store.append(_ev(SourceSystem.SLACK, "message", user="U1", channel="C1"))
+    slack = store.append(_ev(SourceSystem.SLACK, "message", user="U1", channel="C1",
+                             text="Morning all — ETA update: MV Pacific Star alongside Singapore by 0600 local."))
+    # the Slack message body is carried verbatim into the edge props (not dropped)
+    assert slack["props"]["body"].startswith("Morning all")
     store.append(_ev(SourceSystem.EMAIL, "email", signoff=True, subject="Sign-Off Notification"))
     store.append(_ev(SourceSystem.CREW_DB, "crew", crew_id="CR-1"))
     c = store.counts()

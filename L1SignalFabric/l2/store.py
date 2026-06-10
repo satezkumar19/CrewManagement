@@ -7,7 +7,8 @@ This is a lightweight stand-in for the real L2 Operational Knowledge Graph
 (OrgMap + SignOffEvent nodes). It subscribes to the bus and *projects* each
 canonical `SignalEvent` into an append-only **L2 JSONL store**:
 
-  * SLACK message/reaction/join  → OrgMap edge (person ↔ channel)
+  * SLACK message/reaction/join  → OrgMap edge (person ↔ channel); message body
+                                   lifted into props
   * EMAIL                        → OrgMap edge (sender ↔ recipients); body lifted
                                    into props when EMAIL_INGEST_BODY is on
   * EMAIL with l2Intent=sign-off → **SignOffEvent** node
@@ -202,6 +203,10 @@ class L2JsonlStore:
             props = {"user": d.get("user_name") or d.get("user"),
                      "channel": d.get("channel_name") or d.get("channel"),
                      "channel_id": d.get("channel")}
+            # carry the message body verbatim (mirrors the e-mail edge); the Slack
+            # text is always present on the event, so no ingest flag gates it.
+            if d.get("text"):
+                props["body"] = d["text"]
             if crew:
                 props.update(crew)
             return {**base, "id": f"edge:{rid}", "kind": "edge",
