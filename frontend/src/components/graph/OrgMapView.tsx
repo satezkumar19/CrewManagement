@@ -69,7 +69,13 @@ function filterStructure(
   };
 }
 
-export default function OrgMapView() {
+export default function OrgMapView({
+  activeVessel = null,
+  activeRank = null,
+}: {
+  activeVessel?: string | null;   // sign-off vessel of the highlighted OpsMap case
+  activeRank?: string | null;     // sign-off rank — highlighted in the role view
+} = {}) {
   const [summary, setSummary] = useState<OrgMapSummary | null>(null);
   const [structure, setStructure] = useState<OrgMapStructure | null>(null);
   const [manning, setManning] = useState<OrgMapManningGap | null>(null);
@@ -148,6 +154,24 @@ export default function OrgMapView() {
     () => (structure?.nodes ?? []).filter((n) => n.type === "Vessel").map((n) => n.label),
     [structure],
   );
+
+  // The OpsMap process path through the org tree: the sign-off vessel and the fleet +
+  // company that own it (walked up the OPERATES/OWNS edges), plus the sign-off rank in
+  // the role view. These node ids get the amber "active" highlight.
+  const activeIds = useMemo(() => {
+    if (!structure || !activeVessel) return [] as string[];
+    const vId = `v:${activeVessel}`;
+    if (!structure.nodes.some((n) => n.id === vId)) return [];
+    const ids = new Set<string>([vId]);
+    const fleetId = structure.edges.find((e) => e.label === "OPERATES" && e.target === vId)?.source;
+    if (fleetId) {
+      ids.add(fleetId);
+      const companyId = structure.edges.find((e) => e.label === "OWNS" && e.target === fleetId)?.source;
+      if (companyId) ids.add(companyId);
+    }
+    if (activeRank) ids.add(`r:${activeRank}`);   // only present when scoped to the vessel
+    return [...ids];
+  }, [structure, activeVessel, activeRank]);
 
   // Human-readable label for the active filter banner.
   const scopeLabel = useMemo(() => {
@@ -240,6 +264,7 @@ export default function OrgMapView() {
                 edges={view.edges}
                 height={560}
                 selectedId={selectedId}
+                activeIds={activeIds}
                 onNodeClick={handleNodeClick}
               />
             )}

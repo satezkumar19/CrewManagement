@@ -145,11 +145,66 @@ export interface GraphNodeDetail {
   degree: number;
 }
 
+// A focused subgraph for one OpsMap process case. `active_ids` are the focal nodes
+// (the sign-off crew, vessel and replacement candidate) the UI highlights.
+export interface CaseSubgraph {
+  case: { crew: string | null; vessel: string | null; candidate: string | null };
+  crew_count: number;
+  nodes: GraphNodeDTO[];
+  edges: GraphEdgeDTO[];
+  active_ids: string[];
+  total_nodes: number;
+  total_edges: number;
+  elapsed_ms: number;
+}
+
+// One connected graph for a process case across all three L2 dimensions. Each node is
+// tagged with a `zone` (process | entity | org) and a `col` for the three-band layout;
+// `active` marks the process spine + bridge nodes (the live line).
+export interface TraversalNode {
+  id: string;
+  type: string;       // Activity | Crew | Vessel | Port | Certificate | Contract | Fleet | Company | Rank
+  label: string;
+  zone: "process" | "entity" | "org";
+  col: number;
+  sub?: string;
+  active: boolean;
+}
+export interface TraversalEdge {
+  id: string;
+  source: string;
+  target: string;
+  label: string;
+  active: boolean;
+}
+export interface CaseTraversal {
+  case: {
+    case_id: string;
+    sign_off_crew: string | null;
+    sign_off_rank: string | null;
+    sign_off_vessel: string | null;
+    sign_on_crew: string | null;
+    outcome: OpsMapOutcome;
+  };
+  candidate_reached: boolean;
+  zones: string[];
+  nodes: TraversalNode[];
+  edges: TraversalEdge[];
+  active_ids: string[];
+  total_nodes: number;
+  total_edges: number;
+  elapsed_ms: number;
+}
+
 export const graphApi = {
   getSummary: () => api.get<GraphSummary>("/graph/summary").then(r => r.data),
   getFacets: () => api.get<GraphFacets>("/graph/facets").then(r => r.data),
   getSubgraph: (params: { rank?: string; certificate?: string; port?: string; limit?: number }) =>
     api.get<GraphSubgraph>("/graph/subgraph", { params }).then(r => r.data),
+  getCaseSubgraph: (params: { crew?: string; vessel?: string; candidate?: string }) =>
+    api.get<CaseSubgraph>("/graph/case-subgraph", { params }).then(r => r.data),
+  getCaseTraversal: (caseId: string) =>
+    api.get<CaseTraversal>("/graph/case-traversal", { params: { case_id: caseId } }).then(r => r.data),
   getNode: (nodeId: string) =>
     api.get<GraphNodeDetail>(`/graph/node/${encodeURIComponent(nodeId)}`).then(r => r.data),
 };

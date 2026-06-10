@@ -303,6 +303,89 @@ async def search_subgraph(
     }
 
 
+async def case_subgraph(
+    crew: Optional[str] = None,
+    vessel: Optional[str] = None,
+    candidate: Optional[str] = None,
+) -> Dict[str, Any]:
+    """A focused subgraph for one OpsMap process case: the sign-off crew, the
+    replacement candidate, and their shared vessel — each with its direct neighbours
+    (certificate / port / contract). The focal entities actually in the case are
+    returned in ``active_ids`` so the UI can highlight the live process path,
+    distinct from an ordinary click selection. Crew/vessel are matched by name (the
+    fields an OpsMap case carries)."""
+    nodes: Dict[str, Dict[str, Any]] = {}
+    edges: Dict[str, Dict[str, Any]] = {}
+    active: set = set()
+
+    async def _add_crew(name: str) -> None:
+        rows = await run_cypher(
+            f"MATCH (c:Crew {{name:'{_q(name)}'}}) OPTIONAL MATCH (c)-[r]->(n) "
+            "RETURN {cid: id(c), cname: c.name, crank: c.rank, cpool: c.pool, "
+            "rel: type(r), nid: id(n), "
+            "nlabel: coalesce(n.name, n.type, n.contract_id), ntype: labels(n)[0]} AS v"
+        )
+        for r in rows:
+            if not isinstance(r, dict) or r.get("cid") is None:
+                continue
+            cnode = f"c{r['cid']}"
+            nodes.setdefault(cnode, {
+                "id": cnode, "type": "Crew", "label": r.get("cname") or "",
+                "sub": r.get("crank") or "", "pool": r.get("cpool") or "",
+            })
+            active.add(cnode)
+            # Only EntityMap relationships — skip OrgMap overlay edges (HAS_RANK etc.)
+            # so the case view stays an entity picture, not a rank fan-out.
+            if r.get("rel") in ENTITY_EDGES and r.get("nid") is not None:
+                tnode = f"n{r['nid']}"
+                nodes.setdefault(tnode, {
+                    "id": tnode, "type": r.get("ntype") or "?",
+                    "label": str(r.get("nlabel") or ""), "sub": r.get("ntype") or "",
+                })
+                eid = f"{cnode}-{r['rel']}-{tnode}"
+                edges.setdefault(eid, {"id": eid, "source": cnode, "target": tnode, "label": r["rel"]})
+
+    if crew:
+        await _add_crew(crew)
+    if candidate:
+        await _add_crew(candidate)
+
+    # The case's vessel + its port of call. The vessel node id (n<id(v)>) is the same
+    # one the sign-off crew's ASSIGNED_TO edge points at, so they merge into one node.
+    if vessel:
+        vrows = await run_cypher(
+            f"MATCH (v:Vessel {{name:'{_q(vessel)}'}}) OPTIONAL MATCH (v)-[r]->(n) "
+            "RETURN {vid: id(v), vname: v.name, rel: type(r), nid: id(n), "
+            "nlabel: coalesce(n.name, n.type), ntype: labels(n)[0]} AS v"
+        )
+        for r in vrows:
+            if not isinstance(r, dict) or r.get("vid") is None:
+                continue
+            vnode = f"n{r['vid']}"
+            nodes.setdefault(vnode, {
+                "id": vnode, "type": "Vessel", "label": r.get("vname") or "", "sub": "Vessel",
+            })
+            active.add(vnode)
+            if r.get("rel") in ENTITY_EDGES and r.get("nid") is not None:
+                tnode = f"n{r['nid']}"
+                nodes.setdefault(tnode, {
+                    "id": tnode, "type": r.get("ntype") or "?",
+                    "label": str(r.get("nlabel") or ""), "sub": r.get("ntype") or "",
+                })
+                eid = f"{vnode}-{r['rel']}-{tnode}"
+                edges.setdefault(eid, {"id": eid, "source": vnode, "target": tnode, "label": r["rel"]})
+
+    return {
+        "case": {"crew": crew, "vessel": vessel, "candidate": candidate},
+        "crew_count": sum(1 for n in nodes.values() if n.get("type") == "Crew"),
+        "nodes": list(nodes.values()),
+        "edges": list(edges.values()),
+        "active_ids": sorted(active),
+        "total_nodes": len(nodes),
+        "total_edges": len(edges),
+    }
+
+
 async def node_detail(node_id: str) -> Optional[Dict[str, Any]]:
     """Full detail for a single node, addressed by the id used in the subgraph
     payload (e.g. 'c105...' for crew, 'n106...' for everything else). Returns the

@@ -45,6 +45,16 @@ body {
   animation: glow-pulse 3s ease-in-out infinite;
 }
 
+/* Active process-path node — amber pulse, deliberately distinct from the blue
+   click-selection ring, so a highlighted OpsMap case path reads as "live". */
+@keyframes process-active-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px #f59e0b99, 0 0 12px #f59e0b66; }
+  50% { box-shadow: 0 0 0 3px #f59e0be0, 0 0 24px #f59e0baa; }
+}
+.process-active {
+  animation: process-active-pulse 1.6s ease-in-out infinite;
+}
+
 .data-flow-line {
   stroke-dasharray: 10;
   animation: data-flow 2s linear infinite;

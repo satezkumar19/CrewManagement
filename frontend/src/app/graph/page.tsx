@@ -4,22 +4,35 @@
  * Pick any combination of rank / certificate / port and see the matching crew and
  * their relationships rendered live from the Apache AGE graph (GET /graph/subgraph).
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import {
   Anchor, Ship, Activity, BarChart3, Share2, Search, X, Loader2, Database,
-  ArrowRight, ArrowLeft, Route, GitBranch, Building2,
+  ArrowRight, ArrowLeft, Route, GitBranch, Building2, Crosshair,
 } from "lucide-react";
 
 import {
-  graphApi, type GraphFacets, type GraphSummary, type GraphSubgraph, type GraphNodeDetail,
+  graphApi, opsMapApi,
+  type GraphFacets, type GraphSummary, type GraphSubgraph, type GraphNodeDetail,
+  type OpsMapCase, type CaseSubgraph, type CaseTraversal,
 } from "@/lib/api";
 import EntityGraph, { TYPE_COLOR } from "@/components/graph/EntityGraph";
 import OpsMapView from "@/components/graph/OpsMapView";
 import OrgMapView from "@/components/graph/OrgMapView";
+import TraversalGraph from "@/components/graph/TraversalGraph";
 
-type Dimension = "entity" | "ops" | "org";
+// Activities that mean the process reached "replacement finding" — only then is the
+// sign-on candidate part of the active path (before that, just the sign-off crew/vessel).
+const MATCH_REACHED = ["Crew Matching", "Compliance Check", "Signed On", "Sign-On Rejected"];
+
+function caseLabel(c: OpsMapCase): string {
+  const who = c.sign_off_crew ?? "crew";
+  const to = c.sign_on_crew ? ` → ${c.sign_on_crew}` : "";
+  return `${who}${to} · ${c.sign_off_vessel ?? "?"} [${c.outcome}]`;
+}
+
+type Dimension = "entity" | "ops" | "org" | "full";
 
 export default function GraphPage() {
   const [dimension, setDimension] = useState<Dimension>("entity");
@@ -34,6 +47,20 @@ export default function GraphPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<GraphNodeDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // ── Active process case (highlights its path across EntityMap + OrgMap) ──────────
+  const [cases, setCases] = useState<OpsMapCase[]>([]);
+  const [activeCaseId, setActiveCaseId] = useState("");
+  const [caseData, setCaseData] = useState<CaseSubgraph | null>(null);
+  const [caseLoading, setCaseLoading] = useState(false);
+  const [traversal, setTraversal] = useState<CaseTraversal | null>(null);
+  const [traversalLoading, setTraversalLoading] = useState(false);
+  const activeCase = useMemo(
+    () => cases.find((c) => c.case_id === activeCaseId) ?? null,
+    [cases, activeCaseId],
+  );
+  // The candidate is on the path only once the process reached replacement finding.
+  const candidateReached = !!activeCase?.path.some((a) => MATCH_REACHED.includes(a));
 
   const runSearch = useCallback(async (r: string, c: string, p: string) => {
     setLoading(true);
@@ -69,7 +96,8 @@ export default function GraphPage() {
     }
   }, []);
 
-  // Initial load: facets, summary, and a first (unfiltered) subgraph.
+  // Initial load: facets, summary, a first (unfiltered) subgraph, and the mined
+  // process cases that drive the active-path highlighter.
   useEffect(() => {
     (async () => {
       try {
@@ -82,8 +110,44 @@ export default function GraphPage() {
         if (status === 503) setUnavailable(true);
         else toast.error("Failed to load graph");
       }
+      try {
+        const cs = await opsMapApi.getCases();
+        setCases(cs.cases ?? []);
+      } catch {
+        /* cases are optional; the picker just stays empty */
+      }
     })();
   }, [runSearch]);
+
+  // When a process case is selected, load its focused EntityMap subgraph. The candidate
+  // is only included once the process reached replacement finding (candidateReached).
+  useEffect(() => {
+    if (!activeCase) { setCaseData(null); return; }
+    let cancelled = false;
+    setCaseLoading(true);
+    setSelectedId(null); setDetail(null);
+    graphApi.getCaseSubgraph({
+      crew: activeCase.sign_off_crew ?? undefined,
+      vessel: activeCase.sign_off_vessel ?? undefined,
+      candidate: candidateReached ? (activeCase.sign_on_crew ?? undefined) : undefined,
+    })
+      .then((res) => { if (!cancelled) setCaseData(res); })
+      .catch(() => { if (!cancelled) toast.error("Could not load the case path"); })
+      .finally(() => { if (!cancelled) setCaseLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeCaseId, candidateReached]);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The unified Traversal view: one connected graph across all three dimensions.
+  useEffect(() => {
+    if (dimension !== "full" || !activeCase) { setTraversal(null); return; }
+    let cancelled = false;
+    setTraversalLoading(true);
+    graphApi.getCaseTraversal(activeCase.case_id)
+      .then((res) => { if (!cancelled) setTraversal(res); })
+      .catch(() => { if (!cancelled) toast.error("Could not load the traversal"); })
+      .finally(() => { if (!cancelled) setTraversalLoading(false); });
+    return () => { cancelled = true; };
+  }, [dimension, activeCaseId]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const clear = () => {
     setRank(""); setCertificate(""); setPort("");
@@ -91,6 +155,12 @@ export default function GraphPage() {
   };
 
   const hasFilters = rank || certificate || port;
+
+  // EntityMap renders the focused case subgraph when a case is active, else the search.
+  const entityNodes = activeCase ? (caseData?.nodes ?? []) : (data?.nodes ?? []);
+  const entityEdges = activeCase ? (caseData?.edges ?? []) : (data?.edges ?? []);
+  const entityActiveIds = activeCase ? caseData?.active_ids : undefined;
+  const entityLoading = activeCase ? caseLoading : loading;
 
   return (
     <div className="min-h-screen bg-ocean-gradient">
@@ -175,12 +245,85 @@ export default function GraphPage() {
             icon={<Building2 className="w-4 h-4" />}
             label="OrgMap"
           />
+          <DimensionTab
+            active={dimension === "full"}
+            onClick={() => setDimension("full")}
+            icon={<Crosshair className="w-4 h-4" />}
+            label="Traversal"
+          />
         </div>
+
+        {/* ── Active process case (highlights its path across EntityMap + OrgMap) ── */}
+        {dimension !== "ops" && cases.length > 0 && (
+          <div className="glass rounded-2xl border border-ocean-border/50 p-3 flex flex-wrap items-center gap-3">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-gray-300">
+              <Crosshair className="w-3.5 h-3.5 text-amber-400" /> Highlight process case
+            </span>
+            <select
+              value={activeCaseId}
+              onChange={(e) => setActiveCaseId(e.target.value)}
+              className="flex-1 min-w-[260px] bg-ocean-card border border-ocean-border/60 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400/60"
+            >
+              <option value="">No case — normal view</option>
+              {cases.map((c) => (
+                <option key={c.case_id} value={c.case_id}>{caseLabel(c)}</option>
+              ))}
+            </select>
+            {activeCase && (
+              <>
+                <span className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <ActiveChip label={`Sign-off: ${activeCase.sign_off_crew ?? "?"} (${activeCase.sign_off_rank ?? "?"})`} />
+                  <ActiveChip label={`Vessel: ${activeCase.sign_off_vessel ?? "?"}`} />
+                  {candidateReached
+                    ? <ActiveChip label={`Replacement: ${activeCase.sign_on_crew ?? "?"}`} />
+                    : <span className="text-gray-500">replacement not reached yet</span>}
+                </span>
+                <button
+                  onClick={() => setActiveCaseId("")}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white bg-ocean-card border border-ocean-border/60 hover:border-amber-400/50 transition"
+                >
+                  <X className="w-3 h-3" /> Clear
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         {dimension === "ops" ? (
           <OpsMapView />
         ) : dimension === "org" ? (
-          <OrgMapView />
+          <OrgMapView
+            activeVessel={activeCase?.sign_off_vessel ?? null}
+            activeRank={activeCase?.sign_off_rank ?? null}
+          />
+        ) : dimension === "full" ? (
+          <div className="glass rounded-2xl border border-ocean-border/50 p-4">
+            <div className="flex flex-wrap items-center gap-3 mb-3 text-[11px] text-gray-400">
+              <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: "#2dd4bf" }} /> Process</span>
+              <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: TYPE_COLOR.Crew }} /> Entities</span>
+              <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: "#a855f7" }} /> Org</span>
+              <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: "#f59e0b" }} /> active line</span>
+              <span className="ml-auto text-gray-600">one case · three dimensions · shared vessel bridges them</span>
+            </div>
+            {!activeCase ? (
+              <div className="h-[560px] flex flex-col items-center justify-center text-gray-500 gap-2">
+                <Crosshair className="w-8 h-8 opacity-40 text-amber-400" />
+                <p>Pick a <span className="text-amber-300">process case</span> above to trace it across all three maps.</p>
+                {cases.length === 0 && <p className="text-xs text-gray-600">No mined cases yet.</p>}
+              </div>
+            ) : traversalLoading || !traversal ? (
+              <div className="h-[560px] flex items-center justify-center text-gray-500">
+                <Loader2 className="w-6 h-6 animate-spin text-ocean-accent" />
+              </div>
+            ) : (
+              <TraversalGraph
+                key={traversal.case.case_id}
+                nodes={traversal.nodes}
+                edges={traversal.edges}
+                height={600}
+              />
+            )}
+          </div>
         ) : unavailable ? (
           <div className="glass rounded-2xl border border-amber-500/30 p-8 text-center">
             <p className="text-amber-300 font-semibold">Graph backend disabled</p>
@@ -191,53 +334,79 @@ export default function GraphPage() {
           </div>
         ) : (
           <>
-            {/* ── Filter bar ─────────────────────────────────────────────────── */}
-            <div className="glass rounded-2xl border border-ocean-border/50 p-4">
-              <div className="flex flex-wrap items-end gap-3">
-                <Select label="Rank" value={rank} onChange={setRank} options={facets?.ranks ?? []} />
-                <Select label="Certificate" value={certificate} onChange={setCertificate} options={facets?.certificates ?? []} />
-                <Select label="Port" value={port} onChange={setPort} options={facets?.ports ?? []} />
-                <button
-                  onClick={() => runSearch(rank, certificate, port)}
-                  disabled={loading}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-gradient text-white text-sm font-medium shadow-lg disabled:opacity-60"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  Search
-                </button>
-                {hasFilters && (
-                  <button
-                    onClick={clear}
-                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-ocean-border/30 transition"
-                  >
-                    <X className="w-4 h-4" /> Clear
-                  </button>
-                )}
-                {data && (
-                  <span className="ml-auto text-xs text-gray-500">
-                    <span className="text-white font-semibold">{data.crew_count}</span> crew ·{" "}
-                    {data.total_nodes} nodes · {data.total_edges} edges ·{" "}
-                    <span className="text-teal-300">{data.elapsed_ms} ms</span>
+            {/* ── Filter bar (or, when a case is active, the case-path banner) ──── */}
+            {activeCase ? (
+              <div className="glass rounded-2xl border border-amber-500/30 p-4 flex flex-wrap items-center gap-3">
+                <Crosshair className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-sm text-amber-200">
+                  Showing the <span className="font-semibold">process path</span> for{" "}
+                  <span className="text-white font-semibold">{activeCase.sign_off_crew}</span> signing off{" "}
+                  <span className="text-white font-semibold">{activeCase.sign_off_vessel}</span>
+                  {candidateReached && activeCase.sign_on_crew && (
+                    <> → replacement <span className="text-white font-semibold">{activeCase.sign_on_crew}</span></>
+                  )}.
+                </span>
+                {caseData && (
+                  <span className="text-xs text-gray-500">
+                    {caseData.total_nodes} nodes · {caseData.active_ids.length} on path
                   </span>
                 )}
+                <button
+                  onClick={() => setActiveCaseId("")}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-300 hover:text-white bg-ocean-card border border-ocean-border/60 hover:border-amber-400/50 transition"
+                >
+                  <X className="w-4 h-4" /> Exit case view
+                </button>
               </div>
-            </div>
+            ) : (
+              <div className="glass rounded-2xl border border-ocean-border/50 p-4">
+                <div className="flex flex-wrap items-end gap-3">
+                  <Select label="Rank" value={rank} onChange={setRank} options={facets?.ranks ?? []} />
+                  <Select label="Certificate" value={certificate} onChange={setCertificate} options={facets?.certificates ?? []} />
+                  <Select label="Port" value={port} onChange={setPort} options={facets?.ports ?? []} />
+                  <button
+                    onClick={() => runSearch(rank, certificate, port)}
+                    disabled={loading}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-gradient text-white text-sm font-medium shadow-lg disabled:opacity-60"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    Search
+                  </button>
+                  {hasFilters && (
+                    <button
+                      onClick={clear}
+                      className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-ocean-border/30 transition"
+                    >
+                      <X className="w-4 h-4" /> Clear
+                    </button>
+                  )}
+                  {data && (
+                    <span className="ml-auto text-xs text-gray-500">
+                      <span className="text-white font-semibold">{data.crew_count}</span> crew ·{" "}
+                      {data.total_nodes} nodes · {data.total_edges} edges ·{" "}
+                      <span className="text-teal-300">{data.elapsed_ms} ms</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* ── Graph + node details ───────────────────────────────────────── */}
             <div className="flex flex-col xl:flex-row gap-4">
               <div className="glass rounded-2xl border border-ocean-border/50 p-4 flex-1 min-w-0">
                 <Legend />
-                {data && data.nodes.length > 0 ? (
+                {entityNodes.length > 0 ? (
                   <EntityGraph
-                    nodes={data.nodes}
-                    edges={data.edges}
+                    nodes={entityNodes}
+                    edges={entityEdges}
                     height={560}
                     selectedId={selectedId}
+                    activeIds={entityActiveIds}
                     onNodeClick={handleNodeClick}
                   />
                 ) : (
                   <div className="h-[560px] flex flex-col items-center justify-center text-gray-500 gap-2">
-                    {loading ? (
+                    {entityLoading ? (
                       <Loader2 className="w-6 h-6 animate-spin text-ocean-accent" />
                     ) : (
                       <>
@@ -393,6 +562,14 @@ function Legend() {
       ))}
       <span className="ml-auto text-gray-600">drag nodes · scroll to zoom</span>
     </div>
+  );
+}
+
+function ActiveChip({ label }: { label: string }) {
+  return (
+    <span className="px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200">
+      {label}
+    </span>
   );
 }
 

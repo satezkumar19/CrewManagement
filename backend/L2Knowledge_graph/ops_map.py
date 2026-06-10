@@ -230,6 +230,62 @@ def reset_event_log() -> None:
         _EVENT_LOG.clear()
 
 
+# ── Rich demo cases (real crew/vessel names → full entity + org context) ──────────
+# Each step is (event_type, agent_name, minute_offset, data). Unlike the bare sample
+# traces in scripts/seed_ops_map.py, these carry the per-case detail payload, so the
+# mined cases have a real sign-off crew, vessel and replacement — which is what the
+# case-highlight and cross-dimension Traversal views read. Names match the seeded crew
+# so EntityMap/OrgMap resolve them. Seeded into the in-memory log on startup (the log is
+# per-process and reset on restart), so the case features stay demoable without needing
+# a live workflow run.
+_DEMO_BASE_ISO = "2026-06-09T08:00:00"
+
+_DEMO_CASES: Dict[str, List[Tuple[str, Optional[str], int, Dict[str, Any]]]] = {
+    "demo-signoff-atlantic": [
+        ("workflow_created", "Master Agent", 0, {"crew_name": "Sergei Morozov", "rank": "Second Officer", "vessel": "MV Atlantic Voyager"}),
+        ("agent_completed", "Crew Matching Agent", 6, {"candidate_name": "Rajesh Kumar", "candidate_rank": "Second Officer"}),
+        ("agent_completed", "Travel Agent", 14, {}),
+        ("agent_completed", "Notification Agent", 18, {}),
+        ("crew_updated", "Master Agent", 22, {}),
+        ("auto_compliance", "Compliance Agent", 28, {"candidate_name": "Rajesh Kumar", "compliance_status": "compliant", "compliance_score": 0.94}),
+        ("crew_signed_on", "Compliance Agent", 33, {"crew_name": "Rajesh Kumar", "compliance_status": "compliant", "compliance_score": 0.94}),
+    ],
+    "demo-signoff-pacific": [
+        ("workflow_created", "Master Agent", 0, {"crew_name": "Pedro Lim", "rank": "Cook", "vessel": "MV Pacific Star"}),
+        ("agent_completed", "Crew Matching Agent", 5, {"candidate_name": "Maria Santos", "candidate_rank": "Cook"}),
+        ("agent_completed", "Travel Agent", 12, {}),
+        ("agent_completed", "Notification Agent", 16, {}),
+        ("crew_updated", "Master Agent", 20, {}),
+        ("auto_compliance", "Compliance Agent", 25, {"candidate_name": "Maria Santos", "compliance_status": "compliant", "compliance_score": 0.88}),
+        ("crew_signed_on", "Compliance Agent", 30, {"crew_name": "Maria Santos", "compliance_status": "compliant", "compliance_score": 0.88}),
+    ],
+    "demo-signoff-indian": [
+        ("workflow_created", "Master Agent", 0, {"crew_name": "Ramesh Nair", "rank": "Chief Engineer", "vessel": "MV Indian Ocean Pride"}),
+        ("agent_completed", "Crew Matching Agent", 7, {"candidate_name": "Alexei Petrov", "candidate_rank": "Chief Engineer"}),
+        ("auto_compliance", "Compliance Agent", 16, {"candidate_name": "Alexei Petrov", "compliance_status": "non_compliant", "compliance_score": 0.41}),
+        ("sign_on_rejected", "Compliance Agent", 20, {"crew_name": "Alexei Petrov", "compliance_status": "non_compliant", "compliance_score": 0.41, "failures": ["Medical certificate expired", "STCW endorsement missing for vessel type"]}),
+    ],
+}
+
+
+def seed_demo_cases() -> int:
+    """Seed the rich demo cases into the in-memory event log (idempotent per process:
+    skips any case already present). Returns the number of cases seeded."""
+    base = _parse_ts(_DEMO_BASE_ISO)
+    present = {e["case_id"] for e in _EVENT_LOG}
+    seeded = 0
+    for case_id, steps in _DEMO_CASES.items():
+        if case_id in present:
+            continue
+        for event_type, actor, minute, data in steps:
+            ts_iso = datetime.utcfromtimestamp(base + minute * 60).isoformat()
+            record_event(case_id, event_type, actor, ts_iso, data)
+        seeded += 1
+    if seeded:
+        log.info("opsmap.demo_cases_seeded", count=seeded)
+    return seeded
+
+
 def _cases() -> Dict[str, List[Dict[str, Any]]]:
     """Group the event log by case_id, each case sorted by timestamp."""
     by_case: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
