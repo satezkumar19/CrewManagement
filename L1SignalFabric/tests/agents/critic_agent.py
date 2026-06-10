@@ -253,8 +253,10 @@ class CriticAgent:
         print(f"  connector code, offline-test : {tgt_pass}/{len(tgt)} Gmail/Outlook/SharePoint "
               "capability scenarios PASS (code only)")
         bar = "#" * live + "." * (total_src - live)
+        live_names = ", ".join(s.capitalize() for s, (st, _) in LIVE_STATUS.items() if st == "LIVE")
+        not_live = ", ".join(s.capitalize() for s, (st, _) in LIVE_STATUS.items() if st != "LIVE")
         print(f"  LIVE verification (real tenant): [{bar}] {live}/{total_src} sources "
-              "— Slack only; email/SharePoint/Notion/Database NOT live")
+              f"— {live_names or 'none'} live; {not_live or 'none'} NOT live")
 
     # ---- section 3: what we have ------------------------------------------
     def _section_current(self, results: list[ScenarioResult], caps: dict[str, bool]) -> None:
@@ -266,9 +268,9 @@ class CriticAgent:
              "live route captures raw payload for the dashboard drawer"),
             ("ERP ingress", caps["erp_connector"],
              "outbox poll across 3 systems + watermark + lossless resume"),
-            ("Gmail (built · live PENDING)", caps["gmail_connector"],
-             "Pub/Sub push + OIDC/token verify + history backfill — code built + offline-tested, "
-             "NOT yet verified against a real Gmail tenant"),
+            ("Gmail (LIVE)", caps["gmail_connector"],
+             "Pub/Sub push + OIDC/token verify + history backfill — verified end-to-end against a "
+             "real Gmail tenant: a sent email flows push → /gmail/push → history expansion → EMAIL signal"),
             ("Outlook (built · live PENDING)", caps["outlook_connector"],
              "Graph mail webhook (validationToken + clientState) + delta poll — code built + "
              "offline-tested, NOT yet verified against a real M365 tenant"),

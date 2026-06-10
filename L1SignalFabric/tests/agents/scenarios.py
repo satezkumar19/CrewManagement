@@ -130,10 +130,11 @@ COMPONENTS: list[tuple[str, str]] = [
 # fake. Passing scenarios prove the connector CODE is correct; they do NOT prove
 # the source is integrated live against a real tenant. This registry records what
 # is actually verified end-to-end (real credentials, real webhooks, real events).
-LIVE_VERIFIED = {"slack"}
+LIVE_VERIFIED = {"slack", "gmail"}
 LIVE_STATUS: dict[str, tuple[str, str]] = {
     "slack":      ("LIVE",    "verified end-to-end against a real Slack workspace"),
-    "gmail":      ("PENDING", "connector built + offline-tested; NOT verified vs a real Gmail tenant"),
+    "gmail":      ("LIVE",    "verified end-to-end against a real Gmail tenant: OAuth refresh, "
+                              "users.watch, Pub/Sub push → /gmail/push → history expansion → EMAIL signal"),
     "outlook":    ("PENDING", "connector built + offline-tested; NOT verified vs a real Microsoft 365 tenant"),
     "sharepoint": ("PENDING", "connector built + offline-tested; NOT verified vs a real SharePoint site"),
     "notion":     ("PENDING", "connector built + offline-tested; NOT verified vs a real Notion workspace"),
@@ -455,6 +456,10 @@ def _u_gmail_history_watermark() -> Probe:
                                             {"name": "Subject", "value": "s"}]}}
 
     c = GmailConnector(tenant_id="t", client=FakeGmail())
+    # Seed a baseline cursor so ingest takes the incremental history.list path
+    # (an empty cursor would trigger the cold-start backfill instead — that's a
+    # separate path covered elsewhere and needs list_messages/get_profile).
+    c.commit("50")
     sigs = _run(c.ingest(_gmail_envelope({"historyId": "200"}, "px")))
     ok = len(sigs) == 1 and sigs[0].data["from"] == "a@x" and c.position() == "200"
     return Probe(ok, "history.list expansion advances the historyId watermark",

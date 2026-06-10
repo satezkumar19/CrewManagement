@@ -111,8 +111,10 @@ class TestAgent:
             verified += 1 if live else 0
             print(f"  [{'x' if live else ' '}] {src:<11} {status:<8} {note}")
         print(_THIN)
+        live_names = ", ".join(s.capitalize() for s, (st, _) in LIVE_STATUS.items() if st == "LIVE")
+        not_live = ", ".join(s.capitalize() for s, (st, _) in LIVE_STATUS.items() if st != "LIVE")
         print(f"  live-verified sources: {verified}/{len(LIVE_STATUS)} "
-              "(Slack only — email/SharePoint/Notion/Database live integration NOT complete)")
+              f"({live_names or 'none'} live — {not_live or 'none'} live integration NOT complete)")
 
     def _roster(self, results: list[ScenarioResult], suite: dict | None) -> None:
         """Every scenario across Part A + Part B, split into success and failed —
@@ -192,9 +194,13 @@ class TestAgent:
             print(f"  {_THIN}")
             for r in crows:
                 tag = "PASS" if r.ok else "FAIL"
-                # 'target' connectors are built + offline-tested, but their LIVE
-                # integration (real tenant) is still pending — flag that honestly.
-                flag = " ·offline (live pending)" if r.scenario.target else ""
+                # 'target' connectors are built + offline-tested; flag their LIVE
+                # (real-tenant) status honestly — verified vs still pending.
+                if r.scenario.target:
+                    src_live = LIVE_STATUS.get(r.scenario.source, ("", ""))[0] == "LIVE"
+                    flag = " ·offline (real-tenant verified)" if src_live else " ·offline (live pending)"
+                else:
+                    flag = ""
                 print(f"    [{tag}] {r.id:<22} {r.scenario.title}{flag}")
                 print(f"           asserts: {_fmt(r.scenario.asserts, 86)}")
                 if not self.quiet or not r.ok:
